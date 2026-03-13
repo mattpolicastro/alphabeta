@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  A/B Test Analysis Lambda — Path B fallback compute engine.
+  See requirements.md Section 10.3.
+
+Resources:
+  AnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.handler
+      Runtime: python3.12
+      CodeUri: analysis/
+      Timeout: 60
+      MemorySize: 1024
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          # TODO: replace with actual GitHub Pages domain
+          AllowOrigins:
+            - 'https://<username>.github.io'
+          AllowMethods:
+            - POST
+          AllowHeaders:
+            - Content-Type
+
+Outputs:
+  AnalysisFunctionUrl:
+    Description: Lambda Function URL for the analysis endpoint
+    Value: !GetAtt AnalysisFunctionUrl.FunctionUrl
