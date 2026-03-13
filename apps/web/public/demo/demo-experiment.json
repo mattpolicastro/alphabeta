@@ -1,0 +1,19 @@
+{
+  "id": "demo_001",
+  "name": "Homepage CTA Button Color Test",
+  "hypothesis": "Changing the CTA button from blue to green will increase the purchase conversion rate by at least 15% because green signals 'go' and draws more visual attention.",
+  "description": "Testing the impact of CTA button color on the homepage hero section. Primary metric is purchase rate; clicks and revenue are secondary. Device type and browser are tracked as dimensions.",
+  "status": "running",
+  "createdAt": 1710316800000,
+  "updatedAt": 1710316800000,
+  "variations": [
+    { "id": "v1", "name": "Control (Blue)", "key": "control", "weight": 0.5, "isControl": true },
+    { "id": "v2", "name": "Variant A (Green)", "key": "variant_a", "weight": 0.5, "isControl": false }
+  ],
+  "primaryMetricIds": ["m_purchases", "m_clicks", "m_revenue"],
+  "guardrailMetricIds": [],
+  "statsEngine": "bayesian",
+  "multipleComparisonCorrection": "benjamini-hochberg",
+  "cuped": false,
+  "tags": ["homepage", "cta", "demo"]
+}

@@ -1,0 +1,14 @@
+#schema_version:1
+experiment_id,variation_id,device_type,browser,units,purchases,clicks,revenue
+demo_001,control,all,all,10000,484,3911,26727.83
+demo_001,control,mobile,all,4500,183,1456,10711.96
+demo_001,control,desktop,all,5500,335,2669,17115.72
+demo_001,control,all,chrome,6400,295,2568,13891.7
+demo_001,control,all,safari,2200,129,857,6364.14
+demo_001,control,all,firefox,1400,69,568,4095.16
+demo_001,variant_a,all,all,10000,579,4647,24664.49
+demo_001,variant_a,mobile,all,4500,221,1688,12520.44
+demo_001,variant_a,desktop,all,5500,348,3018,18670.17
+demo_001,variant_a,all,chrome,6400,368,2878,19613.3
+demo_001,variant_a,all,safari,2200,130,1016,6937.85
+demo_001,variant_a,all,firefox,1400,85,652,3916.72
