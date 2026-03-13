@@ -40,7 +40,7 @@
 
 | Task | Files | Effort | Done when… |
 |------|-------|--------|------------|
-| **Set up Jest + testing-library** | `jest.config.ts`, `package.json`, `tsconfig.json` | Medium | `npm test` runs; one smoke test passes using `fake-indexeddb` |
+| ~~**Set up Jest + testing-library**~~ | `jest.config.ts`, `package.json`, `tsconfig.json` | Medium | ✅ `npm test` runs; smoke test passes with `fake-indexeddb` |
 | **Unit tests: DB layer** | `lib/db/__tests__/` | Medium | CRUD, export/import round-trip, retention limit, referential integrity |
 | **Unit tests: CSV pipeline** | `lib/csv/__tests__/` | Medium | Schema version, missing columns, auto-classify, buildRequest payload |
 | **Unit tests: stats transform** | `lib/stats/__tests__/` | Low | `transformResponse` produces correct MetricResult[] from mock AnalysisResponse |
@@ -68,7 +68,7 @@
 - **CUPED:** Schema field preserved but toggle disabled in UI; not implemented in analysis logic.
 - **File organization:** `lib/store/` (not `lib/stores/`), `lib/csv/buildRequest.ts` (not `lib/stats/buildRequest.ts`). DB operations are in `lib/db/index.ts` (not split into per-entity files). See `architecture.md` for actual layout.
 - **Shared components:** Variation editing, stats config, and metric picker are extracted into shared components (`VariationEditor`, `StatsConfigEditor`, `MetricPicker`) used by both the wizard and config panel.
-- **No test framework yet.** Jest/testing-library not configured. Test tasks are noted but not started.
+- **Test framework configured.** Jest + `next/jest` preset + `fake-indexeddb` + `@testing-library/react`. Run `npm test` from `apps/web/`. DB test isolation via `resetDb()` helper in `lib/db/__tests__/helpers.ts`.
 
 ---
 
@@ -85,8 +85,8 @@ Req: §3.1, §3.5, §10.1
 - [x] App shell: top nav (Experiments | Metrics | Settings), full-width container (§8.1)
 - [x] Pages: `app/page.tsx`, `experiments/new/page.tsx`, `experiments/view/page.tsx`, `metrics/page.tsx`, `settings/page.tsx`
 - [x] Verify `npm run build` produces static export in `out/`
-- [ ] Jest + SWC test config via `next/jest` preset (§3.6)
-- [ ] Install test deps: `@testing-library/react`, `fake-indexeddb`, `jest`
+- [x] Jest + SWC test config via `next/jest` preset (§3.6)
+- [x] Install test deps: `@testing-library/react`, `fake-indexeddb`, `jest`
 - [-] ESLint — not configured (optional for v1)
 - [-] `react-bootstrap` — not used; raw Bootstrap classes instead
 - [-] `recharts` — not installed; visualizations deferred (see P1 charts module)
