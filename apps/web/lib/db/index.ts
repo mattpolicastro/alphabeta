@@ -8,6 +8,7 @@ import type {
   Annotation,
   AppSettings,
 } from './schema';
+import { useLoadingStore } from '@/lib/store/loadingStore';
 
 export const db = new AppDB();
 
@@ -303,26 +304,32 @@ export interface ExportData {
 }
 
 export async function exportAllData(): Promise<ExportData> {
-  const [experiments, metrics, results, columnMappings, annotations] =
-    await Promise.all([
-      db.experiments.toArray(),
-      db.metrics.toArray(),
-      db.results.toArray(),
-      db.columnMappings.toArray(),
-      db.annotations.toArray(),
-    ]);
+  const { startLoading, stopLoading } = useLoadingStore.getState();
+  startLoading();
+  try {
+    const [experiments, metrics, results, columnMappings, annotations] =
+      await Promise.all([
+        db.experiments.toArray(),
+        db.metrics.toArray(),
+        db.results.toArray(),
+        db.columnMappings.toArray(),
+        db.annotations.toArray(),
+      ]);
 
-  await updateSettings({ lastExportedAt: Date.now() });
+    await updateSettings({ lastExportedAt: Date.now() });
 
-  return {
-    exportedAt: new Date().toISOString(),
-    version: 1,
-    experiments,
-    metrics,
-    results,
-    columnMappings,
-    annotations,
-  };
+    return {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      experiments,
+      metrics,
+      results,
+      columnMappings,
+      annotations,
+    };
+  } finally {
+    stopLoading();
+  }
 }
 
 export interface ImportSummary {
@@ -351,61 +358,73 @@ export async function importData(
     throw new Error(`Unsupported export version: ${data.version}`);
   }
 
-  await db.transaction(
-    'rw',
-    [db.experiments, db.metrics, db.results, db.columnMappings, db.annotations],
-    async () => {
-      if (mode === 'replace') {
-        await Promise.all([
-          db.experiments.clear(),
-          db.metrics.clear(),
-          db.results.clear(),
-          db.columnMappings.clear(),
-          db.annotations.clear(),
-        ]);
-      }
+  const { startLoading, stopLoading } = useLoadingStore.getState();
+  startLoading();
+  try {
+    await db.transaction(
+      'rw',
+      [db.experiments, db.metrics, db.results, db.columnMappings, db.annotations],
+      async () => {
+        if (mode === 'replace') {
+          await Promise.all([
+            db.experiments.clear(),
+            db.metrics.clear(),
+            db.results.clear(),
+            db.columnMappings.clear(),
+            db.annotations.clear(),
+          ]);
+        }
 
-      // bulkPut merges on key conflict (merge mode) or inserts fresh (replace mode)
-      await Promise.all([
-        db.experiments.bulkPut(data.experiments),
-        db.metrics.bulkPut(data.metrics),
-        db.results.bulkPut(data.results),
-        db.columnMappings.bulkPut(data.columnMappings),
-        db.annotations.bulkPut(data.annotations),
-      ]);
-    },
-  );
+        // bulkPut merges on key conflict (merge mode) or inserts fresh (replace mode)
+        await Promise.all([
+          db.experiments.bulkPut(data.experiments),
+          db.metrics.bulkPut(data.metrics),
+          db.results.bulkPut(data.results),
+          db.columnMappings.bulkPut(data.columnMappings),
+          db.annotations.bulkPut(data.annotations),
+        ]);
+      },
+    );
+  } finally {
+    stopLoading();
+  }
 }
 
 export async function exportExperiment(
   experimentId: string,
 ): Promise<ExportData> {
-  const experiment = await db.experiments.get(experimentId);
-  if (!experiment) throw new Error(`Experiment ${experimentId} not found`);
+  const { startLoading, stopLoading } = useLoadingStore.getState();
+  startLoading();
+  try {
+    const experiment = await db.experiments.get(experimentId);
+    if (!experiment) throw new Error(`Experiment ${experimentId} not found`);
 
-  const [results, columnMappings, annotations] = await Promise.all([
-    db.results.where('experimentId').equals(experimentId).toArray(),
-    db.columnMappings.where('experimentId').equals(experimentId).toArray(),
-    db.annotations.where('experimentId').equals(experimentId).toArray(),
-  ]);
+    const [results, columnMappings, annotations] = await Promise.all([
+      db.results.where('experimentId').equals(experimentId).toArray(),
+      db.columnMappings.where('experimentId').equals(experimentId).toArray(),
+      db.annotations.where('experimentId').equals(experimentId).toArray(),
+    ]);
 
-  // Include metrics referenced by this experiment
-  const metricIds = [
-    ...experiment.primaryMetricIds,
-    ...experiment.guardrailMetricIds,
-    ...(experiment.activationMetricId ? [experiment.activationMetricId] : []),
-  ];
-  const metrics = await db.metrics.where('id').anyOf(metricIds).toArray();
+    // Include metrics referenced by this experiment
+    const metricIds = [
+      ...experiment.primaryMetricIds,
+      ...experiment.guardrailMetricIds,
+      ...(experiment.activationMetricId ? [experiment.activationMetricId] : []),
+    ];
+    const metrics = await db.metrics.where('id').anyOf(metricIds).toArray();
 
-  return {
-    exportedAt: new Date().toISOString(),
-    version: 1,
-    experiments: [experiment],
-    metrics,
-    results,
-    columnMappings,
-    annotations,
-  };
+    return {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      experiments: [experiment],
+      metrics,
+      results,
+      columnMappings,
+      annotations,
+    };
+  } finally {
+    stopLoading();
+  }
 }
 
 // ----- Backup tracking -----

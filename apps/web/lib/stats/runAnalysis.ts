@@ -1,6 +1,7 @@
 import type { AnalysisRequest, AnalysisResponse, WorkerMessage } from './types';
 import { useSettingsStore } from '@/lib/store/settingsStore';
 import { useEngineStatusStore } from '@/lib/store/engineStatusStore';
+import { useLoadingStore } from '@/lib/store/loadingStore';
 
 /**
  * Unified entry point — routes to Pyodide Web Worker (Path A) or Lambda (Path B)
@@ -11,11 +12,17 @@ export async function runAnalysis(
   request: AnalysisRequest,
 ): Promise<AnalysisResponse> {
   const { computeEngine } = useSettingsStore.getState();
+  const { startLoading, stopLoading } = useLoadingStore.getState();
 
-  if (computeEngine === 'wasm') {
-    return runAnalysisInWorker(request);
-  } else {
-    return runAnalysisInLambda(request);
+  startLoading();
+  try {
+    if (computeEngine === 'wasm') {
+      return await runAnalysisInWorker(request);
+    } else {
+      return await runAnalysisInLambda(request);
+    }
+  } finally {
+    stopLoading();
   }
 }
 

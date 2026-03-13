@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { NavBar } from '@/components/NavBar';
+import { GlobalLoadingIndicator } from '@/components/GlobalLoadingIndicator';
 
 export const metadata: Metadata = {
   title: 'A/B Test Analysis Tool',
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <GlobalLoadingIndicator />
         <NavBar />
         <main className="container" style={{ maxWidth: '80rem' }}>
           {children}

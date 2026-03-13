@@ -8,3 +8,4 @@
 export { useWizardStore } from './wizardStore';
 export { useSettingsStore } from './settingsStore';
 export { useEngineStatusStore } from './engineStatusStore';
+export { useLoadingStore } from './loadingStore';
