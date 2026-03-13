@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   getExperiments,
@@ -20,6 +20,7 @@ const STATUS_BADGES: Record<Experiment['status'], string> = {
 export default function DashboardPage() {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [statusFilter, setStatusFilter] = useState<Experiment['status'] | 'all'>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [showBackupBanner, setShowBackupBanner] = useState(false);
   const [empty, setEmpty] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,28 @@ export default function DashboardPage() {
     }
     load();
   }, [statusFilter, loadSettings]);
+
+  // Collect unique tags from loaded experiments (respects status filter)
+  const allTags = useMemo(
+    () => Array.from(new Set(experiments.flatMap((e) => e.tags))).sort(),
+    [experiments],
+  );
+
+  // Reset tag filter when the selected tag no longer exists in the list
+  useEffect(() => {
+    if (tagFilter !== 'all' && !allTags.includes(tagFilter)) {
+      setTagFilter('all');
+    }
+  }, [allTags, tagFilter]);
+
+  // Apply tag filter client-side so the dropdown stays populated
+  const filteredExperiments = useMemo(
+    () =>
+      tagFilter === 'all'
+        ? experiments
+        : experiments.filter((e) => e.tags.includes(tagFilter)),
+    [experiments, tagFilter],
+  );
 
   if (loading) {
     return (
@@ -80,7 +103,7 @@ export default function DashboardPage() {
       {/* Filter + list */}
       {!empty && (
         <>
-          <div className="mb-3">
+          <div className="mb-3 d-flex align-items-center gap-3">
             <div className="btn-group btn-group-sm">
               {(['all', 'draft', 'running', 'stopped', 'archived'] as const).map(
                 (s) => (
@@ -94,6 +117,23 @@ export default function DashboardPage() {
                 ),
               )}
             </div>
+
+            {allTags.length > 0 && (
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                aria-label="Filter by tag"
+              >
+                <option value="all">All tags</option>
+                {allTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="table-responsive">
@@ -109,7 +149,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {experiments.map((exp) => (
+                {filteredExperiments.map((exp) => (
                   <tr key={exp.id}>
                     <td>
                       <Link
@@ -148,7 +188,7 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ))}
-                {experiments.length === 0 && (
+                {filteredExperiments.length === 0 && (
                   <tr>
                     <td colSpan={6} className="text-center text-muted py-4">
                       No experiments match this filter.
