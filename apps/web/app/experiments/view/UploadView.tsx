@@ -7,6 +7,7 @@ import { getExperimentById, getMetricsByIds, getColumnMapping, saveColumnMapping
 import { parseCSVFile, validateCSV, validateMetricColumns, getColumnFingerprint, autoClassifyColumns, getVariationNormalization, type ParsedCSV, type ValidationError } from '@/lib/csv';
 import { buildAnalysisRequest, type ColumnMappingConfig } from '@/lib/csv/buildRequest';
 import { runAnalysis } from '@/lib/stats/runAnalysis';
+import type { AnalysisRequest } from '@/lib/stats/types';
 import { transformResponse } from '@/lib/stats/transformResponse';
 import { downloadTemplateCSV } from '@/lib/csv/generateTemplate';
 import { useSettingsStore } from '@/lib/store/settingsStore';
@@ -32,6 +33,7 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
   const [dragOver, setDragOver] = useState(false);
   const [metricSummaries, setMetricSummaries] = useState<MetricSummary[]>([]);
   const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
+  const lastRequestRef = useRef<AnalysisRequest | null>(null);
   const settings = useSettingsStore();
 
   useEffect(() => {
@@ -71,16 +73,11 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
 
   function handleDrop(e: React.DragEvent) { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }
 
-  async function handleSubmit() {
-    if (!experiment || !parsed) return;
-    const metricCols = Object.entries(mapping).filter(([, c]) => c.role === 'metric' && c.metricId).map(([col]) => col);
-    const metricErrors = validateMetricColumns(parsed.rows, metricCols);
-    const allErrors = [...errors, ...metricErrors];
-    if (allErrors.some((e) => e.type === 'error')) { setErrors(allErrors); return; }
-    await saveColumnMapping(experiment.id, getColumnFingerprint(parsed.headers), mapping);
+  async function executeAnalysis(request: AnalysisRequest) {
+    if (!experiment) return;
+    lastRequestRef.current = request;
     setStep('analyzing'); setAnalyzing(true); setAnalyzeError(null);
     try {
-      const request = buildAnalysisRequest(parsed, experiment, metrics, mapping);
       const response = await runAnalysis(request);
       const transformed = transformResponse(response, request);
       const resultRecord: ExperimentResult = {
@@ -95,6 +92,22 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
       router.push(`/experiments/view?id=${experiment.id}`);
     } catch (err) { setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed'); setStep('mapping'); }
     finally { setAnalyzing(false); }
+  }
+
+  async function handleSubmit() {
+    if (!experiment || !parsed) return;
+    const metricCols = Object.entries(mapping).filter(([, c]) => c.role === 'metric' && c.metricId).map(([col]) => col);
+    const metricErrors = validateMetricColumns(parsed.rows, metricCols);
+    const allErrors = [...errors, ...metricErrors];
+    if (allErrors.some((e) => e.type === 'error')) { setErrors(allErrors); return; }
+    await saveColumnMapping(experiment.id, getColumnFingerprint(parsed.headers), mapping);
+    const request = buildAnalysisRequest(parsed, experiment, metrics, mapping);
+    await executeAnalysis(request);
+  }
+
+  async function handleRetry() {
+    if (!lastRequestRef.current) return;
+    await executeAnalysis(lastRequestRef.current);
   }
 
   function handleMappingChange(newMapping: ColumnMappingConfig) {
@@ -116,7 +129,16 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     <div className="py-4">
       <h1 className="mb-1">Upload Data</h1>
       <p className="text-muted mb-4">{experiment.name}</p>
-      {analyzeError && <div className="alert alert-danger"><strong>Analysis failed:</strong> {analyzeError}</div>}
+      {analyzeError && (
+        <div className="alert alert-danger d-flex justify-content-between align-items-center">
+          <span><strong>Analysis failed:</strong> {analyzeError}</span>
+          {lastRequestRef.current && (
+            <button className="btn btn-outline-danger btn-sm ms-3 flex-shrink-0" onClick={handleRetry} disabled={analyzing}>
+              {analyzing ? 'Retrying\u2026' : 'Retry'}
+            </button>
+          )}
+        </div>
+      )}
       {step === 'analyzing' && <div className="text-center py-5"><div className="spinner-border mb-3" role="status" /><p>Running analysis…</p></div>}
 
       {/* Parse errors shown on the upload step */}
