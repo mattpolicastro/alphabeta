@@ -11,6 +11,7 @@ import { transformResponse } from '@/lib/stats/transformResponse';
 import { downloadTemplateCSV } from '@/lib/csv/generateTemplate';
 import { useSettingsStore } from '@/lib/store/settingsStore';
 import { ColumnMapper } from '@/components/ColumnMapper';
+import { MetricValidationPanel, computeMetricSummaries, hasBlockingValidationErrors, type MetricSummary } from '@/components/MetricValidationPanel';
 
 type UploadStep = 'upload' | 'mapping' | 'analyzing';
 
@@ -29,6 +30,8 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [metricSummaries, setMetricSummaries] = useState<MetricSummary[]>([]);
+  const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
   const settings = useSettingsStore();
 
   useEffect(() => {
@@ -54,8 +57,12 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
       for (const [col, role] of Object.entries(classification)) { if (role !== 'reserved') initial[col] = { role }; }
       const fp = getColumnFingerprint(result.headers);
       const saved = await getColumnMapping(experiment.id, fp);
-      if (saved) { setMapping(saved.mapping as ColumnMappingConfig); setSavedMappingDate(new Date(saved.savedAt).toLocaleDateString()); setSavedMappingColumns(Object.keys(saved.mapping)); }
-      else { setMapping(initial); setSavedMappingDate(null); setSavedMappingColumns([]); }
+      const activeMapping = saved ? saved.mapping as ColumnMappingConfig : initial;
+      if (saved) { setMapping(activeMapping); setSavedMappingDate(new Date(saved.savedAt).toLocaleDateString()); setSavedMappingColumns(Object.keys(saved.mapping)); }
+      else { setMapping(activeMapping); setSavedMappingDate(null); setSavedMappingColumns([]); }
+      setWarningsAcknowledged(false);
+      const variationKeys = experiment.variations.map((v) => v.key);
+      setMetricSummaries(computeMetricSummaries(result.rows, activeMapping, metrics, variationKeys));
       setVariationNorm(getVariationNormalization(result.rows));
       setErrors(validateCSV(result, experiment.variations.map((v) => v.key), settings.dimensionWarningThreshold));
       setStep('mapping');
@@ -87,10 +94,20 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     finally { setAnalyzing(false); }
   }
 
+  function handleMappingChange(newMapping: ColumnMappingConfig) {
+    setMapping(newMapping);
+    setWarningsAcknowledged(false);
+    if (parsed && experiment) {
+      const variationKeys = experiment.variations.map((v) => v.key);
+      setMetricSummaries(computeMetricSummaries(parsed.rows, newMapping, metrics, variationKeys));
+    }
+  }
+
   if (!experiment) return <div className="py-4 text-center"><div className="spinner-border" role="status" /></div>;
   const blockingErrors = errors.filter((e) => e.type === 'error');
   const warnings = errors.filter((e) => e.type === 'warning');
   const mappedMetrics = Object.values(mapping).filter((c) => c.role === 'metric' && c.metricId).length;
+  const hasValidationErrors = metricSummaries.length > 0 && hasBlockingValidationErrors(metricSummaries, metrics);
 
   return (
     <div className="py-4">
@@ -139,18 +156,26 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
             previewRows={parsed.rows.slice(0, 5)}
             availableMetrics={metrics}
             mapping={mapping}
-            onMappingChange={setMapping}
+            onMappingChange={handleMappingChange}
             savedMappingDate={savedMappingDate}
             savedMappingColumns={savedMappingColumns.length > 0 ? savedMappingColumns : undefined}
             onMetricCreated={(metric) => setMetrics((prev) => [...prev, metric])}
           />
 
+          {mappedMetrics > 0 && metricSummaries.length > 0 && (
+            <MetricValidationPanel
+              summaries={metricSummaries}
+              metrics={metrics}
+              onAcknowledge={() => setWarningsAcknowledged(true)}
+            />
+          )}
+
           {blockingErrors.length > 0 && <div className="alert alert-danger"><strong>Errors:</strong><ul className="mb-0 mt-1">{blockingErrors.map((e, i) => <li key={i}>{e.message}</li>)}</ul></div>}
           {warnings.length > 0 && <div className="alert alert-warning"><strong>Warnings:</strong><ul className="mb-0 mt-1">{warnings.map((e, i) => <li key={i}>{e.message}</li>)}</ul></div>}
 
           <div className="d-flex justify-content-between">
-            <button className="btn btn-outline-secondary" onClick={() => { setParsed(null); setStep('upload'); setErrors([]); }}>Choose Different File</button>
-            <button className="btn btn-primary" disabled={blockingErrors.length > 0 || mappedMetrics === 0 || analyzing} onClick={handleSubmit}>{analyzing ? 'Analyzing…' : 'Run Analysis'}</button>
+            <button className="btn btn-outline-secondary" onClick={() => { setParsed(null); setStep('upload'); setErrors([]); setMetricSummaries([]); }}>Choose Different File</button>
+            <button className="btn btn-primary" disabled={blockingErrors.length > 0 || mappedMetrics === 0 || hasValidationErrors || analyzing} onClick={handleSubmit}>{analyzing ? 'Analyzing…' : 'Run Analysis'}</button>
           </div>
         </>
       )}
