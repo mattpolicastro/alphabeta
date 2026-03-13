@@ -22,6 +22,40 @@
 
 ---
 
+## v1 Remaining Gaps — Ready to Assign
+
+> All tasks below are independent and can be parallelized. Read `architecture.md` first. Each task lists the files to touch and what "done" looks like.
+
+### Functional (affects user experience)
+
+| Task | Files | Effort | Done when… |
+|------|-------|--------|------------|
+| **Tag-based filtering in experiment list** | `app/page.tsx` | Low | Dashboard has a tag filter dropdown; experiments filterable by tag |
+| **Populate `scaledImpact` in transform pipeline** | `lib/stats/transformResponse.ts` | Low | `VariationResult.scaledImpact` is computed (uplift × baseline units) and displayed in ResultsTable detail panel |
+| **Retry analysis with preserved request** | `lib/stats/runAnalysis.ts`, `app/experiments/view/UploadView.tsx` | Low | On analysis failure, "Retry" button re-submits the last request without re-uploading CSV |
+| **Annotation markdown rendering + character limit** | `components/AnnotationEditor.tsx`, `ExperimentDetailView.tsx` | Low | Annotation body renders markdown via `react-markdown`; editor enforces 2,000 char limit |
+| **Surface `capValue`/`minSampleSize` in metric form** | `app/metrics/page.tsx` | Low | Create/edit metric form includes optional capValue, capType, and minSampleSize fields |
+
+### Infrastructure
+
+| Task | Files | Effort | Done when… |
+|------|-------|--------|------------|
+| **Set up Jest + testing-library** | `jest.config.ts`, `package.json`, `tsconfig.json` | Medium | `npm test` runs; one smoke test passes using `fake-indexeddb` |
+| **Unit tests: DB layer** | `lib/db/__tests__/` | Medium | CRUD, export/import round-trip, retention limit, referential integrity |
+| **Unit tests: CSV pipeline** | `lib/csv/__tests__/` | Medium | Schema version, missing columns, auto-classify, buildRequest payload |
+| **Unit tests: stats transform** | `lib/stats/__tests__/` | Low | `transformResponse` produces correct MetricResult[] from mock AnalysisResponse |
+| **Unit tests: shared components** | `components/__tests__/` | Medium | VariationEditor validation, MetricValidationPanel warnings, GuardrailSection status logic |
+
+### ~~Polish~~ ✅ Complete
+
+| Task | Files | Effort | Done when… |
+|------|-------|--------|------------|
+| ~~**Global loading indicator**~~ | `app/layout.tsx`, `components/GlobalLoadingIndicator.tsx`, `lib/store/loadingStore.ts` | Low | ✅ Animated progress bar for async ops >500ms; wired into analysis, export, import |
+| ~~**Stats concept tooltips**~~ | `components/StatTooltip.tsx`, ResultsTable, PowerCalculator, StatsConfigEditor, ExperimentDetailView | Low | ✅ Hover tooltips on p-value, CTW, SRM, credible interval, CI, MDE, alpha, power, Cohen's h, etc. |
+| ~~**WASM engine status in settings**~~ | `app/settings/page.tsx`, `lib/stats/runAnalysis.ts` | Low | ✅ Status badge (uninit/loading/ready/error) + "Reload Engine" button in settings |
+
+---
+
 ## Implementation Notes (deviations from requirements.md)
 
 > These clarifications reflect decisions made during implementation. Agents should follow the actual codebase, not the original requirements, where they differ.
@@ -293,7 +327,7 @@ Req: §7.4, §7.5
 - [x] Backup reminder interval (days)
 - [x] IndexedDB storage usage indicator with progress bar
 - [x] Last backup date indicator (amber if > 30 days)
-- [-] WASM status indicator with "Reload engine" button — not implemented (engine initializes lazily on first analysis)
+- [x] WASM status indicator with "Reload engine" button — status badge + reload in settings page
 
 ### Module: JSON Export / Import
 Touches: `lib/db/index.ts`, settings page, experiment detail page
@@ -364,8 +398,8 @@ Req: §8.2
 - [x] Dexie schema versioning (version 1 defined, ready for future migrations)
 - [x] Browser compatibility: standard APIs, no vendor-specific code
 - [ ] All IndexedDB operations wrapped in try/catch with user-facing error messages — partially done
-- [ ] Loading indicator for any operation > 500ms — spinner exists for analysis, not globally
-- [ ] Inline tooltips for statistical concepts — minimal (some in StatsConfigEditor verbose mode)
+- [x] Loading indicator for any operation > 500ms — global progress bar via `GlobalLoadingIndicator` + `loadingStore`
+- [x] Inline tooltips for statistical concepts — `StatTooltip` component with 14 term wrappers across key components
 
 ---
 
