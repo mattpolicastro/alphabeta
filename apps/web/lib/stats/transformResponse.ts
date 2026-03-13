@@ -12,21 +12,53 @@
 import type { AnalysisRequest, AnalysisResponse, MetricVariationResult } from './types';
 import type { MetricResult, VariationResult } from '@/lib/db/schema';
 
+export interface TransformResult {
+  overall: MetricResult[];
+  slices: Record<string, Record<string, MetricResult[]>>;
+}
+
 export function transformResponse(
   response: AnalysisResponse,
   request: AnalysisRequest,
-): MetricResult[] {
+): TransformResult {
   const controlVariation = request.variations.find((v) => v.isControl);
   if (!controlVariation) {
     throw new Error('No control variation found in request');
   }
 
-  const overallData = request.data.overall;
-  const controlData = overallData[controlVariation.key];
+  const overall = transformSlice(
+    response.overall,
+    request,
+    controlVariation,
+    request.data.overall[controlVariation.key],
+  );
 
+  const slices: Record<string, Record<string, MetricResult[]>> = {};
+  for (const [dimName, dimValues] of Object.entries(response.slices)) {
+    slices[dimName] = {};
+    for (const [dimValue, mvrList] of Object.entries(dimValues)) {
+      const sliceControlData = request.data.slices[dimName]?.[dimValue]?.[controlVariation.key];
+      slices[dimName][dimValue] = transformSlice(
+        mvrList,
+        request,
+        controlVariation,
+        sliceControlData,
+      );
+    }
+  }
+
+  return { overall, slices };
+}
+
+function transformSlice(
+  mvrList: MetricVariationResult[],
+  request: AnalysisRequest,
+  controlVariation: AnalysisRequest['variations'][0],
+  controlData: { units: number; metrics: Record<string, number> } | undefined,
+): MetricResult[] {
   // Group response results by metricId
   const byMetric = new Map<string, MetricVariationResult[]>();
-  for (const mvr of response.overall) {
+  for (const mvr of mvrList) {
     const existing = byMetric.get(mvr.metricId) ?? [];
     existing.push(mvr);
     byMetric.set(mvr.metricId, existing);

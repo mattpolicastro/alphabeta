@@ -84,6 +84,7 @@ export interface ExperimentResult {
   multipleExposureCount: number;
   multipleExposureFlagged: boolean;
   perMetricResults: MetricResult[];
+  sliceResults?: Record<string, Record<string, MetricResult[]>>; // dimension → value → results
   rawRequest: AnalysisRequest; // archived for reproducibility
   status: 'pending' | 'complete' | 'error';
   errorMessage?: string;

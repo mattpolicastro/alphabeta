@@ -82,11 +82,14 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     try {
       const request = buildAnalysisRequest(parsed, experiment, metrics, mapping);
       const response = await runAnalysis(request);
+      const transformed = transformResponse(response, request);
       const resultRecord: ExperimentResult = {
         id: nanoid(), experimentId: experiment.id, computedAt: Date.now(),
         srmPValue: response.srmPValue, srmFlagged: response.srmFlagged,
         multipleExposureCount: request.multipleExposureCount, multipleExposureFlagged: response.multipleExposureFlagged,
-        perMetricResults: transformResponse(response, request), rawRequest: request, status: 'complete',
+        perMetricResults: transformed.overall,
+        sliceResults: Object.keys(transformed.slices).length > 0 ? transformed.slices : undefined,
+        rawRequest: request, status: 'complete',
       };
       await saveResult(resultRecord);
       router.push(`/experiments/view?id=${experiment.id}`);
