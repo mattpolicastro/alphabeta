@@ -12,6 +12,11 @@
  * - Frequentist: TwoSidedTTest + FrequentistConfig
  * - Input: ProportionStatistic(n, sum)
  * - SRM: check_srm(users, weights) → float
+ *
+ * Analysis logic mirrors infra/lambda/analysis/handler.py exactly:
+ * - Per-metric, per-variation proportion tests
+ * - Multiple comparison correction (Holm-Bonferroni, Benjamini-Hochberg)
+ * - Dimension slice results
  */
 
 import type { AnalysisRequest, WorkerMessage } from './types';
@@ -70,8 +75,7 @@ self.onmessage = async (event: MessageEvent<AnalysisRequest>) => {
     // Pass request payload into Python namespace
     py.globals.set('request_json', JSON.stringify(event.data));
 
-    // TODO: implement full analysis logic matching Lambda handler
-    // The Python code below should mirror infra/lambda/analysis/handler.py
+    // Python analysis code — mirrors infra/lambda/analysis/handler.py
     const resultJson = await py.runPythonAsync(`
 import json
 import numpy as np
@@ -92,8 +96,131 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
 
+# --- Helper functions (mirror Lambda handler) ---
+
+def _run_bayesian(mid, var_id, stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha):
+    config = EffectBayesianConfig(difference_type="relative", alpha=alpha)
+    test = EffectBayesianABTest(stat_a=stat_a, stat_b=stat_b, config=config)
+    res = test.compute_result()
+    return {
+        "metricId": mid,
+        "variationId": var_id,
+        "units": n_trt,
+        "rate": cv_trt / n_trt if n_trt > 0 else 0,
+        "chanceToBeatControl": res.chance_to_win,
+        "expectedLoss": res.risk[1] if len(res.risk) > 1 else None,
+        "credibleIntervalLower": res.ci[0] if res.ci else None,
+        "credibleIntervalUpper": res.ci[1] if res.ci else None,
+        "relativeUplift": res.expected,
+        "absoluteUplift": (cv_trt / n_trt - cv_ctrl / n_ctrl) if n_trt > 0 and n_ctrl > 0 else 0,
+        "significant": res.chance_to_win > 0.95 if res.chance_to_win is not None else False,
+    }
+
+def _run_frequentist(mid, var_id, stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha):
+    config = FrequentistConfig(difference_type="relative", alpha=alpha)
+    test = TwoSidedTTest(stat_a=stat_a, stat_b=stat_b, config=config)
+    res = test.compute_result()
+    return {
+        "metricId": mid,
+        "variationId": var_id,
+        "units": n_trt,
+        "rate": cv_trt / n_trt if n_trt > 0 else 0,
+        "pValue": res.p_value,
+        "confidenceIntervalLower": res.ci[0] if res.ci else None,
+        "confidenceIntervalUpper": res.ci[1] if res.ci else None,
+        "relativeUplift": res.expected,
+        "absoluteUplift": (cv_trt / n_trt - cv_ctrl / n_ctrl) if n_trt > 0 and n_ctrl > 0 else 0,
+        "significant": res.p_value < alpha if res.p_value is not None else False,
+    }
+
+def _run_tests(variation_data, engine, metrics, control_key, non_controls, alpha):
+    results = []
+    for metric in metrics:
+        mid = metric["id"]
+        ctrl = variation_data[control_key]
+        n_ctrl = ctrl["units"]
+        cv_ctrl = ctrl["metrics"][mid]
+        stat_a = ProportionStatistic(n=n_ctrl, sum=cv_ctrl)
+        for var in non_controls:
+            trt = variation_data[var["key"]]
+            n_trt = trt["units"]
+            cv_trt = trt["metrics"][mid]
+            stat_b = ProportionStatistic(n=n_trt, sum=cv_trt)
+            if engine == "bayesian":
+                results.append(_run_bayesian(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))
+            else:
+                results.append(_run_frequentist(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))
+    return results
+
+def _holm_bonferroni(p_values):
+    m = len(p_values)
+    indexed = sorted(enumerate(p_values), key=lambda x: x[1])
+    adjusted = [0.0] * m
+    cumulative_max = 0.0
+    for rank, (orig_idx, p) in enumerate(indexed):
+        corrected = p * (m - rank)
+        cumulative_max = max(cumulative_max, corrected)
+        adjusted[orig_idx] = min(cumulative_max, 1.0)
+    return adjusted
+
+def _benjamini_hochberg(p_values):
+    m = len(p_values)
+    indexed = sorted(enumerate(p_values), key=lambda x: x[1], reverse=True)
+    adjusted = [0.0] * m
+    cumulative_min = 1.0
+    for rank_desc, (orig_idx, p) in enumerate(indexed):
+        rank_asc = m - rank_desc
+        corrected = p * m / rank_asc
+        cumulative_min = min(cumulative_min, corrected)
+        adjusted[orig_idx] = min(cumulative_min, 1.0)
+    return adjusted
+
+def _apply_correction(results, metrics, correction):
+    guardrail_ids = {m["id"] for m in metrics if m.get("isGuardrail")}
+    non_guardrail = [r for r in results if r["metricId"] not in guardrail_ids]
+    guardrail = [r for r in results if r["metricId"] in guardrail_ids]
+    if not non_guardrail:
+        return results
+    p_values = []
+    for r in non_guardrail:
+        if "pValue" in r and r["pValue"] is not None:
+            p_values.append(r["pValue"])
+        elif "chanceToBeatControl" in r and r["chanceToBeatControl"] is not None:
+            p_values.append(1 - r["chanceToBeatControl"])
+        else:
+            p_values.append(1.0)
+    m = len(p_values)
+    if m <= 1:
+        return results
+    if correction == "holm-bonferroni":
+        adjusted = _holm_bonferroni(p_values)
+    elif correction == "benjamini-hochberg":
+        adjusted = _benjamini_hochberg(p_values)
+    else:
+        return results
+    for i, r in enumerate(non_guardrail):
+        if "pValue" in r and r["pValue"] is not None:
+            r["pValue"] = adjusted[i]
+            r["significant"] = adjusted[i] < 0.05
+        elif "chanceToBeatControl" in r:
+            r["significant"] = adjusted[i] < 0.05
+    return non_guardrail + guardrail
+
+def _compute_slices(slices, engine, metrics, control_key, non_controls, alpha):
+    slice_results = {}
+    for dimension_name, dimension_values in slices.items():
+        slice_results[dimension_name] = {}
+        for slice_value, variation_data in dimension_values.items():
+            slice_results[dimension_name][slice_value] = _run_tests(
+                variation_data, engine, metrics, control_key, non_controls, alpha
+            )
+    return slice_results
+
+# --- Main analysis ---
+
 request = json.loads(request_json)
 engine = request["engine"]
+correction = request.get("correction", "none")
 variations = request["variations"]
 metrics = request["metrics"]
 data = request["data"]
@@ -109,59 +236,15 @@ observed = [overall[v["key"]]["units"] for v in variations]
 expected_weights = [v["weight"] for v in variations]
 srm_p = check_srm(observed, expected_weights)
 
-# 2. Per-metric, per-variation tests
-results = []
-for metric in metrics:
-    mid = metric["id"]
-    ctrl = overall[control_key]
-    n_ctrl = ctrl["units"]
-    cv_ctrl = ctrl["metrics"][mid]
+# 2. Per-metric, per-variation tests (overall)
+results = _run_tests(overall, engine, metrics, control_key, non_controls, alpha)
 
-    for var in non_controls:
-        trt = overall[var["key"]]
-        n_trt = trt["units"]
-        cv_trt = trt["metrics"][mid]
+# 3. Multiple comparison correction (non-guardrail metrics only)
+if correction != "none":
+    results = _apply_correction(results, metrics, correction)
 
-        stat_a = ProportionStatistic(n=n_ctrl, sum=cv_ctrl)
-        stat_b = ProportionStatistic(n=n_trt, sum=cv_trt)
-
-        if engine == "bayesian":
-            config = EffectBayesianConfig(difference_type="relative", alpha=alpha)
-            test = EffectBayesianABTest(stat_a=stat_a, stat_b=stat_b, config=config)
-            res = test.compute_result()
-            result = {
-                "metricId": mid,
-                "variationId": var["id"],
-                "units": n_trt,
-                "rate": cv_trt / n_trt if n_trt > 0 else 0,
-                "chanceToBeatControl": res.chance_to_win,
-                "expectedLoss": res.risk[1] if len(res.risk) > 1 else None,
-                "credibleIntervalLower": res.ci[0] if res.ci else None,
-                "credibleIntervalUpper": res.ci[1] if res.ci else None,
-                "relativeUplift": res.expected,
-                "absoluteUplift": (cv_trt / n_trt - cv_ctrl / n_ctrl) if n_trt > 0 and n_ctrl > 0 else 0,
-                "significant": res.chance_to_win > 0.95 if res.chance_to_win is not None else False,
-            }
-        else:
-            config = FrequentistConfig(difference_type="relative", alpha=alpha)
-            test = TwoSidedTTest(stat_a=stat_a, stat_b=stat_b, config=config)
-            res = test.compute_result()
-            result = {
-                "metricId": mid,
-                "variationId": var["id"],
-                "units": n_trt,
-                "rate": cv_trt / n_trt if n_trt > 0 else 0,
-                "pValue": res.p_value,
-                "confidenceIntervalLower": res.ci[0] if res.ci else None,
-                "confidenceIntervalUpper": res.ci[1] if res.ci else None,
-                "relativeUplift": res.expected,
-                "absoluteUplift": (cv_trt / n_trt - cv_ctrl / n_ctrl) if n_trt > 0 and n_ctrl > 0 else 0,
-                "significant": res.p_value < alpha if res.p_value is not None else False,
-            }
-        results.append(result)
-
-# 3. TODO: apply multiple comparison correction (non-guardrail metrics only)
-# 4. TODO: compute dimension slice results (same tests per slice)
+# 4. Dimension slice results
+slice_results = _compute_slices(data.get("slices", {}), engine, metrics, control_key, non_controls, alpha)
 
 multiple_exposure_count = request.get("multipleExposureCount", 0)
 total_units = sum(overall[v["key"]]["units"] for v in variations)
@@ -171,7 +254,7 @@ response = {
     "srmFlagged": srm_p < srm_threshold,
     "multipleExposureFlagged": (multiple_exposure_count / total_units > 0.01) if total_units > 0 else False,
     "overall": results,
-    "slices": {},
+    "slices": slice_results,
     "warnings": [],
 }
 
