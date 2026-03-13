@@ -260,6 +260,35 @@ The active path is selected in App Settings and stored in IndexedDB. The default
         └── Makefile                # Build + deploy helpers
 ```
 
+### 3.6 Testing
+
+| Concern | Technology |
+|---|---|
+| Test runner | Jest (via `next/jest` preset) |
+| TypeScript transforms | SWC (built into Next.js — no Babel config needed) |
+| Component testing | React Testing Library (`@testing-library/react`) |
+| IndexedDB mocking | `fake-indexeddb` |
+| Coverage | Jest built-in (`--coverage`) |
+
+> **Why Jest + SWC:** The `next/jest` preset auto-configures SWC transforms, module resolution, and static asset handling to match the Next.js build pipeline — zero manual Webpack/TypeScript alignment needed. SWC is significantly faster than Babel for test transforms, which matters as the test suite grows. All dependencies are free and open-source.
+
+**Test surface by module:**
+
+| Module | What to test |
+|---|---|
+| CSV parsing & validation | Schema version check, column detection, variation matching/normalization, edge cases (missing columns, bad values, whitespace) |
+| Column mapping | Auto-classification, fingerprint matching, diff detection on re-upload |
+| Power calculator | Output parity with `scripts/power-calc-reference.py` within floating-point tolerance |
+| Analysis request builder | Correct payload construction from parsed CSV + experiment config + metric mappings |
+| `runAnalysis` abstraction | Routing to worker vs. Lambda based on settings; error handling for both paths |
+| Dexie/IndexedDB operations | CRUD for experiments, metrics, results, annotations; result retention limit (max 3 per experiment); schema migrations |
+| Metric validation | Pre-submission checks (zero units, degenerate rates, sample size warnings, rate balance) |
+| Experiment wizard | Step validation, weight-sum enforcement, variation constraints |
+| Results dashboard | Correct rendering of significance states, guardrail badges, SRM warnings |
+| JSON export/import | Round-trip fidelity, merge vs. replace behavior, schema version validation |
+
+> **Web Worker testing note:** Jest does not execute real Web Workers. Tests for the stats engine should mock the worker boundary and test through the shared `AnalysisRequest` / `AnalysisResponse` contract. The Pyodide compatibility spike (`public/pyodide-test.html`) covers integration-level validation of the actual WASM path separately.
+
 ---
 
 ## 4. Data Model
