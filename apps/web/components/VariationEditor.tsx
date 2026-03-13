@@ -20,6 +20,7 @@ export function VariationEditor({ variations, onChange }: VariationEditorProps) 
   const totalWeight = variations.reduce((s, v) => s + v.weight, 0);
   const weightPct = Math.round(totalWeight * 100);
   const weightsValid = Math.abs(totalWeight - 1) < 0.001;
+  const hasZeroWeight = variations.some((v) => v.weight <= 0);
 
   function update(id: string, patch: Partial<Variation>) {
     onChange(variations.map((v) => (v.id === id ? { ...v, ...patch } : v)));
@@ -71,7 +72,7 @@ export function VariationEditor({ variations, onChange }: VariationEditorProps) 
           )}
         </span>
         <div className="d-flex gap-2">
-          {!weightsValid && (
+          {(!weightsValid || hasZeroWeight) && (
             <button className="btn btn-sm btn-outline-warning" onClick={reallocate}>
               Distribute evenly
             </button>
@@ -89,6 +90,11 @@ export function VariationEditor({ variations, onChange }: VariationEditorProps) 
       {!weightsValid && (
         <div className="alert alert-warning py-2 small">
           Variation weights must sum to exactly 100%. Currently {weightPct}%.
+        </div>
+      )}
+      {hasZeroWeight && weightsValid && (
+        <div className="alert alert-warning py-2 small">
+          Every variation must have an allocation greater than 0%.
         </div>
       )}
 
@@ -114,7 +120,7 @@ export function VariationEditor({ variations, onChange }: VariationEditorProps) 
             <div className="input-group input-group-sm">
               <input
                 type="number"
-                className={`form-control ${!weightsValid ? 'is-invalid' : ''}`}
+                className={`form-control ${!weightsValid || v.weight <= 0 ? 'is-invalid' : ''}`}
                 value={Math.round(v.weight * 100)}
                 onChange={(e) => update(v.id, { weight: Number(e.target.value) / 100 })}
               />
@@ -147,11 +153,12 @@ export function VariationEditor({ variations, onChange }: VariationEditorProps) 
   );
 }
 
-/** Check if variations are valid (at least 2, has control, weights sum to 1). */
+/** Check if variations are valid (at least 2, has control, weights sum to 1, none zero). */
 export function variationsValid(variations: Variation[]): boolean {
   return (
     variations.length >= MIN_VARIATIONS &&
     variations.some((v) => v.isControl) &&
+    variations.every((v) => v.weight > 0) &&
     Math.abs(variations.reduce((s, v) => s + v.weight, 0) - 1) < 0.001
   );
 }

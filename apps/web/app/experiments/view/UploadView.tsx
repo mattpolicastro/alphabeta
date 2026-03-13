@@ -10,6 +10,7 @@ import { runAnalysis } from '@/lib/stats/runAnalysis';
 import { transformResponse } from '@/lib/stats/transformResponse';
 import { downloadTemplateCSV } from '@/lib/csv/generateTemplate';
 import { useSettingsStore } from '@/lib/store/settingsStore';
+import { ColumnMapper } from '@/components/ColumnMapper';
 
 type UploadStep = 'upload' | 'mapping' | 'analyzing';
 
@@ -23,6 +24,7 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [mapping, setMapping] = useState<ColumnMappingConfig>({});
   const [savedMappingDate, setSavedMappingDate] = useState<string | null>(null);
+  const [savedMappingColumns, setSavedMappingColumns] = useState<string[]>([]);
   const [variationNorm, setVariationNorm] = useState<Array<{ original: string; normalized: string }>>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -52,8 +54,8 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
       for (const [col, role] of Object.entries(classification)) { if (role !== 'reserved') initial[col] = { role }; }
       const fp = getColumnFingerprint(result.headers);
       const saved = await getColumnMapping(experiment.id, fp);
-      if (saved) { setMapping(saved.mapping as ColumnMappingConfig); setSavedMappingDate(new Date(saved.savedAt).toLocaleDateString()); }
-      else { setMapping(initial); setSavedMappingDate(null); }
+      if (saved) { setMapping(saved.mapping as ColumnMappingConfig); setSavedMappingDate(new Date(saved.savedAt).toLocaleDateString()); setSavedMappingColumns(Object.keys(saved.mapping)); }
+      else { setMapping(initial); setSavedMappingDate(null); setSavedMappingColumns([]); }
       setVariationNorm(getVariationNormalization(result.rows));
       setErrors(validateCSV(result, experiment.variations.map((v) => v.key), settings.dimensionWarningThreshold));
       setStep('mapping');
@@ -130,37 +132,18 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
 
       {step === 'mapping' && parsed && (
         <>
-          {savedMappingDate && <div className="alert alert-info py-2">Using saved column mapping from {savedMappingDate}. Edit below if your columns have changed.</div>}
           {variationNorm.length > 0 && <div className="mb-3"><small className="text-muted">Variation IDs: {variationNorm.map((v) => <span key={v.normalized} className="me-2">&quot;{v.original}&quot; → <strong>{v.normalized}</strong></span>)}</small></div>}
 
-          <div className="table-responsive mb-3">
-            <table className="table table-sm table-bordered"><thead><tr>{parsed.headers.map((h) => <th key={h} className="small">{h}</th>)}</tr></thead>
-              <tbody>{parsed.rows.slice(0, 5).map((row, i) => <tr key={i}>{parsed.headers.map((h) => <td key={h} className="small">{row[h]}</td>)}</tr>)}</tbody>
-            </table>
-          </div>
-
-          <h5>Column Mapping</h5>
-          <div className="table-responsive mb-3">
-            <table className="table table-sm align-middle"><thead><tr><th>Column</th><th>Role</th><th>Metric</th></tr></thead>
-              <tbody>
-                {parsed.headers.filter((h) => !(['experiment_id', 'variation_id', 'units'] as string[]).includes(h)).map((col) => (
-                  <tr key={col}>
-                    <td className="fw-medium">{col}</td>
-                    <td><select className="form-select form-select-sm" value={mapping[col]?.role ?? 'ignore'}
-                      onChange={(e) => setMapping((p) => ({ ...p, [col]: { ...p[col], role: e.target.value as 'dimension' | 'metric' | 'ignore', metricId: e.target.value === 'metric' ? p[col]?.metricId : undefined } }))}>
-                      <option value="dimension">Dimension</option><option value="metric">Metric</option><option value="ignore">Ignore</option>
-                    </select></td>
-                    <td>{mapping[col]?.role === 'metric' && (
-                      <select className="form-select form-select-sm" value={mapping[col]?.metricId ?? ''}
-                        onChange={(e) => setMapping((p) => ({ ...p, [col]: { ...p[col], metricId: e.target.value } }))}>
-                        <option value="">Select metric…</option>{metrics.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
-                    )}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ColumnMapper
+            headers={parsed.headers}
+            previewRows={parsed.rows.slice(0, 5)}
+            availableMetrics={metrics}
+            mapping={mapping}
+            onMappingChange={setMapping}
+            savedMappingDate={savedMappingDate}
+            savedMappingColumns={savedMappingColumns.length > 0 ? savedMappingColumns : undefined}
+            onMetricCreated={(metric) => setMetrics((prev) => [...prev, metric])}
+          />
 
           {blockingErrors.length > 0 && <div className="alert alert-danger"><strong>Errors:</strong><ul className="mb-0 mt-1">{blockingErrors.map((e, i) => <li key={i}>{e.message}</li>)}</ul></div>}
           {warnings.length > 0 && <div className="alert alert-warning"><strong>Warnings:</strong><ul className="mb-0 mt-1">{warnings.map((e, i) => <li key={i}>{e.message}</li>)}</ul></div>}

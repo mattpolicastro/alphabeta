@@ -17,7 +17,7 @@ import {
   type Annotation,
 } from '@/lib/db';
 import { ResultsTable } from '@/components/ResultsTable';
-import { VariationEditor } from '@/components/VariationEditor';
+import { VariationEditor, variationsValid } from '@/components/VariationEditor';
 import { StatsConfigEditor } from '@/components/StatsConfigEditor';
 import { MetricPicker } from '@/components/MetricPicker';
 
@@ -212,9 +212,8 @@ function ConfigPanel({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const weightsValid = Math.abs(variations.reduce((s, v) => s + v.weight, 0) - 1) < 0.001;
   const metricsValid = primaryMetricIds.length > 0;
-  const canSave = !!name.trim() && weightsValid && metricsValid;
+  const canSave = !!name.trim() && variationsValid(variations) && metricsValid;
 
   async function handleSave() {
     setSaving(true);
