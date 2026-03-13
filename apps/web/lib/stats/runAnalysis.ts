@@ -34,6 +34,22 @@ let statsWorker: Worker | null = null;
 let pendingResolve: ((value: AnalysisResponse) => void) | null = null;
 let pendingReject: ((reason: Error) => void) | null = null;
 
+/**
+ * Terminate the existing stats worker (if any) and reset engine status to
+ * uninitialised. The next call to runAnalysis will create a fresh worker.
+ */
+export function terminateStatsWorker(): void {
+  if (statsWorker) {
+    statsWorker.terminate();
+    statsWorker = null;
+  }
+  // Reject any in-flight analysis
+  pendingReject?.(new Error('Worker terminated by user'));
+  pendingResolve = null;
+  pendingReject = null;
+  useEngineStatusStore.getState().setStatus('uninitialised', '');
+}
+
 function getOrCreateStatsWorker(): Worker {
   if (statsWorker) return statsWorker;
 

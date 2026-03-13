@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/lib/store/settingsStore';
 import { useEngineStatusStore } from '@/lib/store/engineStatusStore';
 import { exportAllData, importData, type ExportData, previewImport } from '@/lib/db';
 import { testLambdaConnection } from '@/lib/stats/lambda';
+import { terminateStatsWorker } from '@/lib/stats/runAnalysis';
 
 export default function SettingsPage() {
   const settings = useSettingsStore();
@@ -128,28 +129,46 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Engine status */}
-          <div className="mb-3">
-            <small className="text-muted">
-              Status:{' '}
-              <span
-                className={`badge ${
-                  engineStatus === 'ready'
-                    ? 'bg-success'
-                    : engineStatus === 'error'
-                      ? 'bg-danger'
-                      : engineStatus === 'loading'
-                        ? 'bg-warning text-dark'
-                        : 'bg-secondary'
-                }`}
-              >
-                {engineStatus}
-              </span>
-              {engineMessage && (
-                <span className="ms-2 text-muted">{engineMessage}</span>
+          {/* WASM Engine status */}
+          <div className="mb-3 d-flex align-items-center gap-2">
+            <span className="text-muted">Status:</span>
+            <span
+              className={`badge ${
+                engineStatus === 'ready'
+                  ? 'bg-success'
+                  : engineStatus === 'error'
+                    ? 'bg-danger'
+                    : engineStatus === 'loading'
+                      ? 'bg-warning text-dark'
+                      : 'bg-secondary'
+              }`}
+            >
+              {engineStatus === 'loading' && (
+                <span
+                  className="spinner-border spinner-border-sm me-1"
+                  role="status"
+                  aria-hidden="true"
+                />
               )}
-            </small>
+              {engineStatus}
+            </span>
+            {engineMessage && (
+              <small className="text-muted">{engineMessage}</small>
+            )}
+            <button
+              className="btn btn-sm btn-outline-secondary ms-auto"
+              onClick={() => terminateStatsWorker()}
+              disabled={engineStatus === 'loading'}
+              title="Terminate the current worker and reset engine state"
+            >
+              Reload Engine
+            </button>
           </div>
+          {engineStatus === 'error' && engineMessage && (
+            <div className="alert alert-danger py-2 mb-3" role="alert">
+              <small><strong>Error:</strong> {engineMessage}</small>
+            </div>
+          )}
 
           {/* Lambda URL */}
           {settings.computeEngine === 'lambda' && (
