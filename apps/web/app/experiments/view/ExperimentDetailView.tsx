@@ -17,6 +17,7 @@ import {
   type Annotation,
 } from '@/lib/db';
 import { ResultsTable } from '@/components/ResultsTable';
+import { GuardrailSection } from '@/components/GuardrailSection';
 import { VariationEditor, variationsValid } from '@/components/VariationEditor';
 import { StatsConfigEditor } from '@/components/StatsConfigEditor';
 import { MetricPicker } from '@/components/MetricPicker';
@@ -170,6 +171,10 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           {experiment.guardrailMetricIds.length > 0 && (
             <>
               <h4 className="mt-4 mb-2">Guardrail Metrics</h4>
+              <GuardrailSection
+                guardrailResults={activeResult.perMetricResults.filter((mr) => experiment.guardrailMetricIds.includes(mr.metricId))}
+                metrics={metrics}
+              />
               <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
             </>
           )}
