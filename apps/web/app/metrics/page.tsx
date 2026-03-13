@@ -280,6 +280,42 @@ export default function MetricsPage() {
                 </div>
               </div>
               <div className="col-md-3">
+                <label className="form-label">Cap type</label>
+                <select
+                  className="form-select"
+                  value={form.capType ?? ''}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      capType: e.target.value
+                        ? (e.target.value as Metric['capType'])
+                        : undefined,
+                    })
+                  }
+                >
+                  <option value="">None</option>
+                  <option value="absolute">Absolute</option>
+                  <option value="percentile">Percentile</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Cap value</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={form.capValue ?? ''}
+                  placeholder={form.capType === 'percentile' ? 'e.g. 99' : ''}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      capValue: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
+                  }
+                />
+              </div>
+              <div className="col-md-3">
                 <label className="form-label">Min sample size</label>
                 <input
                   type="number"
