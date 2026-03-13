@@ -26,15 +26,15 @@
 
 > All tasks below are independent and can be parallelized. Read `architecture.md` first. Each task lists the files to touch and what "done" looks like.
 
-### Functional (affects user experience)
+### ~~Functional (affects user experience)~~ ✅ Complete
 
 | Task | Files | Effort | Done when… |
 |------|-------|--------|------------|
-| **Tag-based filtering in experiment list** | `app/page.tsx` | Low | Dashboard has a tag filter dropdown; experiments filterable by tag |
-| **Populate `scaledImpact` in transform pipeline** | `lib/stats/transformResponse.ts` | Low | `VariationResult.scaledImpact` is computed (uplift × baseline units) and displayed in ResultsTable detail panel |
-| **Retry analysis with preserved request** | `lib/stats/runAnalysis.ts`, `app/experiments/view/UploadView.tsx` | Low | On analysis failure, "Retry" button re-submits the last request without re-uploading CSV |
-| **Annotation markdown rendering + character limit** | `components/AnnotationEditor.tsx`, `ExperimentDetailView.tsx` | Low | Annotation body renders markdown via `react-markdown`; editor enforces 2,000 char limit |
-| **Surface `capValue`/`minSampleSize` in metric form** | `app/metrics/page.tsx` | Low | Create/edit metric form includes optional capValue, capType, and minSampleSize fields |
+| ~~**Tag-based filtering in experiment list**~~ | `app/page.tsx` | Low | ✅ Tag dropdown filters experiments on dashboard |
+| ~~**Populate `scaledImpact` in transform pipeline**~~ | `lib/stats/transformResponse.ts`, `components/ResultsTable.tsx` | Low | ✅ Computed as uplift × baseline units; displayed in detail panel |
+| ~~**Retry analysis with preserved request**~~ | `app/experiments/view/UploadView.tsx` | Low | ✅ Retry button re-submits last request without re-uploading CSV |
+| ~~**Annotation markdown rendering + character limit**~~ | `components/AnnotationEditor.tsx`, `ExperimentDetailView.tsx` | Low | ✅ Markdown preview via react-markdown; 2,000 char limit enforced |
+| ~~**Surface `capValue`/`minSampleSize` in metric form**~~ | `app/metrics/page.tsx` | Low | ✅ capValue, capType, and minSampleSize fields in create/edit form |
 
 ### Infrastructure
 
@@ -125,7 +125,7 @@ Req: §5.1, §7.1, §8.3
 - [x] Status lifecycle: `draft → running → stopped → archived`
 - [x] Clone experiment action (copy config into new draft)
 - [x] Status badges with appropriate colors
-- [ ] Tag-based filtering in experiment list (schema supports it, UI doesn't)
+- [x] Tag-based filtering in experiment list
 - [ ] Tests: CRUD operations, status transitions, clone behavior
 
 ### Module: Experiment Creation Wizard
@@ -152,7 +152,7 @@ Req: §5.2, §7.3
 - [x] Create/edit metric form: name, type, normalization, higherIsBetter, isGuardrail, tags
 - [x] Import/export metric library as standalone JSON (versioned envelope, bulkPut merge)
 - [-] Metric detail view: recent experiments using this metric — not implemented
-- [-] capValue/capType, minSampleSize — in schema but not surfaced in create/edit UI
+- [x] capValue/capType, minSampleSize — surfaced in create/edit metric form
 - [ ] Tests: CRUD, validation of required fields
 
 ### Module: CSV Parsing & Validation
@@ -213,7 +213,7 @@ Req: §9, §2.3
 - [x] `runAnalysisInLambda(request)` — fetch() to Lambda Function URL
 - [x] `runAnalysisInWorker(request)` — postMessage to Web Worker, handles result/error/status
 - [x] Singleton worker management: `getOrCreateStatsWorker()`
-- [ ] Error handling: retry with preserved request payload (§9.4) — not implemented
+- [x] Error handling: retry with preserved request payload (§9.4)
 - [ ] Tests: routing logic, error handling
 
 ### Module: Stats Engine — Pyodide Web Worker (Path A)
@@ -267,7 +267,7 @@ Req: §7.2, §8.3
 - [x] Dimension slice display with dimension/value selector dropdowns
 - [x] Export results as CSV
 - [x] Export raw `AnalysisRequest` as JSON
-- [-] Scaled uplift toggle — `scaledImpact` in schema but not populated by `transformResponse`
+- [x] Scaled uplift — `scaledImpact` computed in `transformResponse`, displayed in detail panel
 - [-] Variation filter for multi-variant — not implemented (all non-control variations shown)
 - [ ] Tests: significance states, guardrail badges, SRM warnings
 
@@ -349,8 +349,8 @@ Req: §5.8
 - [x] "Notes" section on experiment detail page (reverse chronological)
 - [x] 📝 icon on result table rows with attached notes
 - [x] Annotations included in JSON exports
-- [-] Inline Markdown editor — annotations display as plain text (react-markdown available but not wired up for editing)
-- [-] Character limit enforcement — not implemented in UI
+- [x] Inline Markdown editor — react-markdown preview tab in AnnotationEditor
+- [x] Character limit enforcement — 2,000 char limit in AnnotationEditor
 - [-] Append-only / "hide" toggle — not enforced
 
 ### Module: Result Retention
