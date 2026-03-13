@@ -1,13 +1,20 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getMetrics,
   createMetric,
   updateMetric,
   deleteMetric,
+  db,
   type Metric,
 } from '@/lib/db';
+
+interface MetricLibraryExport {
+  version: 1;
+  exportedAt: string;
+  metrics: Metric[];
+}
 
 type MetricFormData = Omit<Metric, 'id' | 'createdAt'>;
 
@@ -29,6 +36,7 @@ export default function MetricsPage() {
   const [form, setForm] = useState<MetricFormData>({ ...EMPTY_FORM });
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const results = await getMetrics(
@@ -85,13 +93,75 @@ export default function MetricsPage() {
     }
   }
 
+  async function handleExport() {
+    const allMetrics = await db.metrics.toArray();
+    const data: MetricLibraryExport = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      metrics: allMetrics,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `metric-library-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as MetricLibraryExport;
+
+      if (data.version !== 1 || !Array.isArray(data.metrics)) {
+        alert('Invalid metric library file. Expected version 1 with a metrics array.');
+        return;
+      }
+
+      const confirmed = confirm(
+        `Import ${data.metrics.length} metric${data.metrics.length === 1 ? '' : 's'}? Existing metrics with matching IDs will be updated.`,
+      );
+      if (!confirmed) return;
+
+      await db.metrics.bulkPut(data.metrics);
+      await load();
+    } catch {
+      alert('Failed to read or parse the selected file.');
+    } finally {
+      // Reset file input so re-selecting the same file triggers onChange
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   return (
     <div className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="mb-0">Metric Library</h1>
-        <button className="btn btn-primary" onClick={openCreate}>
-          Create Metric
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-secondary" onClick={handleExport}>
+            Export Metrics
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import Metrics
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="d-none"
+            onChange={handleImportFile}
+          />
+          <button className="btn btn-primary" onClick={openCreate}>
+            Create Metric
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
