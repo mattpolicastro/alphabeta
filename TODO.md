@@ -228,8 +228,8 @@ Req: §6.5a, §10.2, §13.1
 - [x] Multiple comparison corrections (Holm-Bonferroni, Benjamini-Hochberg)
 - [x] Dimension slice computation
 - [x] Full parity with Lambda handler
-- [ ] Cache API integration for Pyodide assets (relies on browser HTTP cache for now)
-- [ ] Worker crash recovery / fallback prompt
+- [-] Cache API integration for Pyodide assets — deferred to v2 §3.2 (relies on browser HTTP cache for now)
+- [-] Worker crash recovery / fallback prompt — deferred to v2 §3.2
 - [ ] Tests
 
 > **Important:** `public/stats-worker.js` is the actual runtime file. `lib/stats/worker.ts` is the typed reference. Both contain identical Python code and must be kept in sync.
@@ -295,7 +295,7 @@ Req: §5.3, §5.4, §8.4
 - [x] Download template CSV pre-filled with experiment's variations and metrics
 - [x] Error state with message
 - [-] Full-page loading overlay with progress steps (simple spinner + "Running analysis…" instead)
-- [-] Retry with preserved request payload — not implemented
+- [x] Retry with preserved request payload — implemented via `lastRequestRef` in UploadView
 - [ ] Tests
 
 ### Module: Power Calculator
