@@ -21,6 +21,7 @@ import { GuardrailSection } from '@/components/GuardrailSection';
 import { VariationEditor, variationsValid } from '@/components/VariationEditor';
 import { StatsConfigEditor } from '@/components/StatsConfigEditor';
 import { MetricPicker } from '@/components/MetricPicker';
+import { exportResultsCSV } from '@/lib/csv/exportResults';
 
 const STATUS_BADGES: Record<Experiment['status'], string> = {
   draft: 'bg-secondary',
@@ -39,6 +40,8 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   const [showLift, setShowLift] = useState<'relative' | 'absolute'>('relative');
   const [showConfig, setShowConfig] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedDimension, setSelectedDimension] = useState<string>('');
+  const [selectedDimensionValue, setSelectedDimensionValue] = useState<string>('');
 
   useEffect(() => { load(); }, [experimentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -115,6 +118,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
             <button className="btn btn-outline-secondary" onClick={() => setShowConfig(!showConfig)}>Configure</button>
             <button className="btn btn-outline-secondary" onClick={handleClone}>Clone</button>
             <button className="btn btn-outline-secondary" onClick={handleExport}>Export</button>
+            {activeResult && <button className="btn btn-outline-secondary" onClick={() => exportResultsCSV(activeResult, experiment, metrics)}>Export Results CSV</button>}
             {experiment.status === 'running' && <button className="btn btn-outline-warning" onClick={() => handleStatusChange('stopped')}>Stop</button>}
             {experiment.status !== 'archived' && <button className="btn btn-outline-danger" onClick={() => handleStatusChange('archived')}>Archive</button>}
           </div>
@@ -161,9 +165,25 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
 
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h4 className="mb-0">Primary Metrics</h4>
-            <div className="btn-group btn-group-sm">
-              <button className={`btn ${showLift === 'relative' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('relative')}>Relative</button>
-              <button className={`btn ${showLift === 'absolute' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('absolute')}>Absolute</button>
+            <div className="d-flex align-items-center gap-2">
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                title="Download the raw analysis request payload for reproducibility"
+                onClick={() => {
+                  if (!activeResult.rawRequest) return;
+                  const blob = new Blob([JSON.stringify(activeResult.rawRequest, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const date = new Date(activeResult.computedAt).toISOString().slice(0, 10);
+                  const a = document.createElement('a'); a.href = url; a.download = `analysis-request-${experimentId}-${date}.json`; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download Request JSON
+              </button>
+              <div className="btn-group btn-group-sm">
+                <button className={`btn ${showLift === 'relative' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('relative')}>Relative</button>
+                <button className={`btn ${showLift === 'absolute' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('absolute')}>Absolute</button>
+              </div>
             </div>
           </div>
           <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.primaryMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
@@ -178,6 +198,21 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
               <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
             </>
           )}
+
+          {/* Dimension Slices */}
+          {activeResult.sliceResults && Object.keys(activeResult.sliceResults).length > 0 && (
+            <DimensionSliceSection
+              activeResult={activeResult}
+              experiment={experiment}
+              metricById={metricById}
+              showLift={showLift}
+              annotations={annotations}
+              selectedDimension={selectedDimension}
+              selectedDimensionValue={selectedDimensionValue}
+              onDimensionChange={(dim) => { setSelectedDimension(dim); setSelectedDimensionValue(''); }}
+              onDimensionValueChange={setSelectedDimensionValue}
+            />
+          )}
         </>
       )}
 
@@ -187,6 +222,99 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           <h5>Notes</h5>
           {annotations.map((a) => <div key={a.id} className="card mb-2"><div className="card-body py-2"><small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small><p className="mb-0 mt-1">{a.body}</p></div></div>)}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ----- Dimension Slice Section -----
+
+function DimensionSliceSection({
+  activeResult,
+  experiment,
+  metricById,
+  showLift,
+  annotations,
+  selectedDimension,
+  selectedDimensionValue,
+  onDimensionChange,
+  onDimensionValueChange,
+}: {
+  activeResult: ExperimentResult;
+  experiment: Experiment;
+  metricById: Map<string, Metric>;
+  showLift: 'relative' | 'absolute';
+  annotations: Annotation[];
+  selectedDimension: string;
+  selectedDimensionValue: string;
+  onDimensionChange: (dim: string) => void;
+  onDimensionValueChange: (val: string) => void;
+}) {
+  const sliceResults = activeResult.sliceResults!;
+  const dimensionNames = Object.keys(sliceResults).sort();
+  const activeDim = selectedDimension || dimensionNames[0] || '';
+  const dimensionValues = activeDim ? Object.keys(sliceResults[activeDim] ?? {}).sort() : [];
+  const activeValue = selectedDimensionValue || dimensionValues[0] || '';
+  const sliceMetricResults = activeDim && activeValue ? sliceResults[activeDim]?.[activeValue] : undefined;
+
+  // Build a synthetic ExperimentResult-like object for the slice
+  const sliceResult: ExperimentResult | null = sliceMetricResults
+    ? { ...activeResult, perMetricResults: sliceMetricResults }
+    : null;
+
+  return (
+    <div className="mt-4">
+      <h4 className="mb-3">Dimension Slices</h4>
+      <div className="row g-2 mb-3">
+        <div className="col-auto">
+          <label className="form-label small text-muted mb-1">Dimension</label>
+          <select
+            className="form-select form-select-sm"
+            value={activeDim}
+            onChange={(e) => onDimensionChange(e.target.value)}
+          >
+            {dimensionNames.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-auto">
+          <label className="form-label small text-muted mb-1">Value</label>
+          <select
+            className="form-select form-select-sm"
+            value={activeValue}
+            onChange={(e) => onDimensionValueChange(e.target.value)}
+          >
+            {dimensionValues.map((val) => (
+              <option key={val} value={val}>{val}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {sliceResult ? (
+        <>
+          <ResultsTable
+            result={sliceResult}
+            experiment={experiment}
+            metricIds={experiment.primaryMetricIds}
+            metricById={metricById}
+            showLift={showLift}
+            annotations={annotations}
+          />
+          {experiment.guardrailMetricIds.length > 0 && (
+            <ResultsTable
+              result={sliceResult}
+              experiment={experiment}
+              metricIds={experiment.guardrailMetricIds}
+              metricById={metricById}
+              showLift={showLift}
+              annotations={annotations}
+            />
+          )}
+        </>
+      ) : (
+        <p className="text-muted">No slice data available for this selection.</p>
       )}
     </div>
   );
