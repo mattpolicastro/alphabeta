@@ -89,8 +89,9 @@ function transformSlice(
     }
 
     // Map each treatment result
+    const baselineUnits = controlData?.units ?? 0;
     for (const mvr of treatmentResults) {
-      variationResults.push(mapToVariationResult(mvr));
+      variationResults.push(mapToVariationResult(mvr, baselineUnits));
     }
 
     results.push({
@@ -102,7 +103,7 @@ function transformSlice(
   return results;
 }
 
-function mapToVariationResult(mvr: MetricVariationResult): VariationResult {
+function mapToVariationResult(mvr: MetricVariationResult, baselineUnits: number): VariationResult {
   return {
     variationId: mvr.variationId,
     users: mvr.units,
@@ -117,6 +118,7 @@ function mapToVariationResult(mvr: MetricVariationResult): VariationResult {
     confidenceIntervalUpper: mvr.confidenceIntervalUpper,
     relativeUplift: mvr.relativeUplift,
     absoluteUplift: mvr.absoluteUplift,
+    scaledImpact: baselineUnits > 0 ? mvr.absoluteUplift * baselineUnits : undefined,
     significant: mvr.significant,
     cupedApplied: false,
   };
