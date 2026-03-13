@@ -7,6 +7,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { MDETip, AlphaTip, PowerTip, CohensHTip } from '@/components/StatTooltip';
 
 interface PowerCalculatorProps {
   defaultSplitRatio?: number;
@@ -77,7 +78,7 @@ export function PowerCalculator({ defaultSplitRatio = 1.0 }: PowerCalculatorProp
           </div>
           <div className="col-md-4">
             <label className="form-label small">
-              MDE (%)
+              <MDETip /> (%)
               <button
                 className="btn btn-link btn-sm p-0 ms-1"
                 onClick={() =>
@@ -105,7 +106,7 @@ export function PowerCalculator({ defaultSplitRatio = 1.0 }: PowerCalculatorProp
             />
           </div>
           <div className="col-md-3">
-            <label className="form-label small">α (%)</label>
+            <label className="form-label small"><AlphaTip label={'\u03B1 (%)'} /></label>
             <input
               type="number"
               step="0.5"
@@ -115,7 +116,7 @@ export function PowerCalculator({ defaultSplitRatio = 1.0 }: PowerCalculatorProp
             />
           </div>
           <div className="col-md-3">
-            <label className="form-label small">Power (%)</label>
+            <label className="form-label small"><PowerTip label="Power (%)" /></label>
             <input
               type="number"
               step="1"
@@ -164,7 +165,7 @@ export function PowerCalculator({ defaultSplitRatio = 1.0 }: PowerCalculatorProp
             </button>
             {showDetails && (
               <div className="mt-1 small text-muted">
-                Cohen&apos;s h = {result.h.toFixed(6)} · Treatment rate ={' '}
+                <CohensHTip /> = {result.h.toFixed(6)} · Treatment rate ={' '}
                 {(result.pTreatment * 100).toFixed(2)}% · Split ratio ={' '}
                 {defaultSplitRatio.toFixed(2)}
               </div>

@@ -10,3 +10,4 @@ export { AnnotationEditor } from './AnnotationEditor';
 export { VariationEditor, variationsValid } from './VariationEditor';
 export { StatsConfigEditor } from './StatsConfigEditor';
 export { MetricPicker } from './MetricPicker';
+export { StatTooltip, PValueTip, CTWTip, SRMTip, CredibleIntervalTip, ConfidenceIntervalTip, HolmBonferroniTip, BenjaminiHochbergTip, CohensHTip, MDETip, PowerTip, AlphaTip, ExpectedLossTip, CUPEDTip } from './StatTooltip';

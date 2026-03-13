@@ -21,8 +21,8 @@ import { GuardrailSection } from '@/components/GuardrailSection';
 import { VariationEditor, variationsValid } from '@/components/VariationEditor';
 import { StatsConfigEditor } from '@/components/StatsConfigEditor';
 import { MetricPicker } from '@/components/MetricPicker';
+import { SRMTip, StatTooltip } from '@/components/StatTooltip';
 import { exportResultsCSV } from '@/lib/csv/exportResults';
-import ReactMarkdown from 'react-markdown';
 
 const STATUS_BADGES: Record<Experiment['status'], string> = {
   draft: 'bg-secondary',
@@ -140,8 +140,16 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
       )}
 
       {/* Warnings */}
-      {activeResult?.srmFlagged && <div className="alert alert-danger"><strong>Sample Ratio Mismatch detected</strong> (p={activeResult.srmPValue.toExponential(3)}). Results may be unreliable.</div>}
-      {activeResult?.multipleExposureFlagged && <div className="alert alert-warning"><strong>Multiple exposures detected.</strong> {activeResult.multipleExposureCount} users in more than one variation.</div>}
+      {activeResult?.srmFlagged && (
+        <div className="alert alert-danger">
+          <strong><SRMTip /> detected</strong> (p={activeResult.srmPValue.toExponential(3)}). Results may be unreliable.
+        </div>
+      )}
+      {activeResult?.multipleExposureFlagged && (
+        <div className="alert alert-warning">
+          <strong><StatTooltip term="Multiple exposures" definition="Users who appeared in more than one variation, which can dilute treatment effects and bias results." /> detected.</strong> {activeResult.multipleExposureCount} users in more than one variation.
+        </div>
+      )}
 
       {/* No results */}
       {!activeResult && !showConfig && (
@@ -221,7 +229,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
       {annotations.length > 0 && (
         <div className="mt-4">
           <h5>Notes</h5>
-          {annotations.map((a) => <div key={a.id} className="card mb-2"><div className="card-body py-2"><small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small><div className="mb-0 mt-1"><ReactMarkdown>{a.body}</ReactMarkdown></div></div></div>)}
+          {annotations.map((a) => <div key={a.id} className="card mb-2"><div className="card-body py-2"><small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small><p className="mb-0 mt-1">{a.body}</p></div></div>)}
         </div>
       )}
     </div>
@@ -423,7 +431,7 @@ function ConfigPanel({
         {/* Save */}
         <div className="d-flex gap-2 align-items-center">
           <button className="btn btn-primary" onClick={handleSave} disabled={saving || !canSave}>
-            {saving ? 'Saving…' : 'Save Changes'}
+            {saving ? 'Saving\u2026' : 'Save Changes'}
           </button>
           <button className="btn btn-outline-secondary" onClick={onClose}>Cancel</button>
           {saved && <span className="text-success small">Saved</span>}
@@ -432,4 +440,3 @@ function ConfigPanel({
     </div>
   );
 }
-

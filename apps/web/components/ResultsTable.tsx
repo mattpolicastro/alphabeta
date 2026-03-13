@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import type { ExperimentResult, Experiment, Metric, Annotation } from '@/lib/db/schema';
+import { PValueTip, CTWTip, CredibleIntervalTip, ConfidenceIntervalTip, ExpectedLossTip, CUPEDTip } from '@/components/StatTooltip';
 
 export interface ResultsTableProps {
   result: ExperimentResult;
@@ -205,33 +206,33 @@ function DetailPanel({
               {isBayesian ? (
                 <>
                   <tr>
-                    <td className="text-muted">Chance to win</td>
+                    <td className="text-muted"><CTWTip /> (chance to win)</td>
                     <td>{(vr.chanceToBeatControl! * 100).toFixed(2)}%</td>
                   </tr>
                   <tr>
-                    <td className="text-muted">Expected loss</td>
+                    <td className="text-muted"><ExpectedLossTip /></td>
                     <td>{(vr.expectedLoss! * 100).toFixed(4)}%</td>
                   </tr>
                   <tr>
-                    <td className="text-muted">Credible interval</td>
+                    <td className="text-muted"><CredibleIntervalTip /></td>
                     <td>[{(lower * 100).toFixed(3)}%, {(upper * 100).toFixed(3)}%]</td>
                   </tr>
                 </>
               ) : (
                 <>
                   <tr>
-                    <td className="text-muted">p-value</td>
+                    <td className="text-muted"><PValueTip /></td>
                     <td>{vr.pValue?.toFixed(6) ?? '—'}</td>
                   </tr>
                   <tr>
-                    <td className="text-muted">Confidence interval</td>
+                    <td className="text-muted"><ConfidenceIntervalTip /></td>
                     <td>[{(lower * 100).toFixed(3)}%, {(upper * 100).toFixed(3)}%]</td>
                   </tr>
                 </>
               )}
               {vr.cupedApplied && (
                 <tr>
-                  <td className="text-muted">CUPED</td>
+                  <td className="text-muted"><CUPEDTip /></td>
                   <td><span className="badge bg-info text-dark">Applied</span></td>
                 </tr>
               )}
@@ -242,7 +243,7 @@ function DetailPanel({
         {/* Interval visualization */}
         <div className="col-md-7">
           <div className="small text-muted mb-1">
-            {isBayesian ? 'Credible' : 'Confidence'} interval (relative uplift)
+            {isBayesian ? <CredibleIntervalTip /> : <ConfidenceIntervalTip />} (relative uplift)
           </div>
           <div
             className="position-relative bg-white border rounded"
@@ -317,7 +318,7 @@ function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; sig
   if (vr.chanceToBeatControl != null) {
     return (
       <span>
-        {(vr.chanceToBeatControl * 100).toFixed(1)}% CTW
+        {(vr.chanceToBeatControl * 100).toFixed(1)}% <CTWTip />
         {vr.significant && <span className="badge bg-success ms-1">sig</span>}
       </span>
     );
@@ -325,7 +326,7 @@ function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; sig
   if (vr.pValue != null) {
     return (
       <span>
-        p={vr.pValue.toFixed(4)}
+        <PValueTip />={vr.pValue.toFixed(4)}
         {vr.significant && <span className="badge bg-success ms-1">sig</span>}
       </span>
     );

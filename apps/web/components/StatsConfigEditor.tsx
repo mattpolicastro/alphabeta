@@ -5,6 +5,8 @@
  * Shared between experiment creation wizard and experiment config panel.
  */
 
+import { StatTooltip } from '@/components/StatTooltip';
+
 type StatsEngine = 'bayesian' | 'frequentist' | 'sequential';
 type Correction = 'none' | 'holm-bonferroni' | 'benjamini-hochberg';
 
@@ -27,7 +29,12 @@ export function StatsConfigEditor({
   return (
     <div className="row g-3">
       <div className={verbose ? 'col-12 mb-3' : 'col-md-4'}>
-        <label className="form-label">Engine</label>
+        <label className="form-label">
+          <StatTooltip
+            term="Engine"
+            definition="The statistical framework used to evaluate experiment results. Bayesian computes a probability of winning; Frequentist tests against a null hypothesis."
+          />
+        </label>
         <select
           className="form-select"
           value={engine}
@@ -43,7 +50,12 @@ export function StatsConfigEditor({
         </select>
       </div>
       <div className={verbose ? 'col-12' : 'col-md-4'}>
-        <label className="form-label">{verbose ? 'Multiple Comparison Correction' : 'Correction'}</label>
+        <label className="form-label">
+          <StatTooltip
+            term={verbose ? 'Multiple Comparison Correction' : 'Correction'}
+            definition="Adjusts significance thresholds when testing many metrics at once, reducing the chance of false positives."
+          />
+        </label>
         <select
           className="form-select"
           value={correction}
