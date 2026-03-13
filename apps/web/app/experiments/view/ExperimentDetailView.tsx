@@ -22,6 +22,7 @@ import { VariationEditor, variationsValid } from '@/components/VariationEditor';
 import { StatsConfigEditor } from '@/components/StatsConfigEditor';
 import { MetricPicker } from '@/components/MetricPicker';
 import { exportResultsCSV } from '@/lib/csv/exportResults';
+import ReactMarkdown from 'react-markdown';
 
 const STATUS_BADGES: Record<Experiment['status'], string> = {
   draft: 'bg-secondary',
@@ -220,7 +221,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
       {annotations.length > 0 && (
         <div className="mt-4">
           <h5>Notes</h5>
-          {annotations.map((a) => <div key={a.id} className="card mb-2"><div className="card-body py-2"><small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small><p className="mb-0 mt-1">{a.body}</p></div></div>)}
+          {annotations.map((a) => <div key={a.id} className="card mb-2"><div className="card-body py-2"><small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small><div className="mb-0 mt-1"><ReactMarkdown>{a.body}</ReactMarkdown></div></div></div>)}
         </div>
       )}
     </div>

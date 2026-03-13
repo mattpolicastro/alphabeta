@@ -10,7 +10,8 @@
  * - Metric-level: notes on a specific metric within a result
  */
 
-// import ReactMarkdown from 'react-markdown';
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 const MAX_ANNOTATION_LENGTH = 2000;
 
@@ -24,33 +25,85 @@ interface AnnotationEditorProps {
 }
 
 export function AnnotationEditor({
-  experimentId,
-  resultId,
-  metricId,
   existingBody,
   onSave,
   onCancel,
 }: AnnotationEditorProps) {
-  // TODO: textarea with character counter (max 2000)
-  // TODO: preview tab rendering Markdown via react-markdown
-  // TODO: save creates or updates annotation in IndexedDB
-  // TODO: annotations are append-only (no deletion) per Section 5.8
-  // TODO: "hide" toggle to suppress from default view
+  const [body, setBody] = useState(existingBody ?? '');
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
-  void experimentId;
-  void resultId;
-  void metricId;
-  void existingBody;
-  void onSave;
-  void onCancel;
+  const charCount = body.length;
+  const overLimit = charCount > MAX_ANNOTATION_LENGTH;
+  const canSave = body.trim().length > 0 && !overLimit;
 
   return (
-    <div>
-      {/* TODO: edit/preview tabs */}
-      {/* TODO: textarea */}
-      {/* TODO: character counter */}
-      {/* TODO: save/cancel buttons */}
-      <p className="text-muted">AnnotationEditor component stub</p>
+    <div className="card">
+      <div className="card-body">
+        {/* Edit / Preview tabs */}
+        <ul className="nav nav-tabs mb-3">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'edit' ? 'active' : ''}`}
+              onClick={() => setActiveTab('edit')}
+            >
+              Edit
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'preview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('preview')}
+            >
+              Preview
+            </button>
+          </li>
+        </ul>
+
+        {activeTab === 'edit' ? (
+          <>
+            <textarea
+              className={`form-control ${overLimit ? 'is-invalid' : ''}`}
+              rows={4}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Write a note… Markdown is supported."
+              maxLength={MAX_ANNOTATION_LENGTH + 500} // allow typing past limit for UX but show warning
+            />
+            <div className="d-flex justify-content-end mt-1">
+              <small className={overLimit ? 'text-danger fw-bold' : 'text-muted'}>
+                {charCount} / {MAX_ANNOTATION_LENGTH}
+              </small>
+            </div>
+            {overLimit && (
+              <div className="text-danger small">
+                Annotation exceeds the {MAX_ANNOTATION_LENGTH} character limit.
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="border rounded p-3" style={{ minHeight: '6rem' }}>
+            {body.trim() ? (
+              <ReactMarkdown>{body}</ReactMarkdown>
+            ) : (
+              <p className="text-muted mb-0">Nothing to preview.</p>
+            )}
+          </div>
+        )}
+
+        {/* Save / Cancel buttons */}
+        <div className="d-flex gap-2 mt-3">
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={!canSave}
+            onClick={() => onSave(body)}
+          >
+            Save
+          </button>
+          <button className="btn btn-outline-secondary btn-sm" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
