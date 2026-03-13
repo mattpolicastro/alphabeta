@@ -200,13 +200,13 @@ export default function SettingsPage() {
                 onChange={(e) =>
                   settings.updateSetting(
                     'defaultStatsEngine',
-                    e.target.value as 'bayesian' | 'frequentist' | 'sequential',
+                    e.target.value as 'bayesian' | 'frequentist',
                   )
                 }
               >
                 <option value="bayesian">Bayesian</option>
                 <option value="frequentist">Frequentist</option>
-                <option value="sequential">Sequential</option>
+                {/* Sequential (mSPRT) deferred to v2 */}
               </select>
             </div>
             <div className="col-md-4">

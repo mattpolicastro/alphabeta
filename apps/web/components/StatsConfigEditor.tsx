@@ -39,9 +39,7 @@ export function StatsConfigEditor({
           <option value="frequentist">
             {verbose ? 'Frequentist \u2014 p-value, confidence interval' : 'Frequentist'}
           </option>
-          <option value="sequential">
-            {verbose ? 'Sequential \u2014 safe continuous monitoring (mSPRT)' : 'Sequential'}
-          </option>
+          {/* Sequential (mSPRT) deferred to v2 — logic not yet implemented */}
         </select>
       </div>
       <div className={verbose ? 'col-12' : 'col-md-4'}>
