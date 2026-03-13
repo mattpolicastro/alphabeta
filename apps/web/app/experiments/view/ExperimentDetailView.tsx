@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { nanoid } from 'nanoid';
 import {
   getExperimentById,
   getMetricsByIds,
@@ -14,10 +13,13 @@ import {
   updateExperiment,
   type Experiment,
   type Metric,
-  type Variation,
   type ExperimentResult,
   type Annotation,
 } from '@/lib/db';
+import { ResultsTable } from '@/components/ResultsTable';
+import { VariationEditor } from '@/components/VariationEditor';
+import { StatsConfigEditor } from '@/components/StatsConfigEditor';
+import { MetricPicker } from '@/components/MetricPicker';
 
 const STATUS_BADGES: Record<Experiment['status'], string> = {
   draft: 'bg-secondary',
@@ -163,12 +165,12 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
               <button className={`btn ${showLift === 'absolute' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('absolute')}>Absolute</button>
             </div>
           </div>
-          <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.primaryMetricIds} metricById={metricById} showLift={showLift} />
+          <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.primaryMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
 
           {experiment.guardrailMetricIds.length > 0 && (
             <>
               <h4 className="mt-4 mb-2">Guardrail Metrics</h4>
-              <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} />
+              <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
             </>
           )}
         </>
@@ -202,49 +204,17 @@ function ConfigPanel({
   const [hypothesis, setHypothesis] = useState(experiment.hypothesis);
   const [description, setDescription] = useState(experiment.description ?? '');
   const [tags, setTags] = useState(experiment.tags.join(', '));
-  const [variations, setVariations] = useState<Variation[]>(experiment.variations);
+  const [variations, setVariations] = useState(experiment.variations);
   const [statsEngine, setStatsEngine] = useState(experiment.statsEngine);
   const [correction, setCorrection] = useState(experiment.multipleComparisonCorrection);
-  const [cuped, setCuped] = useState(experiment.cuped);
   const [primaryMetricIds, setPrimaryMetricIds] = useState(experiment.primaryMetricIds);
   const [guardrailMetricIds, setGuardrailMetricIds] = useState(experiment.guardrailMetricIds);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const totalWeight = variations.reduce((s, v) => s + v.weight, 0);
-  const weightPct = Math.round(totalWeight * 100);
-  const weightsValid = Math.abs(totalWeight - 1) < 0.001;
+  const weightsValid = Math.abs(variations.reduce((s, v) => s + v.weight, 0) - 1) < 0.001;
   const metricsValid = primaryMetricIds.length > 0;
   const canSave = !!name.trim() && weightsValid && metricsValid;
-
-  function updateVariation(id: string, patch: Partial<Variation>) {
-    setVariations((prev) => prev.map((v) => v.id === id ? { ...v, ...patch } : v));
-  }
-
-  function addVariation() {
-    if (variations.length >= 5) return;
-    const idx = variations.length;
-    setVariations([...variations, {
-      id: nanoid(),
-      name: `Variant ${String.fromCharCode(64 + idx)}`,
-      key: `variant_${String.fromCharCode(96 + idx)}`,
-      weight: 0,
-      isControl: false,
-    }]);
-  }
-
-  function removeVariation(id: string) {
-    if (variations.length <= 2) return;
-    setVariations((prev) => prev.filter((v) => v.id !== id));
-  }
-
-  function setControl(id: string) {
-    setVariations((prev) => prev.map((v) => ({ ...v, isControl: v.id === id })));
-  }
-
-  function toggleMetric(list: string[], id: string): string[] {
-    return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
-  }
 
   async function handleSave() {
     setSaving(true);
@@ -256,7 +226,6 @@ function ConfigPanel({
       variations,
       statsEngine,
       multipleComparisonCorrection: correction,
-      cuped,
       primaryMetricIds,
       guardrailMetricIds,
     });
@@ -295,90 +264,27 @@ function ConfigPanel({
 
         {/* Variations */}
         <h6>Variations</h6>
-        <div className="mb-3">
-          <span className="small text-muted me-2">
-            Weight total: <strong className={weightsValid ? 'text-success' : 'text-danger'}>{weightPct}%</strong>
-          </span>
-          <button className="btn btn-sm btn-outline-primary" onClick={addVariation} disabled={variations.length >= 5}>Add</button>
-        </div>
-        {!weightsValid && (
-          <div className="alert alert-warning py-2 small">Variation weights must sum to exactly 100%. Currently {weightPct}%.</div>
-        )}
-        {variations.map((v) => (
-          <div key={v.id} className="row g-2 align-items-center mb-2">
-            <div className="col-md-3">
-              <input className="form-control form-control-sm" value={v.name} onChange={(e) => updateVariation(v.id, { name: e.target.value })} placeholder="Name" />
-            </div>
-            <div className="col-md-3">
-              <input className="form-control form-control-sm" value={v.key} onChange={(e) => updateVariation(v.id, { key: e.target.value })} placeholder="Key" />
-            </div>
-            <div className="col-md-2">
-              <div className="input-group input-group-sm">
-                <input type="number" className={`form-control ${!weightsValid ? 'is-invalid' : ''}`} value={Math.round(v.weight * 100)} onChange={(e) => updateVariation(v.id, { weight: Number(e.target.value) / 100 })} />
-                <span className="input-group-text">%</span>
-              </div>
-            </div>
-            <div className="col-md-2">
-              <div className="form-check">
-                <input className="form-check-input" type="radio" checked={v.isControl} onChange={() => setControl(v.id)} />
-                <label className="form-check-label small">Control</label>
-              </div>
-            </div>
-            <div className="col-md-2 text-end">
-              <button className="btn btn-sm btn-outline-danger" onClick={() => removeVariation(v.id)} disabled={variations.length <= 2}>Remove</button>
-            </div>
-          </div>
-        ))}
+        <VariationEditor variations={variations} onChange={setVariations} />
 
         {/* Stats config */}
         <h6 className="mt-4">Stats Configuration</h6>
-        <div className="row g-3 mb-3">
-          <div className="col-md-4">
-            <label className="form-label">Engine</label>
-            <select className="form-select" value={statsEngine} onChange={(e) => setStatsEngine(e.target.value as Experiment['statsEngine'])}>
-              <option value="bayesian">Bayesian</option>
-              <option value="frequentist">Frequentist</option>
-              <option value="sequential">Sequential</option>
-            </select>
-          </div>
-          <div className="col-md-4">
-            <label className="form-label">Correction</label>
-            <select className="form-select" value={correction} onChange={(e) => setCorrection(e.target.value as Experiment['multipleComparisonCorrection'])}>
-              <option value="none">None</option>
-              <option value="holm-bonferroni">Holm-Bonferroni</option>
-              <option value="benjamini-hochberg">Benjamini-Hochberg</option>
-            </select>
-          </div>
-          {/* CUPED disabled for v1 */}
-        </div>
+        <StatsConfigEditor
+          engine={statsEngine}
+          correction={correction}
+          onEngineChange={setStatsEngine}
+          onCorrectionChange={setCorrection}
+        />
 
         {/* Metrics */}
-        <div className="row g-3 mb-3">
-          <div className="col-md-6">
-            <h6 className={!metricsValid ? 'text-danger' : ''}>Primary Metrics</h6>
-            {!metricsValid && (
-              <div className="alert alert-warning py-2 small">Select at least one primary metric.</div>
-            )}
-            {allMetrics.map((m) => (
-              <div key={m.id} className="form-check">
-                <input className={`form-check-input ${!metricsValid ? 'is-invalid' : ''}`} type="checkbox" checked={primaryMetricIds.includes(m.id)}
-                  onChange={() => setPrimaryMetricIds(toggleMetric(primaryMetricIds, m.id))} id={`cfg-primary-${m.id}`} />
-                <label className="form-check-label" htmlFor={`cfg-primary-${m.id}`}>
-                  {m.name} <span className="badge bg-light text-dark border">{m.type}</span>
-                </label>
-              </div>
-            ))}
-          </div>
-          <div className="col-md-6">
-            <h6>Guardrail Metrics</h6>
-            {allMetrics.map((m) => (
-              <div key={m.id} className="form-check">
-                <input className="form-check-input" type="checkbox" checked={guardrailMetricIds.includes(m.id)}
-                  onChange={() => setGuardrailMetricIds(toggleMetric(guardrailMetricIds, m.id))} id={`cfg-guard-${m.id}`} />
-                <label className="form-check-label" htmlFor={`cfg-guard-${m.id}`}>{m.name}</label>
-              </div>
-            ))}
-          </div>
+        <div className="mt-4 mb-3">
+          <MetricPicker
+            metrics={allMetrics}
+            primaryMetricIds={primaryMetricIds}
+            guardrailMetricIds={guardrailMetricIds}
+            onPrimaryChange={setPrimaryMetricIds}
+            onGuardrailChange={setGuardrailMetricIds}
+            idPrefix="cfg"
+          />
         </div>
 
         {/* Save */}
@@ -394,44 +300,3 @@ function ConfigPanel({
   );
 }
 
-// ----- Results Table -----
-
-function ResultsTable({ result, experiment, metricIds, metricById, showLift }: {
-  result: ExperimentResult; experiment: Experiment; metricIds: string[]; metricById: Map<string, Metric>; showLift: 'relative' | 'absolute';
-}) {
-  const control = experiment.variations.find((v) => v.isControl);
-  const metricResults = result.perMetricResults.filter((mr) => metricIds.includes(mr.metricId));
-  if (metricResults.length === 0) return <p className="text-muted">No result data available. Re-run analysis to populate.</p>;
-
-  return (
-    <div className="table-responsive">
-      <table className="table table-hover align-middle">
-        <thead><tr>
-          <th>Metric</th><th>Baseline ({control?.name ?? 'Control'})</th>
-          {experiment.variations.filter((v) => !v.isControl).map((v) => <th key={v.id}>{v.name}</th>)}
-          <th>{showLift === 'relative' ? 'Relative Uplift' : 'Absolute Uplift'}</th><th>Evidence</th><th>Interval</th>
-        </tr></thead>
-        <tbody>
-          {metricResults.flatMap((mr) => {
-            const metric = metricById.get(mr.metricId);
-            const controlVR = mr.variationResults.find((vr) => vr.variationId === control?.id);
-            return mr.variationResults.filter((vr) => vr.variationId !== control?.id).map((vr) => {
-              const lift = showLift === 'relative' ? vr.relativeUplift : vr.absoluteUplift;
-              const isPositive = metric?.higherIsBetter ? lift > 0 : lift < 0;
-              return (
-                <tr key={`${mr.metricId}-${vr.variationId}`} className={vr.significant ? (isPositive ? 'table-success' : 'table-danger') : ''}>
-                  <td><span className="fw-medium">{metric?.name ?? mr.metricId}</span><br /><span className="badge bg-light text-dark border">{metric?.type}</span></td>
-                  <td>{controlVR ? `${(controlVR.mean * 100).toFixed(2)}% (n=${controlVR.users.toLocaleString()})` : '—'}</td>
-                  <td>{`${(vr.mean * 100).toFixed(2)}% (n=${vr.users.toLocaleString()})`}</td>
-                  <td><span className={isPositive ? 'text-success' : 'text-danger'}>{lift > 0 ? '+' : ''}{showLift === 'relative' ? `${(lift * 100).toFixed(2)}%` : `${(lift * 100).toFixed(3)}pp`}</span></td>
-                  <td>{vr.chanceToBeatControl != null ? <span>{(vr.chanceToBeatControl * 100).toFixed(1)}% CTW{vr.significant && <span className="badge bg-success ms-1">sig</span>}</span> : vr.pValue != null ? <span>p={vr.pValue.toFixed(4)}{vr.significant && <span className="badge bg-success ms-1">sig</span>}</span> : '—'}</td>
-                  <td className="small text-muted">{vr.credibleIntervalLower != null ? `[${(vr.credibleIntervalLower * 100).toFixed(2)}%, ${(vr.credibleIntervalUpper! * 100).toFixed(2)}%]` : vr.confidenceIntervalLower != null ? `[${(vr.confidenceIntervalLower * 100).toFixed(2)}%, ${(vr.confidenceIntervalUpper! * 100).toFixed(2)}%]` : '—'}</td>
-                </tr>
-              );
-            });
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}

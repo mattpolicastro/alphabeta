@@ -7,3 +7,6 @@ export { ColumnMapper } from './ColumnMapper';
 export { MetricValidationPanel } from './MetricValidationPanel';
 export { PowerCalculator } from './PowerCalculator';
 export { AnnotationEditor } from './AnnotationEditor';
+export { VariationEditor, variationsValid } from './VariationEditor';
+export { StatsConfigEditor } from './StatsConfigEditor';
+export { MetricPicker } from './MetricPicker';
