@@ -2,7 +2,7 @@
 
 ## Project
 
-A/B test analysis tool — static Next.js app with client-side IndexedDB and in-browser stats via Pyodide/WASM. See `architecture.md` for tech stack, directory layout, and conventions. See `requirements.md` for product requirements (v2 roadmap + v1 reference appendices). The original v1 spec is archived at `requirements-v1-archived.md`. See `TODO.md` for task status.
+A/B test analysis tool — static Next.js app with client-side IndexedDB and in-browser stats via Pyodide/WASM. See `architecture.md` for tech stack, directory layout, and conventions. See `requirements.md` for product requirements (v2 roadmap + v1 reference appendices). The original v1 spec is archived at `archive/requirements-v1-archived.md`. See `TODO.md` for task status.
 
 ## Build & Verify
 

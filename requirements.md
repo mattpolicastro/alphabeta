@@ -2,7 +2,7 @@
 
 > **Status:** Active requirements document. Covers v2 feature work (phases 1-3) and remaining v1 cleanup items. Reference appendices from the original v1 spec are included at the bottom for data model, type contracts, and gbstats API details.
 >
-> **Related docs:** `architecture.md` (tech stack, directory layout, data flow, conventions), `TODO.md` (task tracker), `requirements-v1-archived.md` (full original v1 spec, kept for historical reference).
+> **Related docs:** `architecture.md` (tech stack, directory layout, data flow, conventions), `TODO.md` (task tracker), `archive/requirements-v1-archived.md` (full original v1 spec, kept for historical reference).
 
 ---
 
@@ -250,7 +250,7 @@ v1 cleanup: ✅ tests + polish complete; remaining: ESLint + CI test runner
 
 ## Appendices (from v1 spec)
 
-> The sections below are reference material carried forward from the original v1 requirements document (`requirements-v1-archived.md`). They document the data model, type contracts, and gbstats API as designed and implemented in v1. For architecture, directory layout, and runtime conventions, see `architecture.md` instead.
+> The sections below are reference material carried forward from the original v1 requirements document (`archive/requirements-v1-archived.md`). They document the data model, type contracts, and gbstats API as designed and implemented in v1. For architecture, directory layout, and runtime conventions, see `architecture.md` instead.
 
 ---
 
