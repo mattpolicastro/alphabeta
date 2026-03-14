@@ -240,7 +240,7 @@ export function MetricValidationPanel({ summaries, metrics, onAcknowledge }: Met
               className="btn btn-sm btn-outline-warning mt-2"
               onClick={handleAcknowledge}
             >
-              I've reviewed these warnings — proceed
+              I&apos;ve reviewed these warnings — proceed
             </button>
           )}
         </div>

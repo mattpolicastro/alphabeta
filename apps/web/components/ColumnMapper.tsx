@@ -7,7 +7,6 @@
  */
 
 import { useState } from 'react';
-import { nanoid } from 'nanoid';
 import type { Metric } from '@/lib/db/schema';
 import type { ColumnMappingConfig } from '@/lib/csv/buildRequest';
 import { RESERVED_COLUMNS } from '@/lib/csv';

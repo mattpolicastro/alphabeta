@@ -294,7 +294,7 @@ export function getVariationNormalization(
 
 // ----- Helpers -----
 
-async function readFirstLine(file: File): Promise<string> {
+async function _readFirstLine(file: File): Promise<string> {
   // Read just enough bytes to get the first line (schema version is short)
   const slice = file.slice(0, 256);
   const text = await slice.text();
