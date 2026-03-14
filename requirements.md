@@ -21,7 +21,7 @@
 | ~~Unit tests: CSV pipeline~~ | `lib/csv/__tests__/` | ✅ 43 tests |
 | ~~Unit tests: stats transform~~ | `lib/stats/__tests__/` | ✅ 12 tests |
 | ~~Unit tests: shared components~~ | `components/__tests__/` | ✅ 46 tests |
-| ESLint configuration | `.eslintrc.*`, `package.json` | Not started |
+| ~~ESLint configuration~~ | `eslint.config.mjs`, `package.json` | ✅ Merged — `next/core-web-vitals` + `next/typescript` |
 
 ### ~~Incomplete UI Polish~~ ✅ Complete
 

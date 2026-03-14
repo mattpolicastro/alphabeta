@@ -59,7 +59,7 @@ Req: §3.1, §3.5, §10.1
 - [x] Verify `npm run build` produces static export in `out/`
 - [x] Jest + SWC test config via `next/jest` preset (§3.6)
 - [x] Install test deps: `@testing-library/react`, `fake-indexeddb`, `jest`
-- [-] ESLint — not configured (optional for v1)
+- [x] ESLint — `next/core-web-vitals` + `next/typescript` via flat config
 - [-] `react-bootstrap` — not used; raw Bootstrap classes instead
 - [-] `recharts` — not installed; visualizations deferred (see P1 charts module)
 
