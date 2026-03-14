@@ -6,40 +6,6 @@
 
 ---
 
-## Pre-v2: v1 Cleanup
-
-> These items were scoped for v1 but not completed. Finish before starting v2 feature work — they reduce surface area for bugs and make the codebase ready to build on.
-
-### ~~Testing Foundation~~ ✅ Complete (137 tests)
-
-> All test items completed and merged to `main` as of 2026-03-13. ESLint is the only remaining item.
-
-| Item | Files | Status |
-|------|-------|--------|
-| ~~Jest + SWC test config~~ | `jest.config.ts`, `jest.setup.ts`, `package.json` | ✅ Merged — `next/jest` preset, `fake-indexeddb`, structuredClone + File.text() polyfills |
-| ~~Unit tests: DB layer~~ | `lib/db/__tests__/` | ✅ 36 tests |
-| ~~Unit tests: CSV pipeline~~ | `lib/csv/__tests__/` | ✅ 43 tests |
-| ~~Unit tests: stats transform~~ | `lib/stats/__tests__/` | ✅ 12 tests |
-| ~~Unit tests: shared components~~ | `components/__tests__/` | ✅ 46 tests |
-| ~~ESLint configuration~~ | `eslint.config.mjs`, `package.json` | ✅ Merged — `next/core-web-vitals` + `next/typescript` |
-
-### ~~Incomplete UI Polish~~ ✅ Complete
-
-> All 8 items below were completed and merged to `main` as of 2026-03-13.
-
-| Item | Files | Status |
-|------|-------|--------|
-| ~~Tag-based filtering~~ | `app/page.tsx` | ✅ Merged |
-| ~~`scaledImpact` computation~~ | `lib/stats/transformResponse.ts`, `components/ResultsTable.tsx` | ✅ Merged |
-| ~~`capValue`/`minSampleSize` in metric form~~ | `app/metrics/page.tsx` | ✅ Merged |
-| ~~Retry analysis with preserved request~~ | `app/experiments/view/UploadView.tsx` | ✅ Merged |
-| ~~Annotation markdown + char limit~~ | `components/AnnotationEditor.tsx` | ✅ Merged |
-| ~~Global loading indicator~~ | `components/GlobalLoadingIndicator.tsx`, `lib/store/loadingStore.ts` | ✅ Merged |
-| ~~Stats concept tooltips~~ | `components/StatTooltip.tsx` + 4 consumer components | ✅ Merged |
-| ~~WASM engine status in settings~~ | `app/settings/page.tsx`, `lib/stats/runAnalysis.ts` | ✅ Merged |
-
----
-
 ## v2 Phase 1 — Continuous Metrics & Sequential Testing
 
 > The two headline features that define v2. Both require changes across the full stack (CSV schema → request builder → engine → transform → UI).
