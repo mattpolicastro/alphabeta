@@ -22,37 +22,9 @@
 
 ---
 
-## v1 Remaining Gaps — Ready to Assign
+## ~~v1 Remaining Gaps~~ ✅ All Complete
 
-> All tasks below are independent and can be parallelized. Read `architecture.md` first. Each task lists the files to touch and what "done" looks like.
-
-### ~~Functional (affects user experience)~~ ✅ Complete
-
-| Task | Files | Effort | Done when… |
-|------|-------|--------|------------|
-| ~~**Tag-based filtering in experiment list**~~ | `app/page.tsx` | Low | ✅ Tag dropdown filters experiments on dashboard |
-| ~~**Populate `scaledImpact` in transform pipeline**~~ | `lib/stats/transformResponse.ts`, `components/ResultsTable.tsx` | Low | ✅ Computed as uplift × baseline units; displayed in detail panel |
-| ~~**Retry analysis with preserved request**~~ | `app/experiments/view/UploadView.tsx` | Low | ✅ Retry button re-submits last request without re-uploading CSV |
-| ~~**Annotation markdown rendering + character limit**~~ | `components/AnnotationEditor.tsx`, `ExperimentDetailView.tsx` | Low | ✅ Markdown preview via react-markdown; 2,000 char limit enforced |
-| ~~**Surface `capValue`/`minSampleSize` in metric form**~~ | `app/metrics/page.tsx` | Low | ✅ capValue, capType, and minSampleSize fields in create/edit form |
-
-### ~~Infrastructure~~ ✅ Complete (137 tests)
-
-| Task | Files | Effort | Done when… |
-|------|-------|--------|------------|
-| ~~**Set up Jest + testing-library**~~ | `jest.config.ts`, `package.json`, `tsconfig.json` | Medium | ✅ `npm test` runs; smoke test passes with `fake-indexeddb` |
-| ~~**Unit tests: DB layer**~~ | `lib/db/__tests__/` | Medium | ✅ 36 tests: CRUD, export/import round-trip, retention limit, referential integrity |
-| ~~**Unit tests: CSV pipeline**~~ | `lib/csv/__tests__/` | Medium | ✅ 43 tests: schema version, missing columns, auto-classify, buildRequest payload |
-| ~~**Unit tests: stats transform**~~ | `lib/stats/__tests__/` | Low | ✅ 12 tests: `transformResponse` Bayesian/Frequentist, scaledImpact, slices, edge cases |
-| ~~**Unit tests: shared components**~~ | `components/__tests__/` | Medium | ✅ 46 tests: VariationEditor, MetricValidationPanel, GuardrailSection |
-
-### ~~Polish~~ ✅ Complete
-
-| Task | Files | Effort | Done when… |
-|------|-------|--------|------------|
-| ~~**Global loading indicator**~~ | `app/layout.tsx`, `components/GlobalLoadingIndicator.tsx`, `lib/store/loadingStore.ts` | Low | ✅ Animated progress bar for async ops >500ms; wired into analysis, export, import |
-| ~~**Stats concept tooltips**~~ | `components/StatTooltip.tsx`, ResultsTable, PowerCalculator, StatsConfigEditor, ExperimentDetailView | Low | ✅ Hover tooltips on p-value, CTW, SRM, credible interval, CI, MDE, alpha, power, Cohen's h, etc. |
-| ~~**WASM engine status in settings**~~ | `app/settings/page.tsx`, `lib/stats/runAnalysis.ts` | Low | ✅ Status badge (uninit/loading/ready/error) + "Reload Engine" button in settings |
+All v1 gaps have been addressed: 5 functional features, 137 unit tests across 4 modules, and 3 polish items.
 
 ---
 
