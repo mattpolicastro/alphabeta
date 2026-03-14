@@ -32,7 +32,7 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [metricSummaries, setMetricSummaries] = useState<MetricSummary[]>([]);
-  const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
+  const [_warningsAcknowledged, setWarningsAcknowledged] = useState(false);
   const lastRequestRef = useRef<AnalysisRequest | null>(null);
   const settings = useSettingsStore();
 

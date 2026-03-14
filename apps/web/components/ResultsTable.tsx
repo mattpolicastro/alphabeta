@@ -142,7 +142,7 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
 function DetailPanel({
   variationResult: vr,
   controlResult: controlVR,
-  metric,
+  metric: _metric,
   controlName,
   treatmentName,
 }: {

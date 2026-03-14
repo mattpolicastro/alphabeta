@@ -6,7 +6,6 @@
 import type { AnalysisRequest, VariationData } from '@/lib/stats/types';
 import type { Experiment, Metric } from '@/lib/db/schema';
 import type { ParsedCSV } from './parser';
-import { RESERVED_COLUMNS } from './parser';
 
 export interface ColumnMappingConfig {
   [columnName: string]: {

@@ -2,9 +2,7 @@ import { transformResponse } from '../transformResponse';
 import type {
   AnalysisRequest,
   AnalysisResponse,
-  MetricVariationResult,
 } from '../types';
-import type { MetricResult, VariationResult } from '@/lib/db/schema';
 
 describe('transformResponse', () => {
   describe('Bayesian response mapping', () => {
