@@ -72,7 +72,7 @@ Req: §4.1, §9.3
 - [x] `AppDB` Dexie class with version(1) stores and indexes
 - [x] Export singleton `db` instance (via `lib/db/index.ts`)
 - [x] `ExperimentResult.sliceResults` field for dimension slice data
-- [ ] Unit tests: DB opens, tables exist, basic CRUD smoke test
+- [x] Unit tests: DB opens, tables exist, basic CRUD smoke test
 
 ### Module: Zustand Stores
 Touches: `lib/store/`
@@ -152,7 +152,7 @@ Req: §4.2, §5.3
 - [x] Persist mapping to IndexedDB keyed by `experimentId + columnFingerprint`
 - [x] Auto-apply saved mapping on re-upload; show banner with date
 - [x] Diff detection: new/removed columns highlighted with badges when schema changes
-- [ ] Tests: fingerprint matching, diff detection, persistence round-trip
+- [ ] Tests: fingerprint matching, diff detection, persistence round-trip — not yet covered
 
 ### Module: Metric Validation (Pre-Submission)
 Touches: `components/MetricValidationPanel.tsx`
@@ -186,7 +186,7 @@ Req: §9, §2.3
 - [x] `runAnalysisInWorker(request)` — postMessage to Web Worker, handles result/error/status
 - [x] Singleton worker management: `getOrCreateStatsWorker()`
 - [x] Error handling: retry with preserved request payload (§9.4)
-- [ ] Tests: routing logic, error handling
+- [-] Tests: routing logic, error handling — requires mocking Web Worker; deferred
 
 ### Module: Stats Engine — Pyodide Web Worker (Path A)
 Touches: `lib/stats/worker.ts`, `public/stats-worker.js`, `public/pyodide-test.html`
@@ -202,7 +202,7 @@ Req: §6.5a, §10.2, §13.1
 - [x] Full parity with Lambda handler
 - [-] Cache API integration for Pyodide assets — deferred to v2 §3.2 (relies on browser HTTP cache for now)
 - [-] Worker crash recovery / fallback prompt — deferred to v2 §3.2
-- [ ] Tests
+- [-] Tests — Pyodide worker not testable in Jest (runs in real browser only)
 
 > **Important:** `public/stats-worker.js` is the actual runtime file. `lib/stats/worker.ts` is the typed reference. Both contain identical Python code and must be kept in sync.
 
@@ -268,7 +268,7 @@ Req: §5.3, §5.4, §8.4
 - [x] Error state with message
 - [-] Full-page loading overlay with progress steps (simple spinner + "Running analysis…" instead)
 - [x] Retry with preserved request payload — implemented via `lastRequestRef` in UploadView
-- [ ] Tests
+- [ ] Tests: upload flow integration — not yet covered
 
 ### Module: Power Calculator
 Touches: `components/PowerCalculator.tsx`
@@ -280,7 +280,7 @@ Req: §6.8
 - [x] Outputs: required n per variation, total users, estimated days, Cohen's h
 - [x] Warning if h is very small
 - [x] `scripts/power-calc-reference.py` — Python reference
-- [ ] Tests: output parity with Python reference
+- [ ] Tests: output parity with Python reference — not yet covered
 
 > **Note:** Power calculator lives in `components/PowerCalculator.tsx` directly (not split into `lib/stats/powerCalculator.ts` + component).
 
@@ -354,7 +354,7 @@ Req: §10.5
 
 - [x] Frontend deploy workflow: `npm run build` → deploy to GitHub Pages
 - [-] Lambda deploy workflow — deferred (Lambda path is secondary)
-- [-] Test runner in CI — no tests to run yet
+- [ ] Test runner in CI — Jest is configured; add `npm test` to deploy workflow
 
 ### Module: Dark Mode
 Touches: `app/layout.tsx`, theme config

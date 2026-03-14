@@ -8,16 +8,18 @@
 
 > These items were scoped for v1 but not completed. Finish before starting v2 feature work — they reduce surface area for bugs and make the codebase ready to build on.
 
-### Testing Foundation
+### ~~Testing Foundation~~ ✅ Complete (137 tests)
 
-| Item | Files | Effort | Notes |
-|------|-------|--------|-------|
-| Jest + SWC test config | `jest.config.ts`, `package.json`, `tsconfig.json` | Medium | Use `next/jest` preset; `fake-indexeddb` for Dexie tests. Unblocks all other test work. |
-| Unit tests: DB layer | `lib/db/__tests__/` | Medium | CRUD, export/import round-trip, retention limit, referential integrity |
-| Unit tests: CSV pipeline | `lib/csv/__tests__/` | Medium | Schema version, missing columns, auto-classify, buildRequest payload |
-| Unit tests: stats transform | `lib/stats/__tests__/` | Low | `transformResponse` correctness from mock `AnalysisResponse` |
-| Unit tests: shared components | `components/__tests__/` | Medium | VariationEditor validation, MetricValidationPanel warnings, GuardrailSection logic |
-| ESLint configuration | `.eslintrc.*`, `package.json` | Low | Standard Next.js ESLint config |
+> All test items completed and merged to `main` as of 2026-03-13. ESLint is the only remaining item.
+
+| Item | Files | Status |
+|------|-------|--------|
+| ~~Jest + SWC test config~~ | `jest.config.ts`, `jest.setup.ts`, `package.json` | ✅ Merged — `next/jest` preset, `fake-indexeddb`, structuredClone + File.text() polyfills |
+| ~~Unit tests: DB layer~~ | `lib/db/__tests__/` | ✅ 36 tests |
+| ~~Unit tests: CSV pipeline~~ | `lib/csv/__tests__/` | ✅ 43 tests |
+| ~~Unit tests: stats transform~~ | `lib/stats/__tests__/` | ✅ 12 tests |
+| ~~Unit tests: shared components~~ | `components/__tests__/` | ✅ 46 tests |
+| ESLint configuration | `.eslintrc.*`, `package.json` | Not started |
 
 ### ~~Incomplete UI Polish~~ ✅ Complete
 
@@ -226,15 +228,15 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Test runner in CI | Low | Once Jest is configured, add `npm test` step to deploy workflow |
-| Lint check in CI | Low | Once ESLint is configured |
+| Test runner in CI | Low | Jest is configured — add `npm test` step to deploy workflow |
+| Lint check in CI | Low | Blocked on ESLint configuration |
 
 ---
 
 ## Suggested Build Order
 
 ```
-v1 cleanup (tests + polish)
+v1 cleanup: ✅ tests + polish complete; remaining: ESLint + CI test runner
   → v2 Phase 1a: continuous metrics (CSV → engine → UI)
   → v2 Phase 1b: sequential testing (parallel with 1a if different contributors)
   → v2 Phase 2: visualizations (depends on Phase 1 for continuous metric charts)
