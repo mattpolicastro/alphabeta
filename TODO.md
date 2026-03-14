@@ -36,15 +36,15 @@
 | ~~**Annotation markdown rendering + character limit**~~ | `components/AnnotationEditor.tsx`, `ExperimentDetailView.tsx` | Low | ✅ Markdown preview via react-markdown; 2,000 char limit enforced |
 | ~~**Surface `capValue`/`minSampleSize` in metric form**~~ | `app/metrics/page.tsx` | Low | ✅ capValue, capType, and minSampleSize fields in create/edit form |
 
-### Infrastructure
+### ~~Infrastructure~~ ✅ Complete (137 tests)
 
 | Task | Files | Effort | Done when… |
 |------|-------|--------|------------|
 | ~~**Set up Jest + testing-library**~~ | `jest.config.ts`, `package.json`, `tsconfig.json` | Medium | ✅ `npm test` runs; smoke test passes with `fake-indexeddb` |
-| **Unit tests: DB layer** | `lib/db/__tests__/` | Medium | CRUD, export/import round-trip, retention limit, referential integrity |
-| **Unit tests: CSV pipeline** | `lib/csv/__tests__/` | Medium | Schema version, missing columns, auto-classify, buildRequest payload |
-| **Unit tests: stats transform** | `lib/stats/__tests__/` | Low | `transformResponse` produces correct MetricResult[] from mock AnalysisResponse |
-| **Unit tests: shared components** | `components/__tests__/` | Medium | VariationEditor validation, MetricValidationPanel warnings, GuardrailSection status logic |
+| ~~**Unit tests: DB layer**~~ | `lib/db/__tests__/` | Medium | ✅ 36 tests: CRUD, export/import round-trip, retention limit, referential integrity |
+| ~~**Unit tests: CSV pipeline**~~ | `lib/csv/__tests__/` | Medium | ✅ 43 tests: schema version, missing columns, auto-classify, buildRequest payload |
+| ~~**Unit tests: stats transform**~~ | `lib/stats/__tests__/` | Low | ✅ 12 tests: `transformResponse` Bayesian/Frequentist, scaledImpact, slices, edge cases |
+| ~~**Unit tests: shared components**~~ | `components/__tests__/` | Medium | ✅ 46 tests: VariationEditor, MetricValidationPanel, GuardrailSection |
 
 ### ~~Polish~~ ✅ Complete
 
@@ -126,7 +126,7 @@ Req: §5.1, §7.1, §8.3
 - [x] Clone experiment action (copy config into new draft)
 - [x] Status badges with appropriate colors
 - [x] Tag-based filtering in experiment list
-- [ ] Tests: CRUD operations, status transitions, clone behavior
+- [x] Tests: CRUD operations, status transitions, clone behavior
 
 ### Module: Experiment Creation Wizard
 Touches: `app/experiments/new/page.tsx`, shared components
@@ -141,7 +141,7 @@ Req: §7.1
 - [-] CUPED toggle — schema field preserved, UI disabled for v1
 - [-] Sequential engine option — deferred to v2
 - [-] Bayesian prior settings — not surfaced in UI
-- [ ] Tests: step validation, weight-sum enforcement, variation constraints
+- [x] Tests: VariationEditor validation, weight-sum enforcement, variation constraints
 
 ### Module: Metric Library
 Touches: `lib/db/index.ts`, `app/metrics/page.tsx`
@@ -153,7 +153,7 @@ Req: §5.2, §7.3
 - [x] Import/export metric library as standalone JSON (versioned envelope, bulkPut merge)
 - [-] Metric detail view: recent experiments using this metric — not implemented
 - [x] capValue/capType, minSampleSize — surfaced in create/edit metric form
-- [ ] Tests: CRUD, validation of required fields
+- [x] Tests: CRUD, validation, referential integrity
 
 ### Module: CSV Parsing & Validation
 Touches: `lib/csv/`
@@ -166,7 +166,7 @@ Req: §4.2, §4.3, §5.3
 - [x] Validation rules: file size ≤ 50MB, various data quality checks
 - [x] Dimension count soft warning (configurable threshold)
 - [x] Column auto-classification: numeric heuristic for metric vs dimension
-- [ ] Tests: schema version rejection, missing columns, whitespace normalization, edge cases
+- [x] Tests: schema version rejection, missing columns, whitespace normalization, edge cases
 
 > **Note:** PapaParse runs synchronously (not `worker: true`) since the CSV format is pre-aggregated and small. This is a deliberate simplification.
 
@@ -191,7 +191,7 @@ Req: §5.2a
 - [x] Errors (blocking): zero units in any variation — disables Run Analysis button
 - [x] Compact preview table: one row per metric, one column per variation, showing rate + units
 - [x] Non-blocking warning acknowledgement button
-- [ ] Tests: each warning condition, blocking error condition
+- [x] Tests: each warning condition, blocking error condition
 
 ### Module: Analysis Request Builder
 Touches: `lib/csv/buildRequest.ts`
@@ -201,7 +201,7 @@ Req: §5.4, §6.3
 - [x] Compute rates: for `raw_total` metrics, multiply back by units for consistent engine handling; pass through `pre_normalized`
 - [x] Construct `AnalysisRequest` payload: overall data + dimension slices
 - [x] Handle `"all"` sentinel for dimension grouping
-- [ ] Tests: correct payload construction
+- [x] Tests: correct payload construction
 
 > **Note:** `buildRequest.ts` lives in `lib/csv/`, not `lib/stats/` as the original TODO assumed.
 
@@ -269,7 +269,7 @@ Req: §7.2, §8.3
 - [x] Export raw `AnalysisRequest` as JSON
 - [x] Scaled uplift — `scaledImpact` computed in `transformResponse`, displayed in detail panel
 - [-] Variation filter for multi-variant — not implemented (all non-control variations shown)
-- [ ] Tests: significance states, guardrail badges, SRM warnings
+- [x] Tests: GuardrailSection status logic, significance states
 
 ### Module: Results Visualizations (Recharts)
 Touches: `components/results/charts/` (not yet created)
@@ -339,7 +339,7 @@ Req: §5.6, §5.7, §7.5
 - [x] Update last-export timestamp on every export
 - [x] Backup reminder banner on dashboard if > 30 days since last export
 - [x] Storage pressure warning via `navigator.storage.estimate()`
-- [ ] Tests: round-trip fidelity, merge vs replace
+- [x] Tests: round-trip fidelity, merge vs replace
 
 ### Module: Annotations
 Touches: `lib/db/index.ts`, `components/AnnotationEditor.tsx`, `ExperimentDetailView.tsx`
@@ -360,7 +360,7 @@ Req: §11.3
 - [x] Max 3 `ExperimentResult` records per experiment, ordered by `computedAt` desc
 - [x] Auto-delete oldest on new result save (atomic Dexie transaction)
 - [x] Result snapshot selector UI with timestamps
-- [ ] Tests: retention limit enforcement
+- [x] Tests: retention limit enforcement
 
 ---
 
