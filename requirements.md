@@ -153,7 +153,30 @@
 | Append-only enforcement (soft-delete / "hide" toggle) | Low |
 | Audit trail view (show hidden annotations) | Low |
 
-### 3.7 Full-Page Loading Overlay with Progress Steps
+### 3.7 Experiment Status Management
+
+**Effort:** Low
+**Motivation:** Status transitions are currently scattered and incomplete. Drafts can only be launched during creation (not from the detail view), stopped experiments can't be resumed, and archived experiments are terminal with no escape hatch. Users need a clear, consistent way to manage experiment lifecycle from the detail view.
+
+**Current state:**
+- Draft → Running: only in creation wizard ("Launch" button); no way to launch an existing draft
+- Running → Stopped: "Stop" in detail view dropdown
+- Any → Archived: "Archive" in detail view dropdown; terminal (no unarchive)
+- Upload/analysis does not auto-transition status
+
+| Task | Effort | Details |
+|------|--------|---------|
+| "Launch" button for draft experiments in detail view | Low | Transitions draft → running; show in header alongside existing actions |
+| "Resume" action for stopped experiments | Low | Transitions stopped → running; re-enables the experiment |
+| "Unarchive" action | Low | Transitions archived → stopped; escape hatch for accidental archiving |
+| Auto-transition on first analysis | Low | Optionally move draft → running when analysis is first submitted (with confirmation) |
+
+**Decisions needed:**
+- Should "Launch" require confirmation, or is it a single click?
+- Should unarchive go to stopped or draft?
+- Should auto-transition on analysis be opt-in (setting) or always prompt?
+
+### 3.8 Full-Page Loading Overlay with Progress Steps
 
 **Effort:** Low-Medium
 **Motivation:** During analysis, users see a simple spinner. A stepped progress indicator (parsing → building request → running engine → saving results) provides better feedback, especially for first-time WASM loads.
