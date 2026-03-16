@@ -109,6 +109,7 @@ export interface Annotation {
   resultId?: string; // optional — pinned to a specific result snapshot
   metricId?: string; // optional — pinned to a specific metric row
   body: string; // free-text, markdown supported
+  hidden?: boolean; // soft-delete for append-only audit trail
   createdAt: number;
   updatedAt: number;
 }

@@ -264,7 +264,7 @@ export async function saveColumnMapping(
 
 export async function getAnnotations(
   experimentId: string,
-  filters?: { resultId?: string; metricId?: string },
+  filters?: { resultId?: string; metricId?: string; includeHidden?: boolean },
 ): Promise<Annotation[]> {
   let results = await db.annotations
     .where('experimentId')
@@ -272,6 +272,9 @@ export async function getAnnotations(
     .reverse()
     .sortBy('createdAt');
 
+  if (!filters?.includeHidden) {
+    results = results.filter((a) => !a.hidden);
+  }
   if (filters?.resultId) {
     results = results.filter((a) => a.resultId === filters.resultId);
   }
@@ -289,6 +292,10 @@ export async function createAnnotation(
   const annotation: Annotation = { ...data, createdAt: now, updatedAt: now };
   const id = await db.annotations.add(annotation);
   return { ...annotation, id: id as number };
+}
+
+export async function hideAnnotation(id: number): Promise<void> {
+  await db.annotations.update(id, { hidden: true, updatedAt: Date.now() });
 }
 
 // ----- Export / Import -----

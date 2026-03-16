@@ -148,10 +148,10 @@
 **Effort:** Low
 **Motivation:** Minor UX gaps from v1 annotation implementation.
 
-| Task | Effort |
-|------|--------|
-| Append-only enforcement (soft-delete / "hide" toggle) | Low |
-| Audit trail view (show hidden annotations) | Low |
+| Task | Effort | Status |
+|------|--------|--------|
+| Append-only enforcement (soft-delete / "hide" toggle) | Low | Schema + DB done; UI pending |
+| Audit trail view (show hidden annotations) | Low | Pending (blocked on above UI) |
 
 ### 3.7 Experiment Status Management
 

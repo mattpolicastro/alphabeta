@@ -1,4 +1,4 @@
-import { createAnnotation, getAnnotations } from '../index';
+import { createAnnotation, getAnnotations, hideAnnotation } from '../index';
 import { resetDb } from './helpers';
 
 afterEach(async () => {
@@ -88,5 +88,41 @@ describe('getAnnotations', () => {
   it('returns empty array when no annotations exist for experiment', async () => {
     const annotations = await getAnnotations('nonexistent-exp');
     expect(annotations).toEqual([]);
+  });
+
+  it('excludes hidden annotations by default', async () => {
+    const a1 = await createAnnotation({ experimentId: 'exp-f', body: 'Visible note' });
+    const a2 = await createAnnotation({ experimentId: 'exp-f', body: 'Will be hidden' });
+    await hideAnnotation(a2.id!);
+
+    const visible = await getAnnotations('exp-f');
+    expect(visible.length).toBe(1);
+    expect(visible[0].body).toBe('Visible note');
+  });
+
+  it('includes hidden annotations when includeHidden is true', async () => {
+    const a1 = await createAnnotation({ experimentId: 'exp-g', body: 'Visible' });
+    const a2 = await createAnnotation({ experimentId: 'exp-g', body: 'Hidden' });
+    await hideAnnotation(a2.id!);
+
+    const all = await getAnnotations('exp-g', { includeHidden: true });
+    expect(all.length).toBe(2);
+
+    const hiddenOne = all.find((a) => a.body === 'Hidden');
+    expect(hiddenOne?.hidden).toBe(true);
+  });
+});
+
+describe('hideAnnotation', () => {
+  it('sets hidden to true and updates updatedAt', async () => {
+    const annotation = await createAnnotation({ experimentId: 'exp-h', body: 'To hide' });
+    const originalUpdatedAt = annotation.updatedAt;
+
+    await hideAnnotation(annotation.id!);
+
+    const all = await getAnnotations('exp-h', { includeHidden: true });
+    expect(all.length).toBe(1);
+    expect(all[0].hidden).toBe(true);
+    expect(all[0].updatedAt).toBeGreaterThanOrEqual(originalUpdatedAt);
   });
 });
