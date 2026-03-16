@@ -150,8 +150,8 @@
 
 | Task | Effort | Status |
 |------|--------|--------|
-| Append-only enforcement (soft-delete / "hide" toggle) | Low | Schema + DB done; UI pending |
-| Audit trail view (show hidden annotations) | Low | Pending (blocked on above UI) |
+| Append-only enforcement (soft-delete / "hide" toggle) | Low | Done |
+| Audit trail view (show hidden annotations) | Low | Done |
 
 ### 3.7 Experiment Status Management
 

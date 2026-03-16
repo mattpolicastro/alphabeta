@@ -323,7 +323,7 @@ Req: §5.8
 - [x] Annotations included in JSON exports
 - [x] Inline Markdown editor — react-markdown preview tab in AnnotationEditor
 - [x] Character limit enforcement — 2,000 char limit in AnnotationEditor
-- [~] Append-only / "hide" toggle — schema + DB layer done (`hidden` field, `hideAnnotation()`, `includeHidden` filter); UI wiring pending (AnnotationEditor hide button + ExperimentDetailView audit trail)
+- [x] Append-only / "hide" toggle — `hidden` field, `hideAnnotation()`, `includeHidden` filter, AnnotationEditor hide button, audit trail toggle in detail view
 
 ### Module: Result Retention
 Touches: `lib/db/index.ts`
