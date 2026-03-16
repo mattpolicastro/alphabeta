@@ -53,7 +53,8 @@ export function terminateStatsWorker(): void {
 function getOrCreateStatsWorker(): Worker {
   if (statsWorker) return statsWorker;
 
-  const worker = new Worker('/stats-worker.js');
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const worker = new Worker(`${basePath}/stats-worker.js`);
 
   // Persistent listener — handles both status updates and analysis results
   worker.onmessage = (e: MessageEvent<WorkerMessage>) => {

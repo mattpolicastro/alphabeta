@@ -38,7 +38,7 @@ export function MetricPicker({
     return (
       <div className="alert alert-warning">
         No metrics defined yet.{' '}
-        <a href="/metrics" target="_blank">Create metrics</a> first, then come back.
+        <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/metrics`} target="_blank">Create metrics</a> first, then come back.
       </div>
     );
   }

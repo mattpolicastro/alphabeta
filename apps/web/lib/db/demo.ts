@@ -7,7 +7,8 @@ import { db } from './index';
 import type { Experiment, Metric } from './schema';
 
 export async function seedDemoData(): Promise<void> {
-  const res = await fetch('/demo/demo-experiment.json');
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const res = await fetch(`${basePath}/demo/demo-experiment.json`);
   const demoConfig = await res.json();
 
   const now = Date.now();
