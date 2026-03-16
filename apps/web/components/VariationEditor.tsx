@@ -98,6 +98,13 @@ export function VariationEditor({ variations, onChange }: VariationEditorProps) 
         </div>
       )}
 
+      <div className="row g-2 mb-1 d-none d-md-flex">
+        <div className="col-md-3"><label className="form-label small text-muted mb-0">Name</label></div>
+        <div className="col-md-3"><label className="form-label small text-muted mb-0">Key</label></div>
+        <div className="col-md-2"><label className="form-label small text-muted mb-0">Weight</label></div>
+        <div className="col-md-2"><label className="form-label small text-muted mb-0">Control</label></div>
+      </div>
+
       {variations.map((v) => (
         <div key={v.id} className="row g-2 align-items-center mb-2">
           <div className="col-md-3">
