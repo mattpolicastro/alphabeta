@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
 import {
   getExperimentById,
   getMetricsByIds,
   getMetrics,
   getResultsForExperiment,
   getAnnotations,
+  hideAnnotation,
   exportExperiment,
   cloneExperiment,
   updateExperiment,
@@ -43,8 +45,14 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   const [loading, setLoading] = useState(true);
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [selectedDimensionValue, setSelectedDimensionValue] = useState<string>('');
+  const [showHidden, setShowHidden] = useState(false);
 
   useEffect(() => { load(); }, [experimentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!experiment) return;
+    getAnnotations(experiment.id, { includeHidden: showHidden }).then(setAnnotations);
+  }, [showHidden, experiment]);
 
   async function load() {
     const exp = await getExperimentById(experimentId);
@@ -228,8 +236,29 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
       {/* Annotations */}
       {annotations.length > 0 && (
         <div className="mt-4">
-          <h5>Notes</h5>
-          {annotations.map((a) => <div key={a.id} className="card mb-2"><div className="card-body py-2"><small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small><p className="mb-0 mt-1">{a.body}</p></div></div>)}
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <h5 className="mb-0">Notes</h5>
+            <div className="form-check form-switch">
+              <input className="form-check-input" type="checkbox" id="showHiddenToggle" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
+              <label className="form-check-label small text-muted" htmlFor="showHiddenToggle">Show audit trail</label>
+            </div>
+          </div>
+          {annotations.map((a) => (
+            <div key={a.id} className={`card mb-2 ${a.hidden ? 'opacity-50' : ''}`}>
+              <div className="card-body py-2">
+                <div className="d-flex justify-content-between align-items-center">
+                  <small className="text-muted">{new Date(a.createdAt).toLocaleString()}</small>
+                  <div className="d-flex align-items-center gap-2">
+                    {a.hidden && <span className="badge bg-secondary">Hidden</span>}
+                    {!a.hidden && (
+                      <button className="btn btn-outline-secondary btn-sm" onClick={async () => { await hideAnnotation(a.id!); const updated = await getAnnotations(experiment!.id, { includeHidden: showHidden }); setAnnotations(updated); }}>Hide</button>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-1"><ReactMarkdown>{a.body}</ReactMarkdown></div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
