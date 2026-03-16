@@ -51,7 +51,7 @@ def handler(event, context):
 
     # 4. Repeat for each dimension slice
     slice_results = _compute_slices(
-        data.get("slices", {}), engine, metrics, control_key, non_controls, alpha
+        data.get("slices", {}), engine, metrics, control_key, non_controls, alpha, correction
     )
 
     # Multiple exposure flagging
@@ -147,18 +147,14 @@ def _run_frequentist(mid, var_id, stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt
 
 
 def _apply_correction(results, metrics, correction):
-    """Apply multiple comparison correction to non-guardrail metrics.
+    """Apply multiple comparison correction to all metrics (primary and guardrail).
     See requirements.md Section 6.6."""
-    guardrail_ids = {m["id"] for m in metrics if m.get("isGuardrail")}
-    non_guardrail = [r for r in results if r["metricId"] not in guardrail_ids]
-    guardrail = [r for r in results if r["metricId"] in guardrail_ids]
-
-    if not non_guardrail:
+    if not results:
         return results
 
     # Extract p-values (Bayesian: use 1 - chanceToBeatControl as proxy)
     p_values = []
-    for r in non_guardrail:
+    for r in results:
         if "pValue" in r and r["pValue"] is not None:
             p_values.append(r["pValue"])
         elif "chanceToBeatControl" in r and r["chanceToBeatControl"] is not None:
@@ -178,7 +174,7 @@ def _apply_correction(results, metrics, correction):
         return results
 
     # Update significance based on adjusted p-values
-    for i, r in enumerate(non_guardrail):
+    for i, r in enumerate(results):
         if "pValue" in r and r["pValue"] is not None:
             r["pValue"] = adjusted[i]
             r["significant"] = adjusted[i] < (r.get("alpha", 0.05) if "alpha" in r else 0.05)
@@ -186,7 +182,7 @@ def _apply_correction(results, metrics, correction):
             # For Bayesian, adjust the proxy back
             r["significant"] = adjusted[i] < 0.05
 
-    return non_guardrail + guardrail
+    return results
 
 
 def _holm_bonferroni(p_values):
@@ -216,15 +212,18 @@ def _benjamini_hochberg(p_values):
     return adjusted
 
 
-def _compute_slices(slices, engine, metrics, control_key, non_controls, alpha):
+def _compute_slices(slices, engine, metrics, control_key, non_controls, alpha, correction="none"):
     """Compute per-dimension-slice results. See requirements.md Section 6.5 step 4."""
     slice_results = {}
     for dimension_name, dimension_values in slices.items():
         slice_results[dimension_name] = {}
         for slice_value, variation_data in dimension_values.items():
-            slice_results[dimension_name][slice_value] = _run_tests(
+            results = _run_tests(
                 variation_data, engine, metrics, control_key, non_controls, alpha
             )
+            if correction != "none":
+                results = _apply_correction(results, metrics, correction)
+            slice_results[dimension_name][slice_value] = results
     return slice_results
 
 

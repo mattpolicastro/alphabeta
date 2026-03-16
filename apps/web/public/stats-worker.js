@@ -155,13 +155,10 @@ def _benjamini_hochberg(p_values):
     return adjusted
 
 def _apply_correction(results, metrics, correction):
-    guardrail_ids = {m["id"] for m in metrics if m.get("isGuardrail")}
-    non_guardrail = [r for r in results if r["metricId"] not in guardrail_ids]
-    guardrail = [r for r in results if r["metricId"] in guardrail_ids]
-    if not non_guardrail:
+    if not results:
         return results
     p_values = []
-    for r in non_guardrail:
+    for r in results:
         if "pValue" in r and r["pValue"] is not None:
             p_values.append(r["pValue"])
         elif "chanceToBeatControl" in r and r["chanceToBeatControl"] is not None:
@@ -177,22 +174,25 @@ def _apply_correction(results, metrics, correction):
         adjusted = _benjamini_hochberg(p_values)
     else:
         return results
-    for i, r in enumerate(non_guardrail):
+    for i, r in enumerate(results):
         if "pValue" in r and r["pValue"] is not None:
             r["pValue"] = adjusted[i]
             r["significant"] = adjusted[i] < 0.05
         elif "chanceToBeatControl" in r:
             r["significant"] = adjusted[i] < 0.05
-    return non_guardrail + guardrail
+    return results
 
-def _compute_slices(slices, engine, metrics, control_key, non_controls, alpha):
+def _compute_slices(slices, engine, metrics, control_key, non_controls, alpha, correction="none"):
     slice_results = {}
     for dimension_name, dimension_values in slices.items():
         slice_results[dimension_name] = {}
         for slice_value, variation_data in dimension_values.items():
-            slice_results[dimension_name][slice_value] = _run_tests(
+            results = _run_tests(
                 variation_data, engine, metrics, control_key, non_controls, alpha
             )
+            if correction != "none":
+                results = _apply_correction(results, metrics, correction)
+            slice_results[dimension_name][slice_value] = results
     return slice_results
 
 # --- Main analysis ---
@@ -223,7 +223,7 @@ if correction != "none":
     results = _apply_correction(results, metrics, correction)
 
 # 4. Dimension slice results
-slice_results = _compute_slices(data.get("slices", {}), engine, metrics, control_key, non_controls, alpha)
+slice_results = _compute_slices(data.get("slices", {}), engine, metrics, control_key, non_controls, alpha, correction)
 
 multiple_exposure_count = request.get("multipleExposureCount", 0)
 total_units = sum(overall[v["key"]]["units"] for v in variations)
