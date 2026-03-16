@@ -128,7 +128,10 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
             <button className="btn btn-outline-secondary" onClick={handleClone}>Clone</button>
             <button className="btn btn-outline-secondary" onClick={handleExport}>Export</button>
             {activeResult && <button className="btn btn-outline-secondary" onClick={() => exportResultsCSV(activeResult, experiment, metrics)}>Export Results CSV</button>}
+            {experiment.status === 'draft' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Launch</button>}
             {experiment.status === 'running' && <button className="btn btn-outline-warning" onClick={() => handleStatusChange('stopped')}>Stop</button>}
+            {experiment.status === 'stopped' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Resume</button>}
+            {experiment.status === 'archived' && <button className="btn btn-outline-secondary" onClick={() => handleStatusChange('stopped')}>Unarchive</button>}
             {experiment.status !== 'archived' && <button className="btn btn-outline-danger" onClick={() => handleStatusChange('archived')}>Archive</button>}
           </div>
         </div>

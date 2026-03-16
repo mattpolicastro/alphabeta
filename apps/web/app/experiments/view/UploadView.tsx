@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { nanoid } from 'nanoid';
-import { getExperimentById, getMetricsByIds, getColumnMapping, saveColumnMapping, saveResult, type Experiment, type Metric, type ExperimentResult } from '@/lib/db';
+import { getExperimentById, getMetricsByIds, getColumnMapping, saveColumnMapping, saveResult, updateExperiment, type Experiment, type Metric, type ExperimentResult } from '@/lib/db';
 import { parseCSVFile, validateCSV, validateMetricColumns, getColumnFingerprint, autoClassifyColumns, getVariationNormalization, type ParsedCSV, type ValidationError } from '@/lib/csv';
 import { buildAnalysisRequest, type ColumnMappingConfig } from '@/lib/csv/buildRequest';
 import { runAnalysis } from '@/lib/stats/runAnalysis';
@@ -89,6 +89,12 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
         rawRequest: request, status: 'complete',
       };
       await saveResult(resultRecord);
+      if (experiment.status === 'draft') {
+        const shouldLaunch = window.confirm('This experiment is still a draft. Launch it now?');
+        if (shouldLaunch) {
+          await updateExperiment(experiment.id, { status: 'running' });
+        }
+      }
       router.push(`/experiments/view?id=${experiment.id}`);
     } catch (err) { setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed'); setStep('mapping'); }
     finally { setAnalyzing(false); }
