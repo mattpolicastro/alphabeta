@@ -22,12 +22,14 @@ interface AnnotationEditorProps {
   existingBody?: string;
   onSave: (body: string) => void;
   onCancel: () => void;
+  onHide?: () => void;
 }
 
 export function AnnotationEditor({
   existingBody,
   onSave,
   onCancel,
+  onHide,
 }: AnnotationEditorProps) {
   const [body, setBody] = useState(existingBody ?? '');
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
@@ -103,6 +105,14 @@ export function AnnotationEditor({
             Cancel
           </button>
         </div>
+
+        {/* Hide button */}
+        {onHide && (
+          <div className="d-flex align-items-center gap-2 mt-2 pt-2 border-top">
+            <button className="btn btn-outline-secondary btn-sm" onClick={onHide}>Hide</button>
+            <small className="text-muted">Hidden notes are preserved in the audit trail.</small>
+          </div>
+        )}
       </div>
     </div>
   );
