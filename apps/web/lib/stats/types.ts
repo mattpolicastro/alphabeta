@@ -18,6 +18,7 @@ export interface AnalysisRequest {
     id: string;
     name: string;
     isGuardrail: boolean;
+    metricType?: 'proportion' | 'continuous'; // default: 'proportion' for backward compat
   }[];
 
   // Pre-aggregated totals — no row-level data
@@ -37,7 +38,9 @@ export interface AnalysisRequest {
 
 export interface VariationData {
   units: number;
-  metrics: Record<string, number>; // metric id → raw total
+  metrics: Record<string, number>; // metric id → raw total (proportion metrics)
+  // Continuous metric aggregates (populated by v2 CSV parser)
+  continuousMetrics?: Record<string, { mean: number; variance: number; n: number }>;
 }
 
 export interface AnalysisResponse {
@@ -62,6 +65,7 @@ export interface MetricVariationResult {
   variationId: string;
   units: number;
   rate: number;
+  mean?: number; // populated for continuous metrics (instead of rate)
   relativeUplift: number;
   absoluteUplift: number;
   significant: boolean;

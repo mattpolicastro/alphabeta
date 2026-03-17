@@ -10,11 +10,11 @@
  * gbstats API (class-based, NOT bare functions as requirements.md assumed):
  * - Bayesian: EffectBayesianABTest + EffectBayesianConfig
  * - Frequentist: TwoSidedTTest + FrequentistConfig
- * - Input: ProportionStatistic(n, sum)
+ * - Input: ProportionStatistic(n, sum), SampleMeanStatistic(n, sum, sum_squares)
  * - SRM: check_srm(users, weights) → float
  *
  * Analysis logic mirrors infra/lambda/analysis/handler.py exactly:
- * - Per-metric, per-variation proportion tests
+ * - Per-metric, per-variation proportion tests + continuous (mean) tests
  * - Multiple comparison correction (Holm-Bonferroni, Benjamini-Hochberg)
  * - Dimension slice results
  */
@@ -81,7 +81,7 @@ import json
 import numpy as np
 from gbstats.bayesian.tests import EffectBayesianABTest, EffectBayesianConfig
 from gbstats.frequentist.tests import TwoSidedTTest, FrequentistConfig
-from gbstats.models.statistics import ProportionStatistic
+from gbstats.models.statistics import ProportionStatistic, SampleMeanStatistic
 from gbstats.utils import check_srm
 
 class NumpyEncoder(json.JSONEncoder):
@@ -133,23 +133,83 @@ def _run_frequentist(mid, var_id, stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt
         "significant": res.p_value < alpha if res.p_value is not None else False,
     }
 
+def _make_mean_stat(mean, variance, n):
+    """Convert mean + Bessel-corrected variance into SampleMeanStatistic(n, sum, sum_squares)."""
+    s = mean * n
+    ss = variance * (n - 1) + mean ** 2 * n
+    return SampleMeanStatistic(n=n, sum=s, sum_squares=ss)
+
+def _run_mean_test(mid, var_id, stat_a, stat_b, ctrl_mean, trt_mean, n_trt, engine, alpha):
+    if engine == "bayesian":
+        config = EffectBayesianConfig(difference_type="relative", alpha=alpha)
+        test = EffectBayesianABTest(stat_a=stat_a, stat_b=stat_b, config=config)
+        res = test.compute_result()
+        return {
+            "metricId": mid,
+            "variationId": var_id,
+            "units": n_trt,
+            "rate": trt_mean,
+            "mean": trt_mean,
+            "chanceToBeatControl": res.chance_to_win,
+            "expectedLoss": res.risk[1] if len(res.risk) > 1 else None,
+            "credibleIntervalLower": res.ci[0] if res.ci else None,
+            "credibleIntervalUpper": res.ci[1] if res.ci else None,
+            "relativeUplift": res.expected,
+            "absoluteUplift": trt_mean - ctrl_mean if ctrl_mean != 0 else 0,
+            "significant": res.chance_to_win > 0.95 if res.chance_to_win is not None else False,
+        }
+    else:
+        config = FrequentistConfig(difference_type="relative", alpha=alpha)
+        test = TwoSidedTTest(stat_a=stat_a, stat_b=stat_b, config=config)
+        res = test.compute_result()
+        return {
+            "metricId": mid,
+            "variationId": var_id,
+            "units": n_trt,
+            "rate": trt_mean,
+            "mean": trt_mean,
+            "pValue": res.p_value,
+            "confidenceIntervalLower": res.ci[0] if res.ci else None,
+            "confidenceIntervalUpper": res.ci[1] if res.ci else None,
+            "relativeUplift": res.expected,
+            "absoluteUplift": trt_mean - ctrl_mean if ctrl_mean != 0 else 0,
+            "significant": res.p_value < alpha if res.p_value is not None else False,
+        }
+
 def _run_tests(variation_data, engine, metrics, control_key, non_controls, alpha):
     results = []
     for metric in metrics:
         mid = metric["id"]
+        metric_type = metric.get("metricType", "proportion")
         ctrl = variation_data[control_key]
-        n_ctrl = ctrl["units"]
-        cv_ctrl = ctrl["metrics"][mid]
-        stat_a = ProportionStatistic(n=n_ctrl, sum=cv_ctrl)
-        for var in non_controls:
-            trt = variation_data[var["key"]]
-            n_trt = trt["units"]
-            cv_trt = trt["metrics"][mid]
-            stat_b = ProportionStatistic(n=n_trt, sum=cv_trt)
-            if engine == "bayesian":
-                results.append(_run_bayesian(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))
-            else:
-                results.append(_run_frequentist(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))
+
+        if metric_type == "continuous":
+            continuous = ctrl.get("continuousMetrics", {}).get(mid, {})
+            n_ctrl = continuous.get("n", 0)
+            mean_ctrl = continuous.get("mean", 0)
+            var_ctrl = continuous.get("variance", 0)
+            stat_a = _make_mean_stat(mean_ctrl, var_ctrl, n_ctrl) if n_ctrl > 1 else ProportionStatistic(n=1, sum=0)
+            for var in non_controls:
+                trt = variation_data[var["key"]]
+                trt_cont = trt.get("continuousMetrics", {}).get(mid, {})
+                n_trt = trt_cont.get("n", 0)
+                mean_trt = trt_cont.get("mean", 0)
+                var_trt = trt_cont.get("variance", 0)
+                stat_b = _make_mean_stat(mean_trt, var_trt, n_trt) if n_trt > 1 else ProportionStatistic(n=1, sum=0)
+                results.append(_run_mean_test(mid, var["id"], stat_a, stat_b, mean_ctrl, mean_trt, n_trt, engine, alpha))
+        else:
+            n_ctrl = ctrl["units"]
+            cv_ctrl = ctrl["metrics"][mid]
+            stat_a = ProportionStatistic(n=n_ctrl, sum=cv_ctrl)
+            for var in non_controls:
+                trt = variation_data[var["key"]]
+                n_trt = trt["units"]
+                cv_trt = trt["metrics"][mid]
+                stat_b = ProportionStatistic(n=n_trt, sum=cv_trt)
+                if engine == "bayesian":
+                    results.append(_run_bayesian(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))
+                else:
+                    results.append(_run_frequentist(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))
     return results
 
 def _holm_bonferroni(p_values):

@@ -2,7 +2,7 @@
  * Tests for autoClassifyColumns: reserved, metric (numeric), and dimension (string).
  */
 
-import { autoClassifyColumns, RESERVED_COLUMNS } from '../parser';
+import { autoClassifyColumns, RESERVED_COLUMNS_AGG } from '../parser';
 
 describe('autoClassifyColumns — reserved columns', () => {
   it('classifies experiment_id, variation_id, and units as reserved', () => {
@@ -12,7 +12,7 @@ describe('autoClassifyColumns — reserved columns', () => {
     ];
     const classification = autoClassifyColumns(headers, rows);
 
-    for (const col of RESERVED_COLUMNS) {
+    for (const col of RESERVED_COLUMNS_AGG) {
       expect(classification[col]).toBe('reserved');
     }
   });

@@ -54,7 +54,7 @@ function transformSlice(
   mvrList: MetricVariationResult[],
   request: AnalysisRequest,
   controlVariation: AnalysisRequest['variations'][0],
-  controlData: { units: number; metrics: Record<string, number> } | undefined,
+  controlData: { units: number; metrics: Record<string, number>; continuousMetrics?: Record<string, { mean: number; variance: number; n: number }> } | undefined,
 ): MetricResult[] {
   // Group response results by metricId
   const byMetric = new Map<string, MetricVariationResult[]>();
@@ -67,31 +67,50 @@ function transformSlice(
   const results: MetricResult[] = [];
 
   for (const metric of request.metrics) {
+    const isContinuous = metric.metricType === 'continuous';
     const treatmentResults = byMetric.get(metric.id) ?? [];
     const variationResults: VariationResult[] = [];
 
     // Synthesize control row from request data
     if (controlData) {
-      const controlUnits = controlData.units;
-      const controlTotal = controlData.metrics[metric.id] ?? 0;
-      const controlRate = controlUnits > 0 ? controlTotal / controlUnits : 0;
+      if (isContinuous) {
+        const cont = controlData.continuousMetrics?.[metric.id];
+        const controlMean = cont?.mean ?? 0;
+        const controlN = cont?.n ?? 0;
+        const controlVar = cont?.variance ?? 0;
 
-      variationResults.push({
-        variationId: controlVariation.id,
-        users: controlUnits,
-        mean: controlRate,
-        stddev: controlUnits > 0 ? Math.sqrt(controlRate * (1 - controlRate) / controlUnits) : 0,
-        relativeUplift: 0,
-        absoluteUplift: 0,
-        significant: false,
-        cupedApplied: false,
-      });
+        variationResults.push({
+          variationId: controlVariation.id,
+          users: controlN,
+          mean: controlMean,
+          stddev: controlN > 0 ? Math.sqrt(controlVar / controlN) : 0,
+          relativeUplift: 0,
+          absoluteUplift: 0,
+          significant: false,
+          cupedApplied: false,
+        });
+      } else {
+        const controlUnits = controlData.units;
+        const controlTotal = controlData.metrics[metric.id] ?? 0;
+        const controlRate = controlUnits > 0 ? controlTotal / controlUnits : 0;
+
+        variationResults.push({
+          variationId: controlVariation.id,
+          users: controlUnits,
+          mean: controlRate,
+          stddev: controlUnits > 0 ? Math.sqrt(controlRate * (1 - controlRate) / controlUnits) : 0,
+          relativeUplift: 0,
+          absoluteUplift: 0,
+          significant: false,
+          cupedApplied: false,
+        });
+      }
     }
 
     // Map each treatment result
     const baselineUnits = controlData?.units ?? 0;
     for (const mvr of treatmentResults) {
-      variationResults.push(mapToVariationResult(mvr, baselineUnits));
+      variationResults.push(mapToVariationResult(mvr, baselineUnits, isContinuous));
     }
 
     results.push({
@@ -103,12 +122,18 @@ function transformSlice(
   return results;
 }
 
-function mapToVariationResult(mvr: MetricVariationResult, baselineUnits: number): VariationResult {
+function mapToVariationResult(mvr: MetricVariationResult, baselineUnits: number, isContinuous: boolean = false): VariationResult {
+  // For continuous metrics, use the mean field directly; stddev is not derivable from rate
+  const displayMean = isContinuous ? (mvr.mean ?? mvr.rate) : mvr.rate;
+  const stddev = isContinuous
+    ? 0 // stddev for continuous treatment rows not available from engine output
+    : (mvr.units > 0 ? Math.sqrt(mvr.rate * (1 - mvr.rate) / mvr.units) : 0);
+
   return {
     variationId: mvr.variationId,
     users: mvr.units,
-    mean: mvr.rate,
-    stddev: mvr.units > 0 ? Math.sqrt(mvr.rate * (1 - mvr.rate) / mvr.units) : 0,
+    mean: displayMean,
+    stddev,
     chanceToBeatControl: mvr.chanceToBeatControl,
     expectedLoss: mvr.expectedLoss,
     credibleIntervalLower: mvr.credibleIntervalLower,

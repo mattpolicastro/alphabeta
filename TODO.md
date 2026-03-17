@@ -364,6 +364,93 @@ Req: §8.2
 
 ---
 
+## v2 Phase 1 — Continuous Metrics (§1.1)
+
+> **Decisions resolved:** 100k row limit, Web Worker for v2 parsing, no mixed CSVs.
+
+### Module: Shared Types — Continuous Metric Support
+Touches: `lib/stats/types.ts`, `lib/db/schema.ts`
+Depends on: nothing
+Priority: **P0** — all other §1.1 modules depend on these type changes
+
+- [x] Add `'continuous'` to `Metric.type` union in `lib/db/schema.ts`
+- [x] Add `metricType` field to `AnalysisRequest.metrics[]` in `lib/stats/types.ts` (`'proportion' | 'continuous'`)
+- [x] Extend `VariationData` in `lib/stats/types.ts` with optional `mean`, `variance`, `n` fields for continuous metrics
+- [x] Add `mean?: number` to `MetricVariationResult` in `lib/stats/types.ts` (for result display)
+
+### Module: CSV Parser — Schema v2 (Row-Level)
+Touches: `lib/csv/parser.ts`, new `lib/csv/csv-worker.ts`
+Depends on: Shared Types
+Priority: **P0** — buildRequest and engine depend on parsed output
+
+- [x] Extend schema version support to accept `'1'` and `'2'` (`SUPPORTED_SCHEMA_VERSIONS`)
+- [x] Detect schema version in `parseCSVFile` and branch logic
+- [x] v2 required columns: `experiment_id`, `variation_id`, `user_id`, `<metric_columns>`
+- [x] v2 row count validation: reject > 100k rows with blocking error
+- [x] v2 parsing in Web Worker: `public/csv-worker.js` aggregates per-variation: n, mean, variance per metric (Welford's algorithm)
+- [x] Worker returns aggregated data via extended `ParsedCSV` type (`v2Aggregates`, `v2TotalRows`)
+- [x] v2 validation function (`validateCSVv2`), v2-aware `autoClassifyColumns`
+- [ ] Tests: v2 schema detection, row limit rejection, aggregation correctness (mean, variance, n)
+
+### Module: Metric Library — Continuous Type
+Touches: `app/metrics/page.tsx`, `components/MetricPicker.tsx`
+Depends on: Shared Types
+Priority: **P1**
+
+- [x] Add `'continuous'` option to metric type selector in create/edit form (metrics page + ColumnMapper inline create)
+- [x] Add `'continuous'` to metric type filter buttons in metric list
+- [ ] Validation: continuous metrics require schema v2 CSV (surface warning in MetricValidationPanel)
+
+### Module: Request Builder — Mean + Variance Path
+Touches: `lib/csv/buildRequest.ts`
+Depends on: Shared Types, CSV Parser v2
+Priority: **P1**
+
+- [x] Detect metric type from `Metric.type` when building request (v2 branch in `buildAnalysisRequest`)
+- [x] For continuous metrics: include `mean`, `variance`, `n` per variation via `continuousMetrics` field
+- [x] For proportion metrics: existing `total / units` path unchanged
+- [ ] Tests: correct payload for continuous metrics, mixed experiment with both types
+
+### Module: Stats Engine — Mean Test Path
+Touches: `public/stats-worker.js`, `lib/stats/worker.ts`, `infra/lambda/analysis/handler.py`
+Depends on: Shared Types, Request Builder
+Priority: **P1**
+
+- [x] Add `mean_test` via `SampleMeanStatistic` + `_run_mean_test` to worker (Bayesian + Frequentist)
+- [x] Mirror in Lambda handler (`_make_mean_stat`, `_run_mean_test`, updated `_run_tests`)
+- [x] Route based on `metricType` field in request: proportion → existing path, continuous → mean test
+- [x] Kept worker.ts typed reference in sync
+- [ ] Tests: add mean test cases to `infra/lambda/analysis/test_corrections.py` or new test file
+
+### Module: Transform Response — Mean Metrics
+Touches: `lib/stats/transformResponse.ts`
+Depends on: Shared Types, Stats Engine
+Priority: **P1**
+
+- [x] Handle mean-based result fields from engine (mean instead of rate)
+- [x] Map to `MetricVariationResult` with `mean` field; continuous-aware control synthesis
+- [x] Continuous-aware stddev calculation (variance/n for continuous, binomial formula for proportion)
+- [ ] Tests: transform correctness for continuous metric results
+
+### Module: Results UI — Metric Type Indicators
+Touches: `components/ResultsTable.tsx`
+Depends on: Transform Response
+Priority: **P2**
+
+- [x] Badge already exists in results table (shows `metric.type` including 'continuous')
+- [x] Display raw mean value instead of percentage for continuous metrics in table and detail panel
+
+### Module: Template CSV — Row-Level Format
+Touches: `lib/csv/generateTemplate.ts`
+Depends on: Shared Types
+Priority: **P2**
+
+- [x] Detect if experiment has continuous metrics
+- [x] Generate schema v2 row-level template with `user_id` column when continuous metrics are configured
+- [x] Fallback to v1 pre-aggregated template when all metrics are proportion
+
+---
+
 ## Cross-Cutting Concerns
 
 - [x] CSV data held in memory only — never written to IndexedDB (§5.3, §11.2)

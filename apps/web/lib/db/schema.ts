@@ -33,7 +33,7 @@ export interface Metric {
   id: string;
   name: string;
   description?: string;
-  type: 'binomial' | 'count' | 'revenue';
+  type: 'binomial' | 'count' | 'revenue' | 'continuous';
   /**
    * How to interpret the uploaded column value:
    * - 'raw_total': value is a sum; app divides by `units` to get rate/mean

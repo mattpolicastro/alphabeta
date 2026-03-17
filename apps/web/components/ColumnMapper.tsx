@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import type { Metric } from '@/lib/db/schema';
 import type { ColumnMappingConfig } from '@/lib/csv/buildRequest';
-import { RESERVED_COLUMNS } from '@/lib/csv';
+import { RESERVED_COLUMNS_AGG } from '@/lib/csv';
 import { createMetric } from '@/lib/db';
 
 export interface ColumnMapperProps {
@@ -51,7 +51,7 @@ export function ColumnMapper({
   const [creating, setCreating] = useState(false);
 
   const mappableHeaders = headers.filter(
-    (h) => !(RESERVED_COLUMNS as readonly string[]).includes(h),
+    (h) => !(RESERVED_COLUMNS_AGG as readonly string[]).includes(h),
   );
 
   // Diff detection: columns added or removed since the saved mapping
@@ -62,7 +62,7 @@ export function ColumnMapper({
     ? savedMappingColumns.filter(
         (h) =>
           !headers.includes(h) &&
-          !(RESERVED_COLUMNS as readonly string[]).includes(h),
+          !(RESERVED_COLUMNS_AGG as readonly string[]).includes(h),
       )
     : [];
   const hasSchemaChanges = addedColumns.length > 0 || removedColumns.length > 0;
@@ -279,6 +279,7 @@ export function ColumnMapper({
                   <option value="binomial">Binomial</option>
                   <option value="count">Count</option>
                   <option value="revenue">Revenue</option>
+                  <option value="continuous">Continuous</option>
                 </select>
               </div>
               <div className="col-md-3">

@@ -55,7 +55,7 @@ const BASE_MAPPING: ColumnMappingConfig = {
 // Simple two-variation overall-only CSV (no dimension columns)
 const OVERALL_PARSED: ParsedCSV = {
   headers: ['experiment_id', 'variation_id', 'units', 'purchases'],
-  schemaVersion: '1',
+  schema: 'agg-v1',
   rows: [
     { experiment_id: 'exp1', variation_id: 'control', units: '1000', purchases: '100' },
     { experiment_id: 'exp1', variation_id: 'variant_a', units: '950', purchases: '130' },
@@ -65,7 +65,7 @@ const OVERALL_PARSED: ParsedCSV = {
 // CSV with a country dimension, including both overall ("all") and slice rows
 const DIMENSION_PARSED: ParsedCSV = {
   headers: ['experiment_id', 'variation_id', 'units', 'purchases', 'country'],
-  schemaVersion: '1',
+  schema: 'agg-v1',
   rows: [
     // Overall rows (country = "all")
     { experiment_id: 'exp1', variation_id: 'control',   units: '1000', purchases: '100', country: 'all' },
@@ -230,7 +230,7 @@ describe('buildAnalysisRequest — pre_normalized metrics', () => {
     // CSV value is 0.1 (10% rate), units = 1000 → stored value should be 100
     const parsed: ParsedCSV = {
       headers: ['experiment_id', 'variation_id', 'units', 'purchases'],
-      schemaVersion: '1',
+      schema: 'agg-v1',
       rows: [
         { experiment_id: 'exp1', variation_id: 'control',   units: '1000', purchases: '0.1' },
         { experiment_id: 'exp1', variation_id: 'variant_a', units: '950',  purchases: '0.12' },

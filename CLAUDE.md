@@ -119,6 +119,19 @@ The 14B model is capable but has a narrow context window and no access to the br
 - Tasks touching 4+ files — split into separate tasks instead.
 - Asking the agent to make design choices ("pick the best approach") — decide in the plan.
 
+#### Preventing drift in local agents
+
+The 14B model is prone to two failure modes. `dispatch.sh` mitigates both, but prompt design matters too.
+
+**Wrong-file edits:** The model may pick a different file in the same directory (e.g., `page.tsx` instead of `ExperimentDetailView.tsx`). `dispatch.sh` passes `--file` flags from the plan's `files` array to lock Aider to the correct files. Always populate `files` in `plan.json` — it's not optional documentation, it's an input to the dispatch script.
+
+**Import/code hallucination:** On longer prompts the model "drifts" and generates plausible-looking but wrong code (bogus imports, invented APIs). To minimize this:
+
+- **Keep prompts under ~150 lines.** If a prompt needs to be longer, the task is too complex for 14B — escalate to Sonnet.
+- **Paste exact before/after blocks** rather than describing changes in prose. The model copies more reliably than it interprets.
+- **One logical change per task.** The §3.6 annotation tasks succeeded (one change each). The §3.7 tasks were similarly scoped but still drifted — when in doubt, make tasks smaller, not larger.
+- **Use `--edit-format diff`** (now set in `dispatch.sh`) to constrain output to targeted diffs rather than full file rewrites, which reduces the surface area for hallucination.
+
 #### Parallelization rules
 
 The `dispatch.sh` script spawns agents in separate git worktrees, so they can't conflict at the filesystem level. But merge conflicts are still possible.

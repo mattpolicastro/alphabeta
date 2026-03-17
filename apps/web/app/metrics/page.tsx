@@ -177,7 +177,7 @@ export default function MetricsPage() {
         </div>
         <div className="col-auto">
           <div className="btn-group btn-group-sm">
-            {(['all', 'binomial', 'count', 'revenue'] as const).map((t) => (
+            {(['all', 'binomial', 'count', 'revenue', 'continuous'] as const).map((t) => (
               <button
                 key={t}
                 className={`btn ${typeFilter === t ? 'btn-dark' : 'btn-outline-dark'}`}
@@ -218,6 +218,7 @@ export default function MetricsPage() {
                   <option value="binomial">Binomial</option>
                   <option value="count">Count</option>
                   <option value="revenue">Revenue</option>
+                  <option value="continuous">Continuous</option>
                 </select>
               </div>
               <div className="col-md-3">

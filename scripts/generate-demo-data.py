@@ -92,7 +92,7 @@ def write_csv(rows, output_path):
     ]
     with open(output_path, "w", newline="") as f:
         # Schema version header (required by app — see Section 4.2)
-        f.write("#schema_version:1\n")
+        f.write("#schema:agg-v1\n")
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)

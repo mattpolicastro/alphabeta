@@ -31,6 +31,10 @@ export function buildAnalysisRequest(
   mapping: ColumnMappingConfig,
   multipleExposureCount: number = 0,
 ): AnalysisRequest {
+  if (parsed.schema === 'row-v1' && parsed.rowLevelAggregates) {
+    return buildAnalysisRequestV2(parsed, experiment, metrics, mapping, multipleExposureCount);
+  }
+
   const experimentId = experiment.id;
 
   // Filter rows to this experiment
@@ -161,6 +165,198 @@ export function buildAnalysisRequest(
     variations: requestVariations,
     metrics: requestMetrics,
     data: { overall, slices },
+    multipleExposureCount,
+  };
+}
+
+/**
+ * Build a merged AnalysisRequest from up to two data sources:
+ * - Aggregated CSV (proportion/count/revenue metrics with dimension slices)
+ * - Row-level CSV (any metric type, overall only)
+ *
+ * If a metric appears in both sources, the row-level data wins (more granular).
+ * Units for SRM come from whichever source provides overall data for that variation;
+ * if both provide data, the aggregated source's units are used (explicit sample sizes).
+ */
+export function buildMergedAnalysisRequest(
+  aggParsed: ParsedCSV | null,
+  aggMapping: ColumnMappingConfig,
+  rowLevelParsed: ParsedCSV | null,
+  rowLevelMapping: ColumnMappingConfig,
+  experiment: Experiment,
+  metrics: Metric[],
+  multipleExposureCount: number = 0,
+): AnalysisRequest {
+  // If only one source, delegate directly
+  if (!rowLevelParsed && aggParsed) {
+    return buildAnalysisRequest(aggParsed, experiment, metrics, aggMapping, multipleExposureCount);
+  }
+  if (!aggParsed && rowLevelParsed) {
+    return buildAnalysisRequest(rowLevelParsed, experiment, metrics, rowLevelMapping, multipleExposureCount);
+  }
+  if (!aggParsed && !rowLevelParsed) {
+    throw new Error('At least one data source must be provided.');
+  }
+
+  // Both sources present — build each independently and merge
+  const aggRequest = buildAnalysisRequest(aggParsed!, experiment, metrics, aggMapping, multipleExposureCount);
+  const rowRequest = buildAnalysisRequestV2(rowLevelParsed!, experiment, metrics, rowLevelMapping, multipleExposureCount);
+
+  // Collect metric IDs from each source
+  const aggMetricIds = new Set(aggRequest.metrics.map((m) => m.id));
+  const rowMetricIds = new Set(rowRequest.metrics.map((m) => m.id));
+
+  // Merged metrics list: all from agg + row-level-only metrics
+  // If a metric is in both, keep the row-level version (it has metricType info)
+  const mergedMetrics = [
+    ...aggRequest.metrics.filter((m) => !rowMetricIds.has(m.id)),
+    ...rowRequest.metrics,
+  ];
+
+  // Merge overall variation data
+  const variationKeys = experiment.variations.map((v) => v.key);
+  const mergedOverall: Record<string, VariationData> = {};
+
+  for (const varKey of variationKeys) {
+    const aggVar = aggRequest.data.overall[varKey];
+    const rowVar = rowRequest.data.overall[varKey];
+
+    if (!aggVar && !rowVar) continue;
+
+    // Start from agg data (has explicit units and proportion metrics)
+    const mergedPropMetrics: Record<string, number> = {};
+    const mergedContMetrics: Record<string, { mean: number; variance: number; n: number }> = {};
+
+    // Proportion metrics from agg (skip any that row-level also covers)
+    if (aggVar) {
+      for (const [metricId, value] of Object.entries(aggVar.metrics)) {
+        if (!rowMetricIds.has(metricId)) {
+          mergedPropMetrics[metricId] = value;
+        }
+      }
+    }
+
+    // Proportion metrics from row-level
+    if (rowVar) {
+      for (const [metricId, value] of Object.entries(rowVar.metrics)) {
+        mergedPropMetrics[metricId] = value;
+      }
+      // Continuous metrics from row-level
+      if (rowVar.continuousMetrics) {
+        for (const [metricId, stats] of Object.entries(rowVar.continuousMetrics)) {
+          mergedContMetrics[metricId] = stats;
+        }
+      }
+    }
+
+    mergedOverall[varKey] = {
+      units: aggVar?.units ?? rowVar!.units,
+      metrics: mergedPropMetrics,
+      ...(Object.keys(mergedContMetrics).length > 0 ? { continuousMetrics: mergedContMetrics } : {}),
+    };
+  }
+
+  return {
+    engine: experiment.statsEngine,
+    correction: experiment.multipleComparisonCorrection,
+    alpha: 0.05,
+    srmThreshold: 0.001,
+    variations: aggRequest.variations,
+    metrics: mergedMetrics,
+    data: {
+      overall: mergedOverall,
+      slices: aggRequest.data.slices, // slices come from agg only
+    },
+    multipleExposureCount,
+  };
+}
+
+/**
+ * Build an AnalysisRequest from v2 (row-level) CSV aggregates.
+ * v2 has no dimensions/slices — only overall data with mean, variance, n per metric.
+ */
+function buildAnalysisRequestV2(
+  parsed: ParsedCSV,
+  experiment: Experiment,
+  metrics: Metric[],
+  mapping: ColumnMappingConfig,
+  multipleExposureCount: number,
+): AnalysisRequest {
+  const v2Agg = parsed.rowLevelAggregates!;
+
+  // Identify mapped metric columns
+  const metricCols: { column: string; metricId: string }[] = [];
+  for (const [col, config] of Object.entries(mapping)) {
+    if (config.role === 'metric' && config.metricId) {
+      metricCols.push({ column: col, metricId: config.metricId });
+    }
+  }
+  if (metricCols.length === 0) {
+    throw new Error('At least one metric column must be mapped.');
+  }
+
+  const metricById = new Map(metrics.map((m) => [m.id, m]));
+  const variationKeys = experiment.variations.map((v) => v.key);
+
+  // Build overall data from v2 aggregates
+  const overall: Record<string, VariationData> = {};
+  for (const varKey of variationKeys) {
+    const normalizedKey = varKey.toLowerCase();
+    const varAgg = v2Agg[normalizedKey];
+    if (!varAgg) continue;
+
+    // For v2, units = n from the first metric (all metrics share the same user set)
+    const firstMetricCol = metricCols[0].column;
+    const n = varAgg[firstMetricCol]?.n ?? 0;
+
+    const metricValues: Record<string, number> = {};
+    const continuousMetrics: Record<string, { mean: number; variance: number; n: number }> = {};
+
+    for (const { column, metricId } of metricCols) {
+      const agg = varAgg[column];
+      if (!agg) continue;
+
+      const metricDef = metricById.get(metricId);
+      if (metricDef?.type === 'continuous') {
+        continuousMetrics[metricId] = { mean: agg.mean, variance: agg.variance, n: agg.n };
+      } else {
+        // Proportion metrics in v2: total = mean * n (mean is the raw value average)
+        metricValues[metricId] = agg.mean * agg.n;
+      }
+    }
+
+    overall[varKey] = {
+      units: n,
+      metrics: metricValues,
+      ...(Object.keys(continuousMetrics).length > 0 ? { continuousMetrics } : {}),
+    };
+  }
+
+  const requestMetrics = metricCols.map(({ metricId }) => {
+    const metricDef = metricById.get(metricId);
+    return {
+      id: metricId,
+      name: metricDef?.name ?? metricId,
+      isGuardrail: experiment.guardrailMetricIds.includes(metricId),
+      metricType: (metricDef?.type === 'continuous' ? 'continuous' : 'proportion') as 'proportion' | 'continuous',
+    };
+  });
+
+  const requestVariations = experiment.variations.map((v) => ({
+    id: v.id,
+    key: v.key,
+    weight: v.weight,
+    isControl: v.isControl,
+  }));
+
+  return {
+    engine: experiment.statsEngine,
+    correction: experiment.multipleComparisonCorrection,
+    alpha: 0.05,
+    srmThreshold: 0.001,
+    variations: requestVariations,
+    metrics: requestMetrics,
+    data: { overall, slices: {} },
     multipleExposureCount,
   };
 }

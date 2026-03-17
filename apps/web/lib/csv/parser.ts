@@ -6,20 +6,35 @@
 
 import Papa from 'papaparse';
 
-export const SCHEMA_VERSION_PREFIX = '#schema_version:';
-export const CURRENT_SCHEMA_VERSION = '1';
+export const SCHEMA_PREFIX = '#schema:';
+export const SUPPORTED_SCHEMAS = ['agg-v1', 'row-v1'] as const;
 export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+export const MAX_ROW_LEVEL_ROWS = 100_000;
 
-export const RESERVED_COLUMNS = [
+export const RESERVED_COLUMNS_AGG = [
   'experiment_id',
   'variation_id',
   'units',
 ] as const;
 
+export const RESERVED_COLUMNS_ROW = [
+  'experiment_id',
+  'variation_id',
+  'user_id',
+] as const;
+
+export interface V2AggregatedMetric {
+  mean: number;
+  variance: number;
+  n: number;
+}
+
 export interface ParsedCSV {
   headers: string[];
-  rows: Record<string, string>[];
-  schemaVersion: string;
+  rows: Record<string, string>[]; // all rows for aggregated; preview rows (first 5) for row-level
+  schema: string; // 'agg-v1' | 'row-v1'
+  rowLevelAggregates?: Record<string, Record<string, V2AggregatedMetric>>; // variation → metric → stats
+  rowLevelTotalRows?: number;
 }
 
 export interface ValidationError {
@@ -47,25 +62,27 @@ export async function parseCSVFile(file: File): Promise<ParsedCSV> {
   // The first line may have trailing commas from CSV editors — strip them
   const firstLineCleaned = firstLine.replace(/,+$/, '');
 
-  if (!firstLineCleaned.startsWith(SCHEMA_VERSION_PREFIX)) {
+  if (!firstLineCleaned.startsWith(SCHEMA_PREFIX)) {
     throw new Error(
-      'Unrecognised CSV schema version. The first line must be #schema_version:1. Please export a fresh file.',
+      'Unrecognised CSV schema. The first line must be #schema:agg-v1 or #schema:row-v1.',
     );
   }
 
-  const schemaVersion = firstLineCleaned.slice(SCHEMA_VERSION_PREFIX.length).trim();
-  if (schemaVersion !== CURRENT_SCHEMA_VERSION) {
+  const schema = firstLineCleaned.slice(SCHEMA_PREFIX.length).trim();
+  if (!(SUPPORTED_SCHEMAS as readonly string[]).includes(schema)) {
     throw new Error(
-      `Unrecognised CSV schema version "${schemaVersion}". Expected version ${CURRENT_SCHEMA_VERSION}. Please export a fresh file.`,
+      `Unrecognised CSV schema "${schema}". Expected "agg-v1" or "row-v1".`,
     );
   }
 
-  // Strip the schema version line and parse the rest
+  // Strip the schema line and parse the rest
   const csvBody = text.slice(firstNewline + 1);
 
-  // PapaParse worker mode only supports File input, not strings.
-  // Parse synchronously on the main thread — this is fine for pre-aggregated
-  // CSVs which are small. For large files, wrap in a manual Web Worker later.
+  if (schema === 'row-v1') {
+    return parseRowLevelInWorker(csvBody);
+  }
+
+  // agg-v1: Parse synchronously on the main thread — fine for pre-aggregated CSVs
   const results = Papa.parse<Record<string, string>>(csvBody, {
     header: true,
     skipEmptyLines: true,
@@ -80,8 +97,50 @@ export async function parseCSVFile(file: File): Promise<ParsedCSV> {
   return {
     headers,
     rows: results.data,
-    schemaVersion,
+    schema,
   };
+}
+
+/**
+ * Parse row-level CSV in a Web Worker.
+ * The worker aggregates per-variation, per-metric: n, mean, variance.
+ */
+function parseRowLevelInWorker(csvBody: string): Promise<ParsedCSV> {
+  return new Promise((resolve, reject) => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    const worker = new Worker(`${basePath}/csv-worker.js`);
+
+    worker.onmessage = (e: MessageEvent) => {
+      worker.terminate();
+      const msg = e.data;
+      if (msg.type === 'error') {
+        reject(new Error(msg.message));
+        return;
+      }
+
+      if (msg.totalRows > MAX_ROW_LEVEL_ROWS) {
+        reject(new Error(
+          `Row-level CSV has ${msg.totalRows.toLocaleString()} rows, exceeding the ${MAX_ROW_LEVEL_ROWS.toLocaleString()} row limit. Please pre-aggregate your data or reduce the dataset.`,
+        ));
+        return;
+      }
+
+      resolve({
+        headers: msg.headers,
+        rows: msg.previewRows, // first 5 rows for UI preview
+        schema: 'row-v1',
+        rowLevelAggregates: msg.aggregates,
+        rowLevelTotalRows: msg.totalRows,
+      });
+    };
+
+    worker.onerror = (e) => {
+      worker.terminate();
+      reject(new Error(`CSV worker error: ${e.message}`));
+    };
+
+    worker.postMessage({ csvText: csvBody });
+  });
 }
 
 /**
@@ -93,11 +152,15 @@ export function validateCSV(
   experimentVariationKeys: string[],
   dimensionWarningThreshold: number = 5,
 ): ValidationError[] {
+  if (parsed.schema === 'row-v1') {
+    return validateRowLevelCSV(parsed, experimentVariationKeys);
+  }
+
   const errors: ValidationError[] = [];
   const { headers, rows } = parsed;
 
   // 1. Required columns
-  for (const col of RESERVED_COLUMNS) {
+  for (const col of RESERVED_COLUMNS_AGG) {
     if (!headers.includes(col)) {
       errors.push({ type: 'error', message: `Missing required column: "${col}"` });
     }
@@ -151,7 +214,7 @@ export function validateCSV(
   // Use the same heuristic as autoClassifyColumns: sample rows, if all non-"all" values are
   // numeric, treat it as a metric column and skip it for dimension checks.
   const nonReservedCols = headers.filter(
-    (h) => !(RESERVED_COLUMNS as readonly string[]).includes(h),
+    (h) => !(RESERVED_COLUMNS_AGG as readonly string[]).includes(h),
   );
   const dimensionCols = nonReservedCols.filter((col) => {
     const samples = rows
@@ -245,11 +308,13 @@ export function getColumnFingerprint(columns: string[]): string {
 export function autoClassifyColumns(
   headers: string[],
   sampleRows: Record<string, string>[],
+  schema: string = 'agg-v1',
 ): Record<string, 'reserved' | 'dimension' | 'metric'> {
   const classification: Record<string, 'reserved' | 'dimension' | 'metric'> = {};
+  const reserved = schema === 'row-v1' ? RESERVED_COLUMNS_ROW : RESERVED_COLUMNS_AGG;
 
   for (const header of headers) {
-    if ((RESERVED_COLUMNS as readonly string[]).includes(header)) {
+    if ((reserved as readonly string[]).includes(header)) {
       classification[header] = 'reserved';
       continue;
     }
@@ -290,6 +355,57 @@ export function getVariationNormalization(
     original,
     normalized,
   }));
+}
+
+/**
+ * Validate row-level CSV data.
+ * Row-level has no `units` column, no dimension columns, no overall-row concept.
+ */
+function validateRowLevelCSV(
+  parsed: ParsedCSV,
+  experimentVariationKeys: string[],
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const { headers } = parsed;
+
+  // 1. Required v2 columns
+  for (const col of RESERVED_COLUMNS_ROW) {
+    if (!headers.includes(col)) {
+      errors.push({ type: 'error', message: `Missing required column: "${col}"` });
+    }
+  }
+
+  if (errors.length > 0) return errors;
+
+  // 2. Variation matching (use aggregates keys since rows are just preview)
+  const normalizedExpKeys = experimentVariationKeys.map((k) => k.trim().toLowerCase());
+  const csvVariationKeys = parsed.rowLevelAggregates ? Object.keys(parsed.rowLevelAggregates) : [];
+
+  const unmatchedCSV = csvVariationKeys.filter((v) => !normalizedExpKeys.includes(v));
+  if (unmatchedCSV.length > 0) {
+    errors.push({
+      type: 'error',
+      message: `Unmatched variation IDs in CSV: ${unmatchedCSV.map((v) => `"${v}"`).join(', ')}. Expected: ${normalizedExpKeys.map((k) => `"${k}"`).join(', ')}.`,
+    });
+  }
+
+  const unmatchedExp = normalizedExpKeys.filter((k) => !csvVariationKeys.includes(k));
+  if (unmatchedExp.length > 0) {
+    errors.push({
+      type: 'error',
+      message: `Missing variation IDs in CSV: ${unmatchedExp.map((k) => `"${k}"`).join(', ')}.`,
+    });
+  }
+
+  // 3. Must have at least one non-reserved column (metric data)
+  const metricCols = headers.filter(
+    (h) => !(RESERVED_COLUMNS_ROW as readonly string[]).includes(h),
+  );
+  if (metricCols.length === 0) {
+    errors.push({ type: 'error', message: 'No metric columns found. v2 CSV must include at least one metric column besides experiment_id, variation_id, and user_id.' });
+  }
+
+  return errors;
 }
 
 // ----- Helpers -----

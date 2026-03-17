@@ -5,13 +5,15 @@ export {
   getColumnFingerprint,
   autoClassifyColumns,
   getVariationNormalization,
-  SCHEMA_VERSION_PREFIX,
-  CURRENT_SCHEMA_VERSION,
+  SCHEMA_PREFIX,
+  SUPPORTED_SCHEMAS,
   MAX_FILE_SIZE_BYTES,
-  RESERVED_COLUMNS,
+  MAX_ROW_LEVEL_ROWS,
+  RESERVED_COLUMNS_AGG,
+  RESERVED_COLUMNS_ROW,
 } from './parser';
 
-export type { ParsedCSV, ValidationError } from './parser';
+export type { ParsedCSV, ValidationError, V2AggregatedMetric } from './parser';
 
-export { buildAnalysisRequest } from './buildRequest';
+export { buildAnalysisRequest, buildMergedAnalysisRequest } from './buildRequest';
 export type { ColumnMappingConfig } from './buildRequest';

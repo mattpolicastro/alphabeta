@@ -92,11 +92,11 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                     </td>
                     <td>
                       {controlVR
-                        ? `${formatRate(controlVR.mean)} (n=${controlVR.users.toLocaleString()})`
+                        ? `${formatValue(controlVR.mean, metric?.type === 'continuous')} (n=${controlVR.users.toLocaleString()})`
                         : '—'}
                     </td>
                     <td>
-                      {`${formatRate(vr.mean)} (n=${vr.users.toLocaleString()})`}
+                      {`${formatValue(vr.mean, metric?.type === 'continuous')} (n=${vr.users.toLocaleString()})`}
                     </td>
                     <td>
                       <span className={isPositive ? 'text-success' : 'text-danger'}>
@@ -183,10 +183,10 @@ function DetailPanel({
                 </td>
               </tr>
               <tr>
-                <td className="text-muted">Mean</td>
+                <td className="text-muted">{_metric?.type === 'continuous' ? 'Mean' : 'Rate'}</td>
                 <td>
-                  {treatmentName}: {formatRate(vr.mean)}
-                  {controlVR && <> · {controlName}: {formatRate(controlVR.mean)}</>}
+                  {treatmentName}: {formatValue(vr.mean, _metric?.type === 'continuous')}
+                  {controlVR && <> · {controlName}: {formatValue(controlVR.mean, _metric?.type === 'continuous')}</>}
                 </td>
               </tr>
               <tr>
@@ -312,6 +312,13 @@ function DetailPanel({
 
 function formatRate(rate: number): string {
   return `${(rate * 100).toFixed(2)}%`;
+}
+
+function formatValue(value: number, isContinuous: boolean = false): string {
+  if (isContinuous) {
+    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  }
+  return formatRate(value);
 }
 
 function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; significant: boolean }): React.ReactNode {

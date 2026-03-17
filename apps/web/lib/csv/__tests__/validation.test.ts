@@ -10,7 +10,7 @@ function makeParsed(
   headers: string[],
   rows: Record<string, string>[],
 ): ParsedCSV {
-  return { headers, rows, schemaVersion: '1' };
+  return { headers, rows, schema: 'agg-v1' };
 }
 
 // ---------------------------------------------------------------------------

@@ -27,10 +27,10 @@
 | UI: metric type indicators in results | Low | Badge distinguishing proportion vs continuous metrics |
 | Update template CSV download | Low | Generate row-level template when continuous metrics are configured |
 
-**Decisions needed:**
-- Maximum row count before requiring pre-aggregation? (100k? 500k?)
-- Should row-level parsing move to Web Worker to avoid blocking main thread?
-- Support mixed CSVs (some metrics proportion, some continuous)?
+**Decisions (resolved):**
+- Maximum row count: **100k rows**. Reject with a blocking error above this threshold; user must pre-aggregate.
+- Row-level parsing runs in a **Web Worker** (schema v2 only). V1 pre-aggregated format stays synchronous on the main thread.
+- **No mixed CSVs.** A single upload is one schema version. Experiments with both proportion and continuous metrics require separate uploads or pre-aggregation.
 
 ### 1.2 Sequential Testing Engine
 
@@ -164,17 +164,17 @@
 - Any → Archived: "Archive" in detail view dropdown; terminal (no unarchive)
 - Upload/analysis does not auto-transition status
 
-| Task | Effort | Details |
-|------|--------|---------|
-| "Launch" button for draft experiments in detail view | Low | Transitions draft → running; show in header alongside existing actions |
-| "Resume" action for stopped experiments | Low | Transitions stopped → running; re-enables the experiment |
-| "Unarchive" action | Low | Transitions archived → stopped; escape hatch for accidental archiving |
-| Auto-transition on first analysis | Low | Optionally move draft → running when analysis is first submitted (with confirmation) |
+| Task | Effort | Status |
+|------|--------|--------|
+| "Launch" button for draft experiments in detail view | Low | Done |
+| "Resume" action for stopped experiments | Low | Done |
+| "Unarchive" action | Low | Done (→ stopped) |
+| Auto-transition on first analysis | Low | Done (always prompt via `window.confirm`) |
 
-**Decisions needed:**
-- Should "Launch" require confirmation, or is it a single click?
-- Should unarchive go to stopped or draft?
-- Should auto-transition on analysis be opt-in (setting) or always prompt?
+**Decisions (resolved):**
+- Launch is a single click (no confirmation modal).
+- Unarchive goes to stopped.
+- Auto-transition on first analysis always prompts via `window.confirm`.
 
 ### 3.8 Full-Page Loading Overlay with Progress Steps
 

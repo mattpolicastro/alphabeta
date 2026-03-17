@@ -1,4 +1,4 @@
-#schema_version:1
+#schema:agg-v1
 experiment_id,variation_id,device_type,browser,units,purchases,clicks,revenue
 demo_001,control,all,all,10000,484,3911,26727.83
 demo_001,control,mobile,all,4500,183,1456,10711.96

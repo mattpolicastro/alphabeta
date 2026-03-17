@@ -71,6 +71,38 @@ export function computeMetricSummaries(
   });
 }
 
+/**
+ * Build MetricSummary[] from row-level aggregates (mean, variance, n per variation per metric).
+ * Used by the Row-level upload tab where we don't have raw rows to scan.
+ */
+export function computeMetricSummariesFromAggregates(
+  aggregates: Record<string, Record<string, { mean: number; variance: number; n: number }>>,
+  mapping: Record<string, { role: string; metricId?: string }>,
+  metrics: Metric[],
+  variationKeys: string[],
+): MetricSummary[] {
+  const metricById = new Map(metrics.map((m) => [m.id, m]));
+  const metricCols = Object.entries(mapping)
+    .filter(([, c]) => c.role === 'metric' && c.metricId)
+    .map(([col, c]) => ({ col, metricId: c.metricId! }));
+
+  return metricCols.map(({ col, metricId }) => {
+    const metric = metricById.get(metricId);
+    return {
+      metricId,
+      metricName: metric?.name ?? metricId,
+      variations: variationKeys.map((varKey) => {
+        const normalizedKey = varKey.toLowerCase();
+        const agg = aggregates[normalizedKey]?.[col];
+        const n = agg?.n ?? 0;
+        const total = n > 0 ? agg!.mean * n : 0;
+        const rate = n > 0 ? agg!.mean : 0;
+        return { variationKey: varKey, units: n, total, rate };
+      }),
+    };
+  });
+}
+
 function computeIssues(summaries: MetricSummary[], metrics: Metric[]): ValidationIssue[] {
   const metricById = new Map(metrics.map((m) => [m.id, m]));
   const issues: ValidationIssue[] = [];
