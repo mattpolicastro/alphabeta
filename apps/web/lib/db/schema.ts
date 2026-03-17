@@ -61,6 +61,7 @@ export interface VariationResult {
   credibleIntervalUpper?: number;
   // Frequentist / Sequential fields
   pValue?: number;
+  rawPValue?: number; // pre-correction p-value
   confidenceIntervalLower?: number;
   confidenceIntervalUpper?: number;
   relativeUplift: number;

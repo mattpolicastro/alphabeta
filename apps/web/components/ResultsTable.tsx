@@ -231,9 +231,15 @@ function DetailPanel({
               ) : (
                 <>
                   <tr>
-                    <td className="text-muted"><PValueTip /></td>
+                    <td className="text-muted"><PValueTip />{vr.rawPValue != null && vr.rawPValue !== vr.pValue ? ' (adjusted)' : ''}</td>
                     <td>{vr.pValue?.toFixed(6) ?? '—'}</td>
                   </tr>
+                  {vr.rawPValue != null && vr.rawPValue !== vr.pValue && (
+                    <tr>
+                      <td className="text-muted"><PValueTip /> (raw)</td>
+                      <td>{vr.rawPValue.toFixed(6)}</td>
+                    </tr>
+                  )}
                   <tr>
                     <td className="text-muted"><ConfidenceIntervalTip /></td>
                     <td>[{(lower * 100).toFixed(3)}%, {(upper * 100).toFixed(3)}%]</td>
@@ -334,7 +340,7 @@ function formatValue(value: number, metricType?: string, currencySymbol: string 
   return formatRate(value);
 }
 
-function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; significant: boolean }): React.ReactNode {
+function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; rawPValue?: number; significant: boolean }): React.ReactNode {
   if (vr.chanceToBeatControl != null) {
     return (
       <span>
@@ -344,9 +350,15 @@ function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; sig
     );
   }
   if (vr.pValue != null) {
+    const hasCorrection = vr.rawPValue != null && vr.rawPValue !== vr.pValue;
     return (
       <span>
         <PValueTip />={vr.pValue.toFixed(4)}
+        {hasCorrection && (
+          <span className="text-muted ms-1" title={`Raw (uncorrected): ${vr.rawPValue!.toFixed(6)}`}>
+            (raw: {vr.rawPValue!.toFixed(4)})
+          </span>
+        )}
         {vr.significant && <span className="badge bg-success ms-1">sig</span>}
       </span>
     );

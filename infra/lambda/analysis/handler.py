@@ -238,6 +238,7 @@ def _apply_correction(results, metrics, correction):
     # Update significance based on adjusted p-values
     for i, r in enumerate(results):
         if "pValue" in r and r["pValue"] is not None:
+            r["rawPValue"] = r["pValue"]
             r["pValue"] = adjusted[i]
             r["significant"] = adjusted[i] < (r.get("alpha", 0.05) if "alpha" in r else 0.05)
         elif "chanceToBeatControl" in r:

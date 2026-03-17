@@ -76,6 +76,7 @@ export interface MetricVariationResult {
   credibleIntervalUpper?: number;
   // Frequentist / Sequential
   pValue?: number;
+  rawPValue?: number; // pre-correction p-value (populated when multiple comparison correction applied)
   confidenceIntervalLower?: number;
   confidenceIntervalUpper?: number;
 }

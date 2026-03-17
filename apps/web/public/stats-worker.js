@@ -236,6 +236,7 @@ def _apply_correction(results, metrics, correction):
         return results
     for i, r in enumerate(results):
         if "pValue" in r and r["pValue"] is not None:
+            r["rawPValue"] = r["pValue"]
             r["pValue"] = adjusted[i]
             r["significant"] = adjusted[i] < 0.05
         elif "chanceToBeatControl" in r:
