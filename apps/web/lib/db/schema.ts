@@ -126,6 +126,7 @@ export interface AppSettings {
   dimensionWarningThreshold: number;
   backupReminderDays: number;
   lastExportedAt: number | null; // epoch ms
+  currencySymbol: string; // e.g. '$', '€', '£'
 }
 
 // ----- Database class -----

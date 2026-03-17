@@ -166,6 +166,9 @@ Req: §5.2a
 - [x] Compact preview table: one row per metric, one column per variation, showing rate + units
 - [x] Non-blocking warning acknowledgement button
 - [x] Tests: each warning condition, blocking error condition
+- [ ] Tests: `computeMetricSummariesFromAggregates` — correct summaries from row-level aggregates
+- [ ] Tests: `formatMetricValue` — revenue shows currency symbol + 2dp, continuous shows 2dp, proportion shows percentage
+- [ ] Tests: MetricValidationPanel renders currency-formatted values for revenue metrics
 
 ### Module: Analysis Request Builder
 Touches: `lib/csv/buildRequest.ts`
@@ -418,7 +421,9 @@ Priority: **P1**
 - [x] Revenue metrics routed through continuous path via `CONTINUOUS_METRIC_TYPES` set
 - [x] `buildMergedAnalysisRequest` merges agg + row-level sources; row-level wins on overlap
 - [x] `buildAnalysisRequestV2` supports dimension slices via `extractVariationDataFromAgg` helper
-- [ ] Tests: correct payload for continuous metrics, mixed experiment with both types
+- [ ] Tests: `buildAnalysisRequestV2` — continuous metric routing (revenue + continuous → `continuousMetrics`), proportion routing (binomial/count → `metrics`), dimension slices from row-level aggregates
+- [ ] Tests: `buildMergedAnalysisRequest` — single-source delegation, both-sources merge, overlap resolution (row-level wins), slices from agg only
+- [ ] Tests: `isContinuousMetric` — revenue and continuous return true, binomial/count return false
 
 ### Module: Stats Engine — Mean Test Path
 Touches: `public/stats-worker.js`, `lib/stats/worker.ts`, `infra/lambda/analysis/handler.py`
@@ -439,7 +444,7 @@ Priority: **P1**
 - [x] Handle mean-based result fields from engine (mean instead of rate)
 - [x] Map to `MetricVariationResult` with `mean` field; continuous-aware control synthesis
 - [x] Continuous-aware stddev calculation (variance/n for continuous, binomial formula for proportion)
-- [ ] Tests: transform correctness for continuous metric results
+- [ ] Tests: transform correctness for continuous metric results — mean field populated, variance-based stddev, control synthesis with continuous data
 
 ### Module: Results UI — Metric Type Indicators
 Touches: `components/ResultsTable.tsx`
@@ -449,6 +454,8 @@ Priority: **P2**
 - [x] Badge already exists in results table (shows `metric.type` including 'continuous')
 - [x] Display raw mean value instead of percentage for continuous metrics in table and detail panel
 - [x] Revenue metrics display as raw values (via `isContinuousDisplay` helper covering both `continuous` and `revenue` types)
+- [x] Currency symbol formatting for revenue metrics (configurable via settings)
+- [ ] Tests: `formatValue` — revenue shows currency symbol + 2dp, continuous shows 2dp, proportion shows percentage
 
 ### Module: Template CSV — Row-Level Format
 Touches: `lib/csv/generateTemplate.ts`

@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import type { Metric } from '@/lib/db/schema';
+import { useSettingsStore } from '@/lib/store/settingsStore';
 
 export interface MetricSummary {
   metricId: string;
@@ -189,6 +190,8 @@ function computeIssues(summaries: MetricSummary[], metrics: Metric[]): Validatio
 
 export function MetricValidationPanel({ summaries, metrics, onAcknowledge }: MetricValidationPanelProps) {
   const [acknowledged, setAcknowledged] = useState(false);
+  const currencySymbol = useSettingsStore((s) => s.currencySymbol);
+  const metricById = new Map(metrics.map((m) => [m.id, m]));
 
   if (summaries.length === 0) return null;
 
@@ -227,6 +230,7 @@ export function MetricValidationPanel({ summaries, metrics, onAcknowledge }: Met
                 : metricIssueIds.has('warning')
                   ? 'table-warning'
                   : '';
+              const metricDef = metricById.get(s.metricId);
 
               return (
                 <tr key={s.metricId} className={rowClass}>
@@ -235,7 +239,7 @@ export function MetricValidationPanel({ summaries, metrics, onAcknowledge }: Met
                     <td key={v.variationKey} className="text-center small">
                       {v.units > 0 ? (
                         <>
-                          {(v.rate * 100).toFixed(2)}%
+                          {formatMetricValue(v.rate, metricDef?.type, currencySymbol)}
                           <br />
                           <span className="text-muted">n={v.units.toLocaleString()}</span>
                         </>
@@ -290,4 +294,14 @@ export function MetricValidationPanel({ summaries, metrics, onAcknowledge }: Met
 /** Returns true if there are blocking errors that should prevent submission. */
 export function hasBlockingValidationErrors(summaries: MetricSummary[], metrics: Metric[]): boolean {
   return computeIssues(summaries, metrics).some((i) => i.type === 'error');
+}
+
+function formatMetricValue(rate: number, metricType?: string, currencySymbol: string = '$'): string {
+  if (metricType === 'revenue') {
+    return `${currencySymbol}${rate.toFixed(2)}`;
+  }
+  if (metricType === 'continuous') {
+    return rate.toFixed(2);
+  }
+  return `${(rate * 100).toFixed(2)}%`;
 }

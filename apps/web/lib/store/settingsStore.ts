@@ -30,6 +30,7 @@ const defaults: SettingsValues = {
   dimensionWarningThreshold: 5,
   backupReminderDays: 30,
   lastExportedAt: null,
+  currencySymbol: '$',
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import type { ExperimentResult, Experiment, Metric, Annotation } from '@/lib/db/schema';
+import { useSettingsStore } from '@/lib/store/settingsStore';
 import { PValueTip, CTWTip, CredibleIntervalTip, ConfidenceIntervalTip, ExpectedLossTip, CUPEDTip } from '@/components/StatTooltip';
 
 export interface ResultsTableProps {
@@ -20,6 +21,7 @@ export interface ResultsTableProps {
 
 export function ResultsTable({ result, experiment, metricIds, metricById, showLift, annotations = [] }: ResultsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const currencySymbol = useSettingsStore((s) => s.currencySymbol);
   const control = experiment.variations.find((v) => v.isControl);
   const treatmentVariations = experiment.variations.filter((v) => !v.isControl);
   const metricResults = result.perMetricResults.filter((mr) => metricIds.includes(mr.metricId));
@@ -92,11 +94,11 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                     </td>
                     <td>
                       {controlVR
-                        ? `${formatValue(controlVR.mean, isContinuousDisplay(metric?.type))} (n=${controlVR.users.toLocaleString()})`
+                        ? `${formatValue(controlVR.mean, metric?.type, currencySymbol)} (n=${controlVR.users.toLocaleString()})`
                         : '—'}
                     </td>
                     <td>
-                      {`${formatValue(vr.mean, isContinuousDisplay(metric?.type))} (n=${vr.users.toLocaleString()})`}
+                      {`${formatValue(vr.mean, metric?.type, currencySymbol)} (n=${vr.users.toLocaleString()})`}
                     </td>
                     <td>
                       <span className={isPositive ? 'text-success' : 'text-danger'}>
@@ -122,6 +124,7 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                           metric={metric}
                           controlName={control?.name ?? 'Control'}
                           treatmentName={treatmentVariations.find((v) => v.id === vr.variationId)?.name ?? vr.variationId}
+                          currencySymbol={currencySymbol}
                         />
                       </td>
                     </tr>,
@@ -150,12 +153,14 @@ function DetailPanel({
   metric: _metric,
   controlName,
   treatmentName,
+  currencySymbol,
 }: {
   variationResult: ExperimentResult['perMetricResults'][0]['variationResults'][0];
   controlResult: ExperimentResult['perMetricResults'][0]['variationResults'][0] | undefined;
   metric: Metric | undefined;
   controlName: string;
   treatmentName: string;
+  currencySymbol: string;
 }) {
   const isBayesian = vr.chanceToBeatControl != null;
   const lower = vr.credibleIntervalLower ?? vr.confidenceIntervalLower ?? 0;
@@ -190,8 +195,8 @@ function DetailPanel({
               <tr>
                 <td className="text-muted">{isContinuousDisplay(_metric?.type) ? 'Mean' : 'Rate'}</td>
                 <td>
-                  {treatmentName}: {formatValue(vr.mean, isContinuousDisplay(_metric?.type))}
-                  {controlVR && <> · {controlName}: {formatValue(controlVR.mean, isContinuousDisplay(_metric?.type))}</>}
+                  {treatmentName}: {formatValue(vr.mean, _metric?.type, currencySymbol)}
+                  {controlVR && <> · {controlName}: {formatValue(controlVR.mean, _metric?.type, currencySymbol)}</>}
                 </td>
               </tr>
               <tr>
@@ -319,9 +324,12 @@ function formatRate(rate: number): string {
   return `${(rate * 100).toFixed(2)}%`;
 }
 
-function formatValue(value: number, isContinuous: boolean = false): string {
-  if (isContinuous) {
-    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+function formatValue(value: number, metricType?: string, currencySymbol: string = '$'): string {
+  if (metricType === 'revenue') {
+    return `${currencySymbol}${value.toFixed(2)}`;
+  }
+  if (isContinuousDisplay(metricType)) {
+    return value.toFixed(2);
   }
   return formatRate(value);
 }

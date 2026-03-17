@@ -311,6 +311,20 @@ export default function SettingsPage() {
                 }
               />
             </div>
+            <div className="col-md-3">
+              <label className="form-label">Currency symbol</label>
+              <input
+                type="text"
+                className="form-control"
+                value={settings.currencySymbol}
+                onChange={(e) =>
+                  settings.updateSetting('currencySymbol', e.target.value)
+                }
+                maxLength={5}
+                placeholder="$"
+              />
+              <div className="form-text">Used for revenue metric display</div>
+            </div>
           </div>
         </div>
       </section>

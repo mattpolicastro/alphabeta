@@ -30,6 +30,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   dimensionWarningThreshold: 5,
   backupReminderDays: 30,
   lastExportedAt: null,
+  currencySymbol: '$',
 };
 
 export async function getSettings(): Promise<AppSettings> {
