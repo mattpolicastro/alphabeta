@@ -92,11 +92,11 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                     </td>
                     <td>
                       {controlVR
-                        ? `${formatValue(controlVR.mean, metric?.type === 'continuous')} (n=${controlVR.users.toLocaleString()})`
+                        ? `${formatValue(controlVR.mean, isContinuousDisplay(metric?.type))} (n=${controlVR.users.toLocaleString()})`
                         : '—'}
                     </td>
                     <td>
-                      {`${formatValue(vr.mean, metric?.type === 'continuous')} (n=${vr.users.toLocaleString()})`}
+                      {`${formatValue(vr.mean, isContinuousDisplay(metric?.type))} (n=${vr.users.toLocaleString()})`}
                     </td>
                     <td>
                       <span className={isPositive ? 'text-success' : 'text-danger'}>
@@ -135,6 +135,11 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
       </table>
     </div>
   );
+}
+
+/** Metric types that display as raw values (mean) rather than percentages (rate). */
+function isContinuousDisplay(metricType: string | undefined): boolean {
+  return metricType === 'continuous' || metricType === 'revenue';
 }
 
 // ----- Detail Panel -----
@@ -183,10 +188,10 @@ function DetailPanel({
                 </td>
               </tr>
               <tr>
-                <td className="text-muted">{_metric?.type === 'continuous' ? 'Mean' : 'Rate'}</td>
+                <td className="text-muted">{isContinuousDisplay(_metric?.type) ? 'Mean' : 'Rate'}</td>
                 <td>
-                  {treatmentName}: {formatValue(vr.mean, _metric?.type === 'continuous')}
-                  {controlVR && <> · {controlName}: {formatValue(controlVR.mean, _metric?.type === 'continuous')}</>}
+                  {treatmentName}: {formatValue(vr.mean, isContinuousDisplay(_metric?.type))}
+                  {controlVR && <> · {controlName}: {formatValue(controlVR.mean, isContinuousDisplay(_metric?.type))}</>}
                 </td>
               </tr>
               <tr>

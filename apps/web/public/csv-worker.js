@@ -1,17 +1,22 @@
 /**
- * CSV Worker — parses schema v2 (row-level) CSV data and aggregates
- * per-variation, per-metric statistics: n, mean, variance (Bessel-corrected).
+ * CSV Worker — parses row-level CSV data and aggregates per-variation,
+ * per-metric statistics: n, mean, variance (Bessel-corrected).
+ * Also aggregates per-dimension-slice when dimension columns are present.
  *
  * Input message: { csvText: string }
- *   csvText is the CSV body (schema version line already stripped).
+ *   csvText is the CSV body (schema line already stripped).
  *
  * Output message: {
  *   type: 'result',
  *   headers: string[],
  *   previewRows: Record<string, string>[],
  *   totalRows: number,
- *   aggregates: Record<string, Record<string, { mean: number, variance: number, n: number }>>
- *     // variation_id → metric_column → stats
+ *   aggregates: Record<string, Record<string, { mean, variance, n }>>
+ *     // variation_id → metric_column → stats (overall)
+ *   sliceAggregates: Record<string, Record<string, Record<string, Record<string, { mean, variance, n }>>>>
+ *     // dimension_name → dimension_value → variation_id → metric_column → stats
+ *   columnClassification: Record<string, 'metric' | 'dimension'>
+ *     // non-reserved column → auto-detected type
  * }
  *
  * Or: { type: 'error', message: string }
@@ -46,17 +51,59 @@ function parseAndAggregate(csvText) {
 
   const reservedIndices = new Set([expIdx, varIdx, userIdx]);
 
-  // Metric columns = everything that's not reserved
-  const metricCols = [];
+  // Non-reserved columns — we'll classify these after a sampling pass
+  const nonReservedCols = [];
   for (let i = 0; i < headers.length; i++) {
     if (!reservedIndices.has(i)) {
-      metricCols.push({ index: i, name: headers[i] });
+      nonReservedCols.push({ index: i, name: headers[i] });
     }
   }
 
-  // Two-pass online aggregation (Welford's algorithm for numerical stability)
-  // variation_id → metric_name → { n, mean, m2 }
-  const accumulators = {};
+  // ---------- Classification pass: sample up to 20 rows ----------
+  const sampleLimit = Math.min(20, lines.length - 1);
+  // Track non-empty, non-"all" values per column
+  const sampleValues = {};
+  for (const col of nonReservedCols) {
+    sampleValues[col.name] = [];
+  }
+
+  for (let lineIdx = 1; lineIdx <= sampleLimit && lineIdx < lines.length; lineIdx++) {
+    const line = lines[lineIdx].trim();
+    if (!line) continue;
+    const fields = line.split(',');
+    for (const col of nonReservedCols) {
+      const val = (fields[col.index] || '').trim();
+      if (val && val.toLowerCase() !== 'all') {
+        sampleValues[col.name].push(val);
+      }
+    }
+  }
+
+  // Classify: if all sampled values are numeric → metric, otherwise → dimension
+  const columnClassification = {};
+  const metricCols = [];
+  const dimensionCols = [];
+  for (const col of nonReservedCols) {
+    const samples = sampleValues[col.name];
+    const allNumeric = samples.length > 0 && samples.every((v) => !isNaN(Number(v)));
+    if (allNumeric) {
+      columnClassification[col.name] = 'metric';
+      metricCols.push(col);
+    } else {
+      columnClassification[col.name] = 'dimension';
+      dimensionCols.push(col);
+    }
+  }
+
+  // ---------- Main aggregation pass ----------
+  // Overall: variation_id → metric_name → Welford accumulator
+  const overallAcc = {};
+  // Slices: dimension_name → dimension_value → variation_id → metric_name → Welford accumulator
+  const sliceAcc = {};
+  for (const dim of dimensionCols) {
+    sliceAcc[dim.name] = {};
+  }
+
   const previewRows = [];
   let totalRows = 0;
 
@@ -67,7 +114,7 @@ function parseAndAggregate(csvText) {
     const fields = line.split(',');
     totalRows++;
 
-    // Collect preview rows (first 5, as full parsed objects)
+    // Collect preview rows (first 5)
     if (previewRows.length < 5) {
       const row = {};
       for (let i = 0; i < headers.length; i++) {
@@ -79,38 +126,68 @@ function parseAndAggregate(csvText) {
     const varId = (fields[varIdx] || '').trim().toLowerCase();
     if (!varId) continue;
 
-    if (!accumulators[varId]) accumulators[varId] = {};
-
+    // Overall accumulation
+    if (!overallAcc[varId]) overallAcc[varId] = {};
     for (const { index, name } of metricCols) {
-      const rawVal = fields[index];
-      const val = Number(rawVal);
-      if (isNaN(val)) continue; // skip unparseable
+      const val = Number(fields[index]);
+      if (isNaN(val)) continue;
+      welfordUpdate(overallAcc[varId], name, val);
+    }
 
-      if (!accumulators[varId][name]) {
-        accumulators[varId][name] = { n: 0, mean: 0, m2: 0 };
+    // Per-dimension-slice accumulation
+    for (const dim of dimensionCols) {
+      const dimVal = (fields[dim.index] || '').trim().toLowerCase();
+      if (!dimVal || dimVal === 'all') continue;
+
+      if (!sliceAcc[dim.name][dimVal]) sliceAcc[dim.name][dimVal] = {};
+      if (!sliceAcc[dim.name][dimVal][varId]) sliceAcc[dim.name][dimVal][varId] = {};
+
+      for (const { index, name } of metricCols) {
+        const val = Number(fields[index]);
+        if (isNaN(val)) continue;
+        welfordUpdate(sliceAcc[dim.name][dimVal][varId], name, val);
       }
-
-      const acc = accumulators[varId][name];
-      acc.n++;
-      const delta = val - acc.mean;
-      acc.mean += delta / acc.n;
-      const delta2 = val - acc.mean;
-      acc.m2 += delta * delta2;
     }
   }
 
-  // Convert accumulators to final aggregates with Bessel-corrected variance
-  const aggregates = {};
-  for (const [varId, metrics] of Object.entries(accumulators)) {
-    aggregates[varId] = {};
+  // ---------- Finalize ----------
+  const aggregates = finalizeAccumulators(overallAcc);
+
+  const sliceAggregates = {};
+  for (const [dimName, dimValues] of Object.entries(sliceAcc)) {
+    if (Object.keys(dimValues).length === 0) continue;
+    sliceAggregates[dimName] = {};
+    for (const [dimVal, variations] of Object.entries(dimValues)) {
+      sliceAggregates[dimName][dimVal] = finalizeAccumulators(variations);
+    }
+  }
+
+  return { headers, previewRows, totalRows, aggregates, sliceAggregates, columnClassification };
+}
+
+function welfordUpdate(accByMetric, metricName, val) {
+  if (!accByMetric[metricName]) {
+    accByMetric[metricName] = { n: 0, mean: 0, m2: 0 };
+  }
+  const acc = accByMetric[metricName];
+  acc.n++;
+  const delta = val - acc.mean;
+  acc.mean += delta / acc.n;
+  const delta2 = val - acc.mean;
+  acc.m2 += delta * delta2;
+}
+
+function finalizeAccumulators(variationAccumulators) {
+  const result = {};
+  for (const [varId, metrics] of Object.entries(variationAccumulators)) {
+    result[varId] = {};
     for (const [metricName, acc] of Object.entries(metrics)) {
-      aggregates[varId][metricName] = {
+      result[varId][metricName] = {
         mean: acc.mean,
         variance: acc.n > 1 ? acc.m2 / (acc.n - 1) : 0,
         n: acc.n,
       };
     }
   }
-
-  return { headers, previewRows, totalRows, aggregates };
+  return result;
 }

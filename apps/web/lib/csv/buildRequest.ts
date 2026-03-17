@@ -15,6 +15,17 @@ export interface ColumnMappingConfig {
 }
 
 /**
+ * Metric types that require mean/variance analysis (SampleMeanStatistic path).
+ * These cannot be properly analyzed with ProportionStatistic because their variance
+ * is not derivable from the rate alone — they need per-user data (row-level CSV).
+ */
+const CONTINUOUS_METRIC_TYPES: ReadonlySet<string> = new Set(['continuous', 'revenue']);
+
+function isContinuousMetric(metricType: string | undefined): boolean {
+  return CONTINUOUS_METRIC_TYPES.has(metricType ?? '');
+}
+
+/**
  * Build an AnalysisRequest from parsed CSV data, experiment config, and column mapping.
  *
  * Steps:
@@ -272,8 +283,8 @@ export function buildMergedAnalysisRequest(
 }
 
 /**
- * Build an AnalysisRequest from v2 (row-level) CSV aggregates.
- * v2 has no dimensions/slices — only overall data with mean, variance, n per metric.
+ * Build an AnalysisRequest from row-level CSV aggregates.
+ * Supports both overall and per-dimension-slice data from the CSV worker.
  */
 function buildAnalysisRequestV2(
   parsed: ParsedCSV,
@@ -284,11 +295,15 @@ function buildAnalysisRequestV2(
 ): AnalysisRequest {
   const v2Agg = parsed.rowLevelAggregates!;
 
-  // Identify mapped metric columns
+  // Identify mapped columns by role
   const metricCols: { column: string; metricId: string }[] = [];
+  const dimensionCols: string[] = [];
   for (const [col, config] of Object.entries(mapping)) {
     if (config.role === 'metric' && config.metricId) {
       metricCols.push({ column: col, metricId: config.metricId });
+    }
+    if (config.role === 'dimension') {
+      dimensionCols.push(col);
     }
   }
   if (metricCols.length === 0) {
@@ -298,38 +313,57 @@ function buildAnalysisRequestV2(
   const metricById = new Map(metrics.map((m) => [m.id, m]));
   const variationKeys = experiment.variations.map((v) => v.key);
 
-  // Build overall data from v2 aggregates
-  const overall: Record<string, VariationData> = {};
-  for (const varKey of variationKeys) {
-    const normalizedKey = varKey.toLowerCase();
-    const varAgg = v2Agg[normalizedKey];
-    if (!varAgg) continue;
+  // Helper: build variation data from a set of aggregates (reused for overall + slices)
+  function extractVariationDataFromAgg(
+    aggByVariation: Record<string, Record<string, { mean: number; variance: number; n: number }>>,
+  ): Record<string, VariationData> {
+    const result: Record<string, VariationData> = {};
+    for (const varKey of variationKeys) {
+      const normalizedKey = varKey.toLowerCase();
+      const varAgg = aggByVariation[normalizedKey];
+      if (!varAgg) continue;
 
-    // For v2, units = n from the first metric (all metrics share the same user set)
-    const firstMetricCol = metricCols[0].column;
-    const n = varAgg[firstMetricCol]?.n ?? 0;
+      const firstMetricCol = metricCols[0].column;
+      const n = varAgg[firstMetricCol]?.n ?? 0;
 
-    const metricValues: Record<string, number> = {};
-    const continuousMetrics: Record<string, { mean: number; variance: number; n: number }> = {};
+      const metricValues: Record<string, number> = {};
+      const continuousMetrics: Record<string, { mean: number; variance: number; n: number }> = {};
 
-    for (const { column, metricId } of metricCols) {
-      const agg = varAgg[column];
-      if (!agg) continue;
+      for (const { column, metricId } of metricCols) {
+        const agg = varAgg[column];
+        if (!agg) continue;
 
-      const metricDef = metricById.get(metricId);
-      if (metricDef?.type === 'continuous') {
-        continuousMetrics[metricId] = { mean: agg.mean, variance: agg.variance, n: agg.n };
-      } else {
-        // Proportion metrics in v2: total = mean * n (mean is the raw value average)
-        metricValues[metricId] = agg.mean * agg.n;
+        const metricDef = metricById.get(metricId);
+        if (isContinuousMetric(metricDef?.type)) {
+          continuousMetrics[metricId] = { mean: agg.mean, variance: agg.variance, n: agg.n };
+        } else {
+          metricValues[metricId] = agg.mean * agg.n;
+        }
+      }
+
+      result[varKey] = {
+        units: n,
+        metrics: metricValues,
+        ...(Object.keys(continuousMetrics).length > 0 ? { continuousMetrics } : {}),
+      };
+    }
+    return result;
+  }
+
+  // Overall
+  const overall = extractVariationDataFromAgg(v2Agg);
+
+  // Dimension slices
+  const slices: AnalysisRequest['data']['slices'] = {};
+  if (parsed.rowLevelSliceAggregates && dimensionCols.length > 0) {
+    for (const dim of dimensionCols) {
+      const dimData = parsed.rowLevelSliceAggregates[dim];
+      if (!dimData) continue;
+      slices[dim] = {};
+      for (const [dimVal, variationAggs] of Object.entries(dimData)) {
+        slices[dim][dimVal] = extractVariationDataFromAgg(variationAggs);
       }
     }
-
-    overall[varKey] = {
-      units: n,
-      metrics: metricValues,
-      ...(Object.keys(continuousMetrics).length > 0 ? { continuousMetrics } : {}),
-    };
   }
 
   const requestMetrics = metricCols.map(({ metricId }) => {
@@ -338,7 +372,7 @@ function buildAnalysisRequestV2(
       id: metricId,
       name: metricDef?.name ?? metricId,
       isGuardrail: experiment.guardrailMetricIds.includes(metricId),
-      metricType: (metricDef?.type === 'continuous' ? 'continuous' : 'proportion') as 'proportion' | 'continuous',
+      metricType: (isContinuousMetric(metricDef?.type) ? 'continuous' : 'proportion') as 'proportion' | 'continuous',
     };
   });
 
@@ -356,7 +390,7 @@ function buildAnalysisRequestV2(
     srmThreshold: 0.001,
     variations: requestVariations,
     metrics: requestMetrics,
-    data: { overall, slices: {} },
+    data: { overall, slices },
     multipleExposureCount,
   };
 }

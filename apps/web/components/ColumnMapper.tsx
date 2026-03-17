@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import type { Metric } from '@/lib/db/schema';
 import type { ColumnMappingConfig } from '@/lib/csv/buildRequest';
-import { RESERVED_COLUMNS_AGG } from '@/lib/csv';
+import { RESERVED_COLUMNS_AGG, RESERVED_COLUMNS_ROW } from '@/lib/csv';
 import { createMetric } from '@/lib/db';
 
 export interface ColumnMapperProps {
@@ -18,6 +18,8 @@ export interface ColumnMapperProps {
   availableMetrics: Metric[];
   mapping: ColumnMappingConfig;
   onMappingChange: (mapping: ColumnMappingConfig) => void;
+  /** CSV schema — determines reserved columns and available role options */
+  schema?: 'agg-v1' | 'row-v1';
   /** If a saved mapping was loaded, show a banner with this date string */
   savedMappingDate?: string | null;
   /** Columns from the saved mapping (for diff highlighting when schema changes) */
@@ -43,6 +45,7 @@ export function ColumnMapper({
   availableMetrics,
   mapping,
   onMappingChange,
+  schema = 'agg-v1',
   savedMappingDate,
   savedMappingColumns,
   onMetricCreated,
@@ -50,8 +53,10 @@ export function ColumnMapper({
   const [inlineForm, setInlineForm] = useState<InlineMetricForm | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const reservedColumns = schema === 'row-v1' ? RESERVED_COLUMNS_ROW : RESERVED_COLUMNS_AGG;
+
   const mappableHeaders = headers.filter(
-    (h) => !(RESERVED_COLUMNS_AGG as readonly string[]).includes(h),
+    (h) => !(reservedColumns as readonly string[]).includes(h),
   );
 
   // Diff detection: columns added or removed since the saved mapping
@@ -62,7 +67,7 @@ export function ColumnMapper({
     ? savedMappingColumns.filter(
         (h) =>
           !headers.includes(h) &&
-          !(RESERVED_COLUMNS_AGG as readonly string[]).includes(h),
+          !(reservedColumns as readonly string[]).includes(h),
       )
     : [];
   const hasSchemaChanges = addedColumns.length > 0 || removedColumns.length > 0;

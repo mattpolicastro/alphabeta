@@ -116,6 +116,19 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     }));
   }
 
+  function handleRowMappingChange(newMapping: ColumnMappingConfig) {
+    if (!experiment || !row.parsed) return;
+    const variationKeys = experiment.variations.map((v) => v.key);
+    setRow((prev) => ({
+      ...prev,
+      mapping: newMapping,
+      warningsAcknowledged: false,
+      metricSummaries: prev.parsed?.rowLevelAggregates
+        ? computeMetricSummariesFromAggregates(prev.parsed.rowLevelAggregates, newMapping, metrics, variationKeys)
+        : [],
+    }));
+  }
+
   // ---------- Row-level upload ----------
 
   const handleRowFile = useCallback(async (file: File) => {
@@ -127,15 +140,21 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
         return;
       }
 
-      // Auto-map columns to metrics by name
+      // Auto-map columns using worker's classification + metric name matching
       const autoMapping: ColumnMappingConfig = {};
       const metricNameMap = new Map(metrics.map((m) => [m.name.toLowerCase().replace(/\s+/g, '_'), m.id]));
+      const workerClassification = result.rowLevelColumnClassification ?? {};
       for (const header of result.headers) {
         if (['experiment_id', 'variation_id', 'user_id'].includes(header)) continue;
-        const matchedId = metricNameMap.get(header.toLowerCase());
-        autoMapping[header] = matchedId
-          ? { role: 'metric', metricId: matchedId }
-          : { role: 'metric' }; // unmatched — shown as needing attention
+        const workerType = workerClassification[header];
+        if (workerType === 'dimension') {
+          autoMapping[header] = { role: 'dimension' };
+        } else {
+          const matchedId = metricNameMap.get(header.toLowerCase());
+          autoMapping[header] = matchedId
+            ? { role: 'metric', metricId: matchedId }
+            : { role: 'ignore' };
+        }
       }
 
       const variationKeys = experiment.variations.map((v) => v.key);
@@ -365,8 +384,26 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     const warns = agg.errors.filter((e) => e.type === 'warning');
     const mapped = Object.values(agg.mapping).filter((c) => c.role === 'metric' && c.metricId).length;
 
+    // Detect revenue/continuous metrics mapped in aggregated data — these need row-level data for proper analysis
+    const continuousInAgg = Object.values(agg.mapping)
+      .filter((c) => c.role === 'metric' && c.metricId)
+      .map((c) => metrics.find((m) => m.id === c.metricId))
+      .filter((m) => m && (m.type === 'revenue' || m.type === 'continuous'));
+
     return (
       <>
+        {continuousInAgg.length > 0 && (
+          <div className="alert alert-warning py-2">
+            <strong>{continuousInAgg.map((m) => m!.name).join(', ')}</strong>
+            {continuousInAgg.length === 1 ? ' is a ' : ' are '}
+            {[...new Set(continuousInAgg.map((m) => m!.type))].join('/')}-type
+            {continuousInAgg.length === 1 ? ' metric' : ' metrics'} and
+            {continuousInAgg.length === 1 ? ' requires' : ' require'} per-user data to compute variance for statistical testing.
+            Upload this data in the <strong>Row-level</strong> section instead.
+            {continuousInAgg.length === 1 ? ' This metric' : ' These metrics'} will be excluded from analysis if only aggregated data is provided.
+          </div>
+        )}
+
         {agg.variationNorm.length > 0 && (
           <div className="mb-2">
             <small className="text-muted">
@@ -412,7 +449,6 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     const blockingErrs = row.errors.filter((e) => e.type === 'error');
     const warns = row.errors.filter((e) => e.type === 'warning');
     const mapped = Object.values(row.mapping).filter((c) => c.role === 'metric' && c.metricId).length;
-    const unmappedCols = Object.entries(row.mapping).filter(([, c]) => c.role === 'metric' && !c.metricId).map(([col]) => col);
 
     return (
       <>
@@ -423,30 +459,15 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
           </div>
         )}
 
-        {/* Auto-mapped column summary */}
-        <table className="table table-sm table-bordered align-middle mb-2">
-          <thead><tr><th>CSV Column</th><th>Metric</th></tr></thead>
-          <tbody>
-            {Object.entries(row.mapping).map(([col, config]) => {
-              const metric = config.metricId ? metrics.find((m) => m.id === config.metricId) : null;
-              return (
-                <tr key={col} className={!config.metricId ? 'table-warning' : ''}>
-                  <td className="font-monospace small">{col}</td>
-                  <td>
-                    {metric ? (
-                      <span>{metric.name} <span className="badge bg-secondary ms-1">{metric.type}</span></span>
-                    ) : (
-                      <span className="text-warning">Not matched — ignored</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {unmappedCols.length > 0 && (
-          <p className="text-muted small">Unmatched columns are ignored. Create metrics with matching names to include them.</p>
-        )}
+        <ColumnMapper
+          headers={row.parsed.headers}
+          previewRows={row.parsed.rows.slice(0, 5)}
+          availableMetrics={metrics}
+          mapping={row.mapping}
+          onMappingChange={handleRowMappingChange}
+          schema="row-v1"
+          onMetricCreated={(metric) => setMetrics((prev) => [...prev, metric])}
+        />
 
         {mapped > 0 && row.metricSummaries.length > 0 && (
           <MetricValidationPanel
@@ -479,15 +500,18 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
                 const inAgg = aggMappedIds.has(m.id);
                 const inRow = rowMappedIds.has(m.id);
                 const isOverlap = overlapIds.includes(m.id);
+                const needsRowLevel = m.type === 'revenue' || m.type === 'continuous';
+                const aggOnlyNoVariance = needsRowLevel && inAgg && !inRow;
                 let source: string;
                 let badgeClass: string;
-                if (inAgg && inRow) { source = 'Both (row-level used)'; badgeClass = 'bg-info'; }
+                if (aggOnlyNoVariance) { source = 'Aggregated (needs row-level)'; badgeClass = 'bg-warning text-dark'; }
+                else if (inAgg && inRow) { source = 'Both (row-level used)'; badgeClass = 'bg-info'; }
                 else if (inAgg) { source = 'Aggregated'; badgeClass = 'bg-primary'; }
                 else if (inRow) { source = 'Row-level'; badgeClass = 'bg-success'; }
                 else { source = 'Not covered'; badgeClass = 'bg-danger'; }
 
                 return (
-                  <tr key={m.id} className={!inAgg && !inRow ? 'table-danger' : isOverlap ? 'table-info' : ''}>
+                  <tr key={m.id} className={aggOnlyNoVariance ? 'table-warning' : !inAgg && !inRow ? 'table-danger' : isOverlap ? 'table-info' : ''}>
                     <td>{m.name}</td>
                     <td><span className="badge bg-secondary">{m.type}</span></td>
                     <td><span className={`badge ${badgeClass}`}>{source}</span></td>
@@ -507,6 +531,19 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
             {overlapIds.length} metric{overlapIds.length > 1 ? 's appear' : ' appears'} in both uploads. Row-level data will be used.
           </div>
         )}
+        {(() => {
+          const aggOnlyNeedsRow = metrics.filter((m) =>
+            (m.type === 'revenue' || m.type === 'continuous') && aggMappedIds.has(m.id) && !rowMappedIds.has(m.id),
+          );
+          if (aggOnlyNeedsRow.length === 0) return null;
+          return (
+            <div className="card-footer small text-warning-emphasis bg-warning-subtle">
+              <strong>{aggOnlyNeedsRow.map((m) => m.name).join(', ')}</strong>
+              {aggOnlyNeedsRow.length === 1 ? ' requires' : ' require'} row-level data to compute variance for statistical testing.
+              Without it, {aggOnlyNeedsRow.length === 1 ? 'this metric' : 'these metrics'} will be excluded from analysis.
+            </div>
+          );
+        })()}
       </div>
     );
   }

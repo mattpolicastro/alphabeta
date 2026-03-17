@@ -34,6 +34,8 @@ export interface ParsedCSV {
   rows: Record<string, string>[]; // all rows for aggregated; preview rows (first 5) for row-level
   schema: string; // 'agg-v1' | 'row-v1'
   rowLevelAggregates?: Record<string, Record<string, V2AggregatedMetric>>; // variation → metric → stats
+  rowLevelSliceAggregates?: Record<string, Record<string, Record<string, Record<string, V2AggregatedMetric>>>>; // dimension → value → variation → metric → stats
+  rowLevelColumnClassification?: Record<string, 'metric' | 'dimension'>; // auto-detected column types from worker
   rowLevelTotalRows?: number;
 }
 
@@ -130,6 +132,8 @@ function parseRowLevelInWorker(csvBody: string): Promise<ParsedCSV> {
         rows: msg.previewRows, // first 5 rows for UI preview
         schema: 'row-v1',
         rowLevelAggregates: msg.aggregates,
+        rowLevelSliceAggregates: msg.sliceAggregates,
+        rowLevelColumnClassification: msg.columnClassification,
         rowLevelTotalRows: msg.totalRows,
       });
     };
