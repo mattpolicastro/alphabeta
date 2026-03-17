@@ -16,21 +16,24 @@
 
 **Approach:** Support a second CSV format — one row per user per variation — that provides raw values from which the frontend computes mean, variance, and sample size before sending to the engine.
 
-| Task | Effort | Details |
-|------|--------|---------|
-| Define row-level CSV schema | Low | New `#schema_version:2` header; columns: `experiment_id`, `variation_id`, `user_id`, `<metric_columns>` |
-| Extend CSV parser for row-level format | Medium | Detect schema version; aggregate per-variation: n, mean, variance per metric |
-| Add `continuous` metric type | Low | New option in metric library; maps to `mean_test` in gbstats |
-| Update `buildRequest` for mean + variance | Medium | Include `mean`, `variance`, `n` per metric per variation (not just totals) |
-| Engine support for `mean_test` | Medium | Add `mean_test` / `TwoSidedTTest` with variance path to both worker and Lambda |
-| Update `transformResponse` for mean metrics | Low | Handle mean-based result fields |
-| UI: metric type indicators in results | Low | Badge distinguishing proportion vs continuous metrics |
-| Update template CSV download | Low | Generate row-level template when continuous metrics are configured |
+| Task | Effort | Status | Details |
+|------|--------|--------|---------|
+| Define row-level CSV schema | Low | Done | `#schema:row-v1` header; columns: `experiment_id`, `variation_id`, `user_id`, `<metric_columns>` |
+| Extend CSV parser for row-level format | Medium | Done | Detects schema from `#schema:` prefix; dispatches `row-v1` to Web Worker for aggregation |
+| Web Worker for row-level aggregation | Medium | Done | `public/csv-worker.js` — Welford's algorithm for numerically stable online mean/variance per variation per metric |
+| Add `continuous` metric type | Low | Done | New option in metric library and type selector; maps to `SampleMeanStatistic` in gbstats |
+| Update `buildRequest` for mean + variance | Medium | Done | `buildAnalysisRequestV2` populates `continuousMetrics` on `VariationData`; `buildMergedAnalysisRequest` combines agg + row-level sources |
+| Engine support for `mean_test` | Medium | Done | `SampleMeanStatistic` + `_run_mean_test` in both worker and Lambda; routes by `metricType` |
+| Update `transformResponse` for mean metrics | Low | Done | Handles continuous metric fields (mean, variance-based stddev) |
+| UI: metric type indicators in results | Low | Done | Badge distinguishing proportion vs continuous; "Mean" vs "Rate" labels |
+| Dual-upload interface | Medium | Done | Two side-by-side upload sections (aggregated + row-level); metric coverage panel; merged analysis request |
+| Update template CSV download | Low | Done | Explicit `format` parameter; each upload section gets its own template |
 
 **Decisions (resolved):**
 - Maximum row count: **100k rows**. Reject with a blocking error above this threshold; user must pre-aggregate.
-- Row-level parsing runs in a **Web Worker** (schema v2 only). V1 pre-aggregated format stays synchronous on the main thread.
-- **No mixed CSVs.** A single upload is one schema version. Experiments with both proportion and continuous metrics require separate uploads or pre-aggregation.
+- Row-level parsing runs in a **Web Worker** (`row-v1` only). `agg-v1` pre-aggregated format stays synchronous on the main thread.
+- Schema naming: parallel convention (`#schema:agg-v1`, `#schema:row-v1`) rather than sequential versioning, to allow independent evolution.
+- **Dual uploads supported.** A single experiment can combine an aggregated CSV (proportion/count/revenue metrics with dimension slices) and a row-level CSV (any metric type, overall only). If a metric appears in both, row-level data takes precedence. The `buildMergedAnalysisRequest` function merges both into one `AnalysisRequest`.
 
 ### 1.2 Sequential Testing Engine
 
@@ -283,7 +286,7 @@ export interface Metric {
   id: string;
   name: string;
   description?: string;
-  type: 'binomial' | 'count' | 'revenue';
+  type: 'binomial' | 'count' | 'revenue' | 'continuous';
   // How to interpret the uploaded column value:
   // 'raw_total'       → value is a sum; app divides by `units` to get rate/mean
   // 'pre_normalized'  → value is already a rate or mean; used as-is
@@ -377,7 +380,7 @@ export class AppDB extends Dexie {
 }
 ```
 
-#### A.2 CSV Format (v1 — Pre-Aggregated)
+#### A.2 CSV Format — Aggregated (`agg-v1`)
 
 Users upload a **single pre-aggregated CSV** per analysis run. Data is already grouped and summed before upload — no row-level user data is required.
 
@@ -394,7 +397,7 @@ Each row represents one `experiment_id x variation_id x dimension slice` combina
 **Example:**
 
 ```csv
-#schema_version:1
+#schema:agg-v1
 experiment_id,variation_id,device_type,browser,units,purchases,clicks,revenue
 exp_001,control,all,all,5000,480,1200,24000.00
 exp_001,variant_a,all,all,5100,551,1320,27550.00
@@ -407,31 +410,69 @@ exp_001,variant_a,all,chrome,3300,358,860,18000.00
 ```
 
 Key conventions:
-- **`#schema_version` header comment:** The first line of every CSV must be `#schema_version:1`. The app reads this before parsing and rejects files with an unknown or missing version.
+- **`#schema:agg-v1` header:** The first line of every aggregated CSV must be `#schema:agg-v1`. The app reads this before parsing and rejects files with an unknown or missing schema.
 - **`"all"` sentinel:** A dimension value of `"all"` means "not sliced by this dimension." The overall result row has `"all"` in every dimension column.
 - **Raw totals for metrics:** `purchases = 480` means 480 total purchase events, not a rate. The app computes `480 / 5000 = 9.6%` at analysis time.
 - **Normalization flag per metric:** Some metrics may already be rates or averages. This is handled via a per-metric config flag (`Metric.normalization`).
 - **Multiple experiments in one file:** Supported. The app filters rows by `experiment_id` matching the current experiment.
 
+#### A.2b CSV Format — Row-level (`row-v1`)
+
+Row-level CSVs contain **one row per user per variation** with raw metric values. The app aggregates per-variation statistics (n, mean, variance) in a Web Worker before sending to the stats engine. This format is required for continuous metrics and also supports proportion metrics (as 0/1 values per user).
+
+| Column group | Columns | Required | Description |
+|---|---|---|---|
+| **Identifiers** | `experiment_id` | Yes | Must match an experiment defined in the app |
+| | `variation_id` | Yes | Must match a variation key on the experiment |
+| | `user_id` | Yes | Unique user identifier per row |
+| **Metrics** | `[any named column]` | Yes (>=1) | Raw per-user metric values. For continuous metrics: the observed value (e.g. revenue amount, session duration). For proportion metrics: 0 or 1. |
+
+**Example:**
+
+```csv
+#schema:row-v1
+experiment_id,variation_id,user_id,revenue,converted
+exp_001,control,user_001,0,0
+exp_001,control,user_002,52.30,1
+exp_001,control,user_003,0,0
+exp_001,variant_a,user_004,48.70,1
+exp_001,variant_a,user_005,61.20,1
+exp_001,variant_a,user_006,0,0
+```
+
+Key conventions:
+- **`#schema:row-v1` header:** The first line must be `#schema:row-v1`.
+- **No dimension columns.** Row-level data is overall only; dimension slices are only available via the aggregated format.
+- **No `units` column.** Sample size is computed automatically from the row count per variation.
+- **Auto-mapping by name.** Columns are matched to experiment metrics by comparing the column name (lowercased, spaces replaced with underscores) to metric names in the library. Unmatched columns are ignored.
+- **Aggregation in Web Worker.** The CSV is parsed and aggregated in `public/csv-worker.js` using Welford's online algorithm for numerically stable mean and variance computation. Only the first 5 rows are returned for UI preview; the full aggregates (mean, variance, n per variation per metric) are used for analysis.
+
 #### A.3 CSV Validation Rules
 
-Before dispatching to the active compute path, the frontend validates:
-
-- First line is `#schema_version:1` (blocking error if missing or unrecognised)
-- `experiment_id`, `variation_id`, and `units` columns are present
+**Common (both formats):**
+- First line must be a recognized schema header (`#schema:agg-v1` or `#schema:row-v1`); blocking error if missing or unrecognised
+- `experiment_id` and `variation_id` columns are present
 - `variation_id` values, after trimming whitespace and lowercasing, match those defined on the experiment
 - At least one metric column has been mapped
-- `units` is a positive integer on every row
+- File size does not exceed configured limit (default: 50 MB)
+
+**Aggregated (`agg-v1`) specific:**
+- `units` column is present and contains a positive integer on every row
 - Metric columns contain parseable non-negative numbers (invalid rows flagged and dropped with warning)
 - Each `variation_id` has exactly one row with all dimensions = `"all"` (the overall row); warn if missing
-- File size does not exceed configured limit (default: 50MB)
 - If the number of mapped dimension columns exceeds **5**, display a soft warning (non-blocking)
+
+**Row-level (`row-v1`) specific:**
+- `user_id` column is present
+- At least one non-reserved column exists (metric data)
+- Row count does not exceed **100,000** rows (blocking error)
+- Variation IDs are checked against the aggregated keys from the worker output
 
 ---
 
 ### Appendix B: Shared TypeScript Types
 
-> These are the v1 type contracts for the stats engine interface. Both compute paths (WASM worker and Lambda) consume and produce these types. See `lib/stats/types.ts` in the codebase for the canonical definitions.
+> Type contracts for the stats engine interface. Both compute paths (WASM worker and Lambda) consume and produce these types. See `lib/stats/types.ts` in the codebase for the canonical definitions.
 
 ```typescript
 // lib/stats/types.ts
@@ -453,15 +494,23 @@ interface AnalysisRequest {
     id: string;
     name: string;
     isGuardrail: boolean;
+    metricType?: 'proportion' | 'continuous'; // default: 'proportion' for backward compat
   }[];
 
   // Pre-aggregated totals — no row-level data
   data: {
-    overall: Record<string, { units: number; metrics: Record<string, number> }>;
-    slices:  Record<string, Record<string, Record<string, { units: number; metrics: Record<string, number> }>>>;
+    overall: Record<string, VariationData>;
+    slices:  Record<string, Record<string, Record<string, VariationData>>>;
   };
 
   multipleExposureCount: number;   // detected client-side during CSV validation
+}
+
+interface VariationData {
+  units: number;
+  metrics: Record<string, number>;  // metric id → raw total (proportion metrics)
+  // Continuous metric aggregates (populated by row-level CSV parser)
+  continuousMetrics?: Record<string, { mean: number; variance: number; n: number }>;
 }
 
 interface AnalysisResponse {
@@ -480,6 +529,7 @@ interface MetricVariationResult {
   variationId: string;
   units: number;
   rate: number;
+  mean?: number;                   // populated for continuous metrics (instead of rate)
   relativeUplift: number;
   absoluteUplift: number;
   significant: boolean;
