@@ -152,6 +152,8 @@ Req: §4.2, §5.3
 - [x] Persist mapping to IndexedDB keyed by `experimentId + columnFingerprint`
 - [x] Auto-apply saved mapping on re-upload; show banner with date
 - [x] Diff detection: new/removed columns highlighted with badges when schema changes
+- [x] Schema-aware ColumnMapper: accepts `schema` prop (`agg-v1` / `row-v1`), uses appropriate reserved columns
+- [x] Row-level auto-mapping uses worker's `columnClassification` for initial dimension/metric roles
 - [ ] Tests: fingerprint matching, diff detection, persistence round-trip — not yet covered
 
 ### Module: Metric Validation (Pre-Submission)
@@ -264,7 +266,10 @@ Req: §5.3, §5.4, §8.4
 - [x] Variation ID normalization display
 - [x] Metric validation panel (uses `MetricValidationPanel` component)
 - [x] Submit → build request → run analysis → persist result → redirect to results
-- [x] Download template CSV pre-filled with experiment's variations and metrics
+- [x] Dual-upload layout: two side-by-side cards (aggregated + row-level) with independent mapping and validation
+- [x] Metric coverage panel: shows source per metric, overlap detection (row-level wins), continuous-needs-row-level warnings
+- [x] Merged analysis via `buildMergedAnalysisRequest` at submit time
+- [x] Download template CSV pre-filled with experiment's variations and metrics (per-section format)
 - [x] Error state with message
 - [-] Full-page loading overlay with progress steps (simple spinner + "Running analysis…" instead)
 - [x] Retry with preserved request payload — implemented via `lastRequestRef` in UploadView
@@ -366,7 +371,7 @@ Req: §8.2
 
 ## v2 Phase 1 — Continuous Metrics (§1.1)
 
-> **Decisions resolved:** 100k row limit, Web Worker for v2 parsing, no mixed CSVs.
+> **Decisions resolved:** 100k row limit, Web Worker for v2 parsing, dual-upload (agg + row-level) supported, revenue routed through continuous path.
 
 ### Module: Shared Types — Continuous Metric Support
 Touches: `lib/stats/types.ts`, `lib/db/schema.ts`
@@ -388,7 +393,8 @@ Priority: **P0** — buildRequest and engine depend on parsed output
 - [x] v2 required columns: `experiment_id`, `variation_id`, `user_id`, `<metric_columns>`
 - [x] v2 row count validation: reject > 100k rows with blocking error
 - [x] v2 parsing in Web Worker: `public/csv-worker.js` aggregates per-variation: n, mean, variance per metric (Welford's algorithm)
-- [x] Worker returns aggregated data via extended `ParsedCSV` type (`v2Aggregates`, `v2TotalRows`)
+- [x] Worker auto-classifies columns as metric/dimension via sampling; aggregates per-dimension-slice stats
+- [x] Worker returns aggregated data via extended `ParsedCSV` type (`rowLevelAggregates`, `rowLevelSliceAggregates`, `rowLevelColumnClassification`, `rowLevelTotalRows`)
 - [x] v2 validation function (`validateCSVv2`), v2-aware `autoClassifyColumns`
 - [ ] Tests: v2 schema detection, row limit rejection, aggregation correctness (mean, variance, n)
 
@@ -399,7 +405,7 @@ Priority: **P1**
 
 - [x] Add `'continuous'` option to metric type selector in create/edit form (metrics page + ColumnMapper inline create)
 - [x] Add `'continuous'` to metric type filter buttons in metric list
-- [ ] Validation: continuous metrics require schema v2 CSV (surface warning in MetricValidationPanel)
+- [x] Validation: warning when continuous/revenue metrics mapped in aggregated upload section (UploadView + metric coverage panel)
 
 ### Module: Request Builder — Mean + Variance Path
 Touches: `lib/csv/buildRequest.ts`
@@ -409,6 +415,9 @@ Priority: **P1**
 - [x] Detect metric type from `Metric.type` when building request (v2 branch in `buildAnalysisRequest`)
 - [x] For continuous metrics: include `mean`, `variance`, `n` per variation via `continuousMetrics` field
 - [x] For proportion metrics: existing `total / units` path unchanged
+- [x] Revenue metrics routed through continuous path via `CONTINUOUS_METRIC_TYPES` set
+- [x] `buildMergedAnalysisRequest` merges agg + row-level sources; row-level wins on overlap
+- [x] `buildAnalysisRequestV2` supports dimension slices via `extractVariationDataFromAgg` helper
 - [ ] Tests: correct payload for continuous metrics, mixed experiment with both types
 
 ### Module: Stats Engine — Mean Test Path
@@ -439,6 +448,7 @@ Priority: **P2**
 
 - [x] Badge already exists in results table (shows `metric.type` including 'continuous')
 - [x] Display raw mean value instead of percentage for continuous metrics in table and detail panel
+- [x] Revenue metrics display as raw values (via `isContinuousDisplay` helper covering both `continuous` and `revenue` types)
 
 ### Module: Template CSV — Row-Level Format
 Touches: `lib/csv/generateTemplate.ts`

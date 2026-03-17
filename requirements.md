@@ -26,7 +26,11 @@
 | Engine support for `mean_test` | Medium | Done | `SampleMeanStatistic` + `_run_mean_test` in both worker and Lambda; routes by `metricType` |
 | Update `transformResponse` for mean metrics | Low | Done | Handles continuous metric fields (mean, variance-based stddev) |
 | UI: metric type indicators in results | Low | Done | Badge distinguishing proportion vs continuous; "Mean" vs "Rate" labels |
+| Revenue metrics via continuous path | Low | Done | Revenue routed through `SampleMeanStatistic` (mean test) alongside continuous; `CONTINUOUS_METRIC_TYPES` set in `buildRequest.ts` |
 | Dual-upload interface | Medium | Done | Two side-by-side upload sections (aggregated + row-level); metric coverage panel; merged analysis request |
+| Warnings for continuous metrics in agg upload | Low | Done | Warning when revenue/continuous metrics mapped in aggregated section; metric coverage panel shows "needs row-level" badge |
+| ColumnMapper abstraction for row-v1 | Low | Done | ColumnMapper accepts `schema` prop; uses appropriate reserved columns; replaces static table in row-level section |
+| Row-level dimension support | Medium | Done | Worker auto-classifies columns as metric/dimension; per-dimension-slice Welford aggregation; `buildAnalysisRequestV2` populates slices |
 | Update template CSV download | Low | Done | Explicit `format` parameter; each upload section gets its own template |
 
 **Decisions (resolved):**
@@ -425,27 +429,28 @@ Row-level CSVs contain **one row per user per variation** with raw metric values
 | **Identifiers** | `experiment_id` | Yes | Must match an experiment defined in the app |
 | | `variation_id` | Yes | Must match a variation key on the experiment |
 | | `user_id` | Yes | Unique user identifier per row |
+| **Dimensions** | `[any named column]` | No | Named breakout columns with string values (e.g. `device_type`, `country`). Auto-detected by the worker via sampling: columns where all sampled values are non-numeric are classified as dimensions. |
 | **Metrics** | `[any named column]` | Yes (>=1) | Raw per-user metric values. For continuous metrics: the observed value (e.g. revenue amount, session duration). For proportion metrics: 0 or 1. |
 
 **Example:**
 
 ```csv
 #schema:row-v1
-experiment_id,variation_id,user_id,revenue,converted
-exp_001,control,user_001,0,0
-exp_001,control,user_002,52.30,1
-exp_001,control,user_003,0,0
-exp_001,variant_a,user_004,48.70,1
-exp_001,variant_a,user_005,61.20,1
-exp_001,variant_a,user_006,0,0
+experiment_id,variation_id,user_id,device_type,revenue,converted
+exp_001,control,user_001,mobile,0,0
+exp_001,control,user_002,desktop,52.30,1
+exp_001,control,user_003,mobile,0,0
+exp_001,variant_a,user_004,desktop,48.70,1
+exp_001,variant_a,user_005,mobile,61.20,1
+exp_001,variant_a,user_006,desktop,0,0
 ```
 
 Key conventions:
 - **`#schema:row-v1` header:** The first line must be `#schema:row-v1`.
-- **No dimension columns.** Row-level data is overall only; dimension slices are only available via the aggregated format.
+- **Dimension columns supported.** Non-reserved columns are auto-classified by the worker: columns where all sampled values (up to 20 rows) are numeric are classified as metrics; others as dimensions. Dimension columns produce per-dimension-slice aggregates in addition to overall data. Users can override the auto-classification in the ColumnMapper UI.
 - **No `units` column.** Sample size is computed automatically from the row count per variation.
-- **Auto-mapping by name.** Columns are matched to experiment metrics by comparing the column name (lowercased, spaces replaced with underscores) to metric names in the library. Unmatched columns are ignored.
-- **Aggregation in Web Worker.** The CSV is parsed and aggregated in `public/csv-worker.js` using Welford's online algorithm for numerically stable mean and variance computation. Only the first 5 rows are returned for UI preview; the full aggregates (mean, variance, n per variation per metric) are used for analysis.
+- **Auto-mapping by worker classification.** The worker classifies columns as metric or dimension by sampling. Metric columns are then matched to experiment metrics by comparing the column name (lowercased, spaces replaced with underscores) to metric names in the library. Unmatched metric columns default to "ignore"; dimension-classified columns default to the "dimension" role.
+- **Aggregation in Web Worker.** The CSV is parsed and aggregated in `public/csv-worker.js` using Welford's online algorithm for numerically stable mean and variance computation. The worker computes both overall aggregates and per-dimension-slice aggregates. Only the first 5 rows are returned for UI preview; the full aggregates (mean, variance, n per variation per metric) are used for analysis.
 
 #### A.3 CSV Validation Rules
 
@@ -614,7 +619,7 @@ result = frequentist_test(
 |---|---|---|---|
 | `binomial` | Proportion | `proportion_test` | Variance derived as p(1-p) |
 | `count` | Proportion (rate) | `proportion_test` | e.g. clicks/units; treated as binomial rate |
-| `revenue` | Deferred to v2 | requires `mean_test` | Needs variance; not derivable from totals alone |
+| `revenue` | Continuous (mean) | `mean_test` via `SampleMeanStatistic` | Routed through continuous path; requires row-level data for variance |
 
 ---
 
