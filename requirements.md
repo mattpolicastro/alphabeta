@@ -31,13 +31,20 @@
 | Warnings for continuous metrics in agg upload | Low | Done | Warning when revenue/continuous metrics mapped in aggregated section; metric coverage panel shows "needs row-level" badge |
 | ColumnMapper abstraction for row-v1 | Low | Done | ColumnMapper accepts `schema` prop; uses appropriate reserved columns; replaces static table in row-level section |
 | Row-level dimension support | Medium | Done | Worker auto-classifies columns as metric/dimension; per-dimension-slice Welford aggregation; `buildAnalysisRequestV2` populates slices |
+| Worker: slice by all potential dimensions | Low | Done | Worker computes slice aggregates for ALL non-reserved columns (not just auto-detected dimensions); cardinality cap (200 unique values) prevents memory explosion from high-cardinality numeric columns |
+| Merge slices from both data sources | Low | Done | `buildMergedAnalysisRequest` merges dimension slices from both agg and row-level sources; previously only used agg slices |
+| Row-level column mapping persistence | Low | Done | Row-level mappings saved to IndexedDB on submit and restored on re-upload, matching agg behavior |
+| Revenue metric formatting | Low | Done | Revenue values display with configurable currency symbol (default `$`) + 2dp; continuous as plain 2dp; proportion as percentage |
+| Raw p-value display (multiple comparison correction) | Low | Done | When BH or Holm correction applied, both raw and adjusted p-values shown in results table and detail panel |
 | Update template CSV download | Low | Done | Explicit `format` parameter; each upload section gets its own template |
 
 **Decisions (resolved):**
 - Maximum row count: **100k rows**. Reject with a blocking error above this threshold; user must pre-aggregate.
 - Row-level parsing runs in a **Web Worker** (`row-v1` only). `agg-v1` pre-aggregated format stays synchronous on the main thread.
 - Schema naming: parallel convention (`#schema:agg-v1`, `#schema:row-v1`) rather than sequential versioning, to allow independent evolution.
-- **Dual uploads supported.** A single experiment can combine an aggregated CSV (proportion/count/revenue metrics with dimension slices) and a row-level CSV (any metric type, overall only). If a metric appears in both, row-level data takes precedence. The `buildMergedAnalysisRequest` function merges both into one `AnalysisRequest`.
+- **Dual uploads supported.** A single experiment can combine an aggregated CSV (proportion/count/revenue metrics with dimension slices) and a row-level CSV (any metric type, overall only). If a metric appears in both, row-level data takes precedence. The `buildMergedAnalysisRequest` function merges both into one `AnalysisRequest`. Dimension slices are merged from both sources; row-level takes precedence on overlap.
+- **Column mapping persistence for both formats.** Both aggregated and row-level column mappings are saved to IndexedDB (keyed by experiment ID + column fingerprint) on analysis submit. On re-upload, saved mappings are restored if the column schema matches. The ColumnMapper shows a "saved mapping" banner with the date when a previous mapping is loaded.
+- **Worker slicing is classification-independent.** The csv-worker computes dimension slices for ALL non-reserved columns regardless of auto-classification, up to a cardinality cap of 200 unique values per column. This allows users to override the auto-classification (e.g., change a numeric column to "dimension") without losing slice data. Columns exceeding the cardinality cap are silently dropped from slice aggregation.
 
 ### 1.2 Sequential Testing Engine
 
@@ -313,6 +320,7 @@ export interface ExperimentResult {
   multipleExposureCount: number;
   multipleExposureFlagged: boolean;
   perMetricResults: MetricResult[];
+  sliceResults?: Record<string, Record<string, MetricResult[]>>; // dimension → value → results
   rawRequest: AnalysisRequest;      // archived for reproducibility
   status: 'pending' | 'complete' | 'error';
   errorMessage?: string;
@@ -333,6 +341,7 @@ export interface VariationResult {
   credibleIntervalLower?: number;
   credibleIntervalUpper?: number;
   pValue?: number;
+  rawPValue?: number;              // pre-correction p-value (when multiple comparison correction applied)
   confidenceIntervalLower?: number;
   confidenceIntervalUpper?: number;
   relativeUplift: number;
@@ -340,6 +349,21 @@ export interface VariationResult {
   scaledImpact?: number;
   significant: boolean;
   cupedApplied: boolean;
+}
+
+export interface AppSettings {
+  id: 'singleton';
+  computeEngine: 'wasm' | 'lambda';
+  lambdaUrl: string;
+  srmThreshold: number;
+  multipleExposureThreshold: number;
+  defaultStatsEngine: 'bayesian' | 'frequentist' | 'sequential';
+  defaultAlpha: number;
+  defaultPower: number;
+  dimensionWarningThreshold: number;
+  backupReminderDays: number;
+  lastExportedAt: number | null;
+  currencySymbol: string;          // e.g. '$', '€', '£' — used for revenue metric display
 }
 
 export interface ColumnMapping {
@@ -447,10 +471,46 @@ exp_001,variant_a,user_006,desktop,0,0
 
 Key conventions:
 - **`#schema:row-v1` header:** The first line must be `#schema:row-v1`.
-- **Dimension columns supported.** Non-reserved columns are auto-classified by the worker: columns where all sampled values (up to 20 rows) are numeric are classified as metrics; others as dimensions. Dimension columns produce per-dimension-slice aggregates in addition to overall data. Users can override the auto-classification in the ColumnMapper UI.
+- **Dimension columns supported.** Non-reserved columns are auto-classified by the worker: columns where all sampled values (up to 20 rows) are numeric are classified as metrics; others as dimensions. Users can override the auto-classification in the ColumnMapper UI (e.g., change a numeric column like `segment_id` to "dimension").
+- **Worker slices all potential dimensions.** The worker computes per-dimension-slice aggregates for ALL non-reserved columns, not just auto-detected dimensions. This ensures slice data is available regardless of how the user maps columns. A cardinality cap of **200 unique values** per column prevents memory explosion from high-cardinality numeric columns; columns exceeding the cap are silently dropped from slice aggregation.
 - **No `units` column.** Sample size is computed automatically from the row count per variation.
 - **Auto-mapping by worker classification.** The worker classifies columns as metric or dimension by sampling. Metric columns are then matched to experiment metrics by comparing the column name (lowercased, spaces replaced with underscores) to metric names in the library. Unmatched metric columns default to "ignore"; dimension-classified columns default to the "dimension" role.
-- **Aggregation in Web Worker.** The CSV is parsed and aggregated in `public/csv-worker.js` using Welford's online algorithm for numerically stable mean and variance computation. The worker computes both overall aggregates and per-dimension-slice aggregates. Only the first 5 rows are returned for UI preview; the full aggregates (mean, variance, n per variation per metric) are used for analysis.
+- **Column mapping persistence.** Row-level column mappings are saved to IndexedDB on analysis submit, keyed by experiment ID + column fingerprint (sorted column names). When the same CSV schema is re-uploaded for the same experiment, the saved mapping is restored automatically, and the ColumnMapper shows a "saved mapping" banner with the date. This matches the existing behavior for aggregated CSV mappings.
+- **Aggregation in Web Worker.** The CSV is parsed and aggregated in `public/csv-worker.js` using Welford's online algorithm for numerically stable mean and variance computation. The worker computes both overall aggregates and per-dimension-slice aggregates (for all non-reserved columns up to the cardinality cap). Only the first 5 rows are returned for UI preview; the full aggregates (mean, variance, n per variation per metric) are used for analysis.
+
+#### A.2c Dimension Slice Data Flow
+
+Dimension slices flow through a multi-stage pipeline from CSV upload to results display. Understanding this pipeline is important because dimensions can originate from either data source (aggregated or row-level) and the user can override auto-classification.
+
+**Stage 1: CSV Worker (row-level only)**
+- `public/csv-worker.js` parses the CSV in a single pass
+- Auto-classifies non-reserved columns via sampling (20 rows): all-numeric → metric, otherwise → dimension
+- Computes Welford aggregates for metric columns, grouped by ALL non-reserved columns as potential dimensions
+- Cardinality cap: columns with >200 unique values are dropped from slice accumulation
+- Output: `sliceAggregates` keyed as `dimension_name → dimension_value → variation_id → metric_column → { mean, variance, n }`
+
+**Stage 2: Column Mapping**
+- Auto-mapping uses worker classification as default; saved mappings override if available
+- User can override any column's role in the ColumnMapper (dimension / metric / ignore)
+- Mapping changes don't require re-parsing; the worker pre-computed slices for all eligible columns
+
+**Stage 3: Request Builder**
+- `buildAnalysisRequestV2`: reads `dimensionCols` from the user's mapping, looks up slice data from `rowLevelSliceAggregates`
+- `buildMergedAnalysisRequest`: when both data sources present, merges slices from both. Row-level slices take precedence on dimension name overlap
+- For aggregated CSVs: slices come from rows where exactly one dimension has a real value and all others = "all"
+
+**Stage 4: Stats Engine**
+- `_compute_slices` (in both `stats-worker.js` and `handler.py`) runs per-metric, per-variation tests for each dimension slice
+- Multiple comparison correction is applied per-slice independently
+
+**Stage 5: Transform + Storage**
+- `transformResponse` processes `response.slices` in parallel to `response.overall`
+- Result stored with `sliceResults?: Record<string, Record<string, MetricResult[]>>` on `ExperimentResult`
+
+**Stage 6: Results Display**
+- `ExperimentDetailView` renders `DimensionSliceSection` when `sliceResults` is non-empty
+- Dropdown selectors for dimension name and dimension value
+- Selected slice renders a full `ResultsTable` with the same columns as the overall results
 
 #### A.3 CSV Validation Rules
 
@@ -545,10 +605,35 @@ interface MetricVariationResult {
   credibleIntervalUpper?: number;
   // Frequentist / Sequential
   pValue?: number;
+  rawPValue?: number;              // pre-correction p-value (populated when multiple comparison correction applied)
   confidenceIntervalLower?: number;
   confidenceIntervalUpper?: number;
 }
 ```
+
+#### B.1 Multiple Comparison Correction — Raw p-value Preservation
+
+When a multiple comparison correction (Holm-Bonferroni or Benjamini-Hochberg) is applied, the engine preserves the original p-value as `rawPValue` before overwriting `pValue` with the adjusted value. This flows through the full pipeline:
+
+1. **Engine** (`stats-worker.js` / `handler.py`): `_apply_correction` saves `r["rawPValue"] = r["pValue"]` before setting `r["pValue"] = adjusted[i]`.
+2. **Types** (`types.ts`): `MetricVariationResult.rawPValue?: number`.
+3. **Transform** (`transformResponse.ts`): passes `rawPValue` through to `VariationResult`.
+4. **Schema** (`schema.ts`): `VariationResult.rawPValue?: number`.
+5. **UI** (`ResultsTable.tsx`): Evidence column shows `(raw: X.XXXX)` inline; detail panel shows separate "p-value (adjusted)" and "p-value (raw)" rows.
+
+**Why both values matter:** Benjamini-Hochberg step-down correction enforces monotonicity via a cumulative minimum. When raw p-values are within a factor of `m` (number of tests) of the largest, the adjusted values converge to the same number. Showing the raw p-value alongside the adjusted value helps users understand that different metrics do have different evidence strength despite identical adjusted values.
+
+#### B.2 Revenue and Continuous Metric Formatting
+
+Revenue and continuous metrics are formatted differently from proportion metrics throughout the UI:
+
+| Metric type | Format | Example |
+|-------------|--------|---------|
+| Proportion (binomial, count) | Percentage with 2dp | `9.60%` |
+| Revenue | Currency symbol + 2dp | `$52.30` |
+| Continuous | Plain number with 2dp | `14.72` |
+
+The currency symbol is configurable via `AppSettings.currencySymbol` (default: `$`). Both `ResultsTable` and `MetricValidationPanel` use metric-type-aware formatters (`formatValue`, `formatMetricValue`) that read the currency symbol from the settings store.
 
 ---
 

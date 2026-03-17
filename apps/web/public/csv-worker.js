@@ -1,7 +1,9 @@
 /**
  * CSV Worker — parses row-level CSV data and aggregates per-variation,
  * per-metric statistics: n, mean, variance (Bessel-corrected).
- * Also aggregates per-dimension-slice when dimension columns are present.
+ * Also aggregates per-dimension-slice for ALL non-reserved columns so that
+ * the user can reassign any column to "dimension" in the ColumnMapper and
+ * have slice data available without re-parsing.
  *
  * Input message: { csvText: string }
  *   csvText is the CSV body (schema line already stripped).
@@ -21,6 +23,11 @@
  *
  * Or: { type: 'error', message: string }
  */
+
+// Max unique values per column before we stop tracking it as a potential dimension.
+// Prevents memory explosion from high-cardinality numeric columns (e.g. revenue with
+// thousands of distinct float values).
+const MAX_DIMENSION_CARDINALITY = 200;
 
 // eslint-disable-next-line no-restricted-globals
 self.onmessage = function (e) {
@@ -98,10 +105,19 @@ function parseAndAggregate(csvText) {
   // ---------- Main aggregation pass ----------
   // Overall: variation_id → metric_name → Welford accumulator
   const overallAcc = {};
-  // Slices: dimension_name → dimension_value → variation_id → metric_name → Welford accumulator
+
+  // Slices: we accumulate for ALL non-reserved columns as potential dimensions,
+  // not just the ones classified as 'dimension'. This allows the user to override
+  // the auto-classification in the ColumnMapper and still get slice data.
+  // dimension_name → dimension_value → variation_id → metric_name → Welford accumulator
   const sliceAcc = {};
-  for (const dim of dimensionCols) {
-    sliceAcc[dim.name] = {};
+  // Track unique value counts per column; stop accumulating if cardinality exceeds cap
+  const dimUniqueValues = {};
+  const dimOverflow = {}; // columns that exceeded MAX_DIMENSION_CARDINALITY
+  for (const col of nonReservedCols) {
+    sliceAcc[col.name] = {};
+    dimUniqueValues[col.name] = new Set();
+    dimOverflow[col.name] = false;
   }
 
   const previewRows = [];
@@ -134,18 +150,29 @@ function parseAndAggregate(csvText) {
       welfordUpdate(overallAcc[varId], name, val);
     }
 
-    // Per-dimension-slice accumulation
-    for (const dim of dimensionCols) {
-      const dimVal = (fields[dim.index] || '').trim().toLowerCase();
+    // Per-dimension-slice accumulation — try ALL non-reserved columns
+    for (const col of nonReservedCols) {
+      if (dimOverflow[col.name]) continue; // already exceeded cardinality cap
+
+      const dimVal = (fields[col.index] || '').trim().toLowerCase();
       if (!dimVal || dimVal === 'all') continue;
 
-      if (!sliceAcc[dim.name][dimVal]) sliceAcc[dim.name][dimVal] = {};
-      if (!sliceAcc[dim.name][dimVal][varId]) sliceAcc[dim.name][dimVal][varId] = {};
+      // Track cardinality
+      dimUniqueValues[col.name].add(dimVal);
+      if (dimUniqueValues[col.name].size > MAX_DIMENSION_CARDINALITY) {
+        // Too many unique values — drop accumulated data and skip future rows
+        dimOverflow[col.name] = true;
+        delete sliceAcc[col.name];
+        continue;
+      }
+
+      if (!sliceAcc[col.name][dimVal]) sliceAcc[col.name][dimVal] = {};
+      if (!sliceAcc[col.name][dimVal][varId]) sliceAcc[col.name][dimVal][varId] = {};
 
       for (const { index, name } of metricCols) {
         const val = Number(fields[index]);
         if (isNaN(val)) continue;
-        welfordUpdate(sliceAcc[dim.name][dimVal][varId], name, val);
+        welfordUpdate(sliceAcc[col.name][dimVal][varId], name, val);
       }
     }
   }

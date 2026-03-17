@@ -150,25 +150,30 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
         if (workerType === 'dimension') {
           autoMapping[header] = { role: 'dimension' };
         } else {
-          const matchedId = metricNameMap.get(header.toLowerCase());
+          const matchedId = metricNameMap.get(header.toLowerCase().replace(/\s+/g, '_'));
           autoMapping[header] = matchedId
             ? { role: 'metric', metricId: matchedId }
             : { role: 'ignore' };
         }
       }
 
+      // Check for a saved mapping (persisted from a previous analysis run)
+      const fp = getColumnFingerprint(result.headers);
+      const saved = await getColumnMapping(experiment.id, fp);
+      const activeMapping = saved ? saved.mapping as ColumnMappingConfig : autoMapping;
+
       const variationKeys = experiment.variations.map((v) => v.key);
       const summaries = result.rowLevelAggregates
-        ? computeMetricSummariesFromAggregates(result.rowLevelAggregates, autoMapping, metrics, variationKeys)
+        ? computeMetricSummariesFromAggregates(result.rowLevelAggregates, activeMapping, metrics, variationKeys)
         : [];
 
       setRow({
         parsed: result,
         errors: validateCSV(result, variationKeys),
-        mapping: autoMapping,
+        mapping: activeMapping,
         metricSummaries: summaries,
-        savedMappingDate: null,
-        savedMappingColumns: [],
+        savedMappingDate: saved ? new Date(saved.savedAt).toLocaleDateString() : null,
+        savedMappingColumns: saved ? Object.keys(saved.mapping) : [],
         variationNorm: [],
         warningsAcknowledged: false,
       });
@@ -221,6 +226,11 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
         if (metricErrors.some((e) => e.type === 'error')) return;
       }
       await saveColumnMapping(experiment.id, getColumnFingerprint(agg.parsed.headers), agg.mapping);
+    }
+
+    // Save row-level mapping if present
+    if (row.parsed) {
+      await saveColumnMapping(experiment.id, getColumnFingerprint(row.parsed.headers), row.mapping);
     }
 
     // Check for blocking errors in either source

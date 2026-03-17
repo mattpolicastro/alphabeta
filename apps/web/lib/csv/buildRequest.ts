@@ -267,6 +267,19 @@ export function buildMergedAnalysisRequest(
     };
   }
 
+  // Merge slices from both sources. Agg slices use dimension names from the
+  // aggregated CSV; row-level slices use column names classified as dimensions
+  // by the csv-worker. If the same dimension name appears in both, merge the
+  // dimension values (row-level wins on overlap).
+  const mergedSlices: AnalysisRequest['data']['slices'] = { ...aggRequest.data.slices };
+  for (const [dimName, dimValues] of Object.entries(rowRequest.data.slices)) {
+    if (!mergedSlices[dimName]) {
+      mergedSlices[dimName] = dimValues;
+    } else {
+      mergedSlices[dimName] = { ...mergedSlices[dimName], ...dimValues };
+    }
+  }
+
   return {
     engine: experiment.statsEngine,
     correction: experiment.multipleComparisonCorrection,
@@ -276,7 +289,7 @@ export function buildMergedAnalysisRequest(
     metrics: mergedMetrics,
     data: {
       overall: mergedOverall,
-      slices: aggRequest.data.slices, // slices come from agg only
+      slices: mergedSlices,
     },
     multipleExposureCount,
   };
