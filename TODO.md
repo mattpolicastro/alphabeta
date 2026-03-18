@@ -1,4 +1,4 @@
-# A/B Test Tool — Task Tracker
+# ⍺lphaβeta — Task Tracker
 
 > **How to use this file:** Each module is self-contained. Agents should claim a module by marking tasks `[~]` (in progress). Before starting, read the **Depends on** line and confirm those items are merged to `main`. Mark `[x]` when merged. Use branch naming convention `feat/<module-slug>`.
 >

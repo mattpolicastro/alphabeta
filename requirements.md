@@ -1,4 +1,4 @@
-# A/B Test Tool — Requirements
+# ⍺lphaβeta — Requirements
 
 > **Status:** Active requirements document. Covers v2 feature work (phases 1-3) and remaining v1 cleanup items. Reference appendices from the original v1 spec are included at the bottom for data model, type contracts, and gbstats API details.
 >

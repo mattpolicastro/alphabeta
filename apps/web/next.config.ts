@@ -1,12 +1,12 @@
 import type { NextConfig } from 'next';
 
 const isProd = process.env.NODE_ENV === 'production';
-const basePath = isProd ? '/experiment-tools' : '';
+const basePath = isProd ? '/alphabeta' : '';
 
 const config: NextConfig = {
   output: 'export',
   basePath,
-  assetPrefix: isProd ? '/experiment-tools/' : undefined,
+  assetPrefix: isProd ? '/alphabeta/' : undefined,
   trailingSlash: true,
   images: { unoptimized: true }, // required for static export
   env: {

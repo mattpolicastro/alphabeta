@@ -32,7 +32,7 @@ export function NavBar() {
     <nav className="navbar navbar-expand navbar-dark bg-dark">
       <div className="container" style={{ maxWidth: '80rem' }}>
         <Link href="/" className="navbar-brand fw-bold">
-          A/B Tool
+          {process.env.NEXT_PUBLIC_APP_TITLE || '⍺lphaβeta'}
         </Link>
         <ul className="navbar-nav me-auto">
           {links.map((link) => (
