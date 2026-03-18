@@ -3,9 +3,11 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { NavBar } from '@/components/NavBar';
 import { GlobalLoadingIndicator } from '@/components/GlobalLoadingIndicator';
 
+const appTitle = process.env.NEXT_PUBLIC_APP_TITLE || '⍺lphaβeta';
+
 export const metadata: Metadata = {
-  title: 'A/B Test Analysis Tool',
-  description: 'Statically-generated A/B test and experiment analysis tool',
+  title: appTitle,
+  description: appTitle + ' | A/B test and experiment analysis tool',
 };
 
 export default function RootLayout({
@@ -18,6 +20,14 @@ export default function RootLayout({
       <body>
         <GlobalLoadingIndicator />
         <NavBar />
+        <div
+          className="alert alert-warning text-center mb-0 rounded-0 py-2"
+          role="alert"
+          style={{ fontSize: '0.875rem' }}
+        >
+          This app is in active alpha development. Backup often as breaking changes may
+          be released frequently.
+        </div>
         <main className="container" style={{ maxWidth: '80rem' }}>
           {children}
         </main>
