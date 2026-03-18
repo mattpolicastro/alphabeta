@@ -236,3 +236,15 @@ git push origin v0.1.0
 | `v0.2.0` | `068015f` | v2 complete — continuous metrics, dark mode, worker resilience, Cache API, variation filter, metric detail view, CI pipeline |
 
 Update this table when creating new tags.
+
+### Proactive tagging
+
+Claude should suggest a version bump when any of the following occur during a session:
+
+- A **planned feature** from requirements.md is fully implemented, tested, and builds pass
+- A **batch of related fixes** lands that meaningfully changes user-facing behavior (not just doc cleanups)
+- A **breaking change** ships (schema migration, CSV format change, removed feature)
+- The session ends with **multiple commits** that collectively represent a releasable milestone
+- A **bug fix** resolves something that would affect users of the deployed app
+
+When suggesting, Claude should propose the specific version number, the commit to tag, and a one-line milestone summary — then wait for confirmation before tagging.
