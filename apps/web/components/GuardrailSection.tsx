@@ -12,6 +12,7 @@ import type { MetricResult, Metric } from '@/lib/db/schema';
 export interface GuardrailSectionProps {
   guardrailResults: MetricResult[];
   metrics: Metric[];
+  selectedVariationIds?: string[];
 }
 
 type GuardrailStatus = 'safe' | 'borderline' | 'violated';
@@ -84,11 +85,19 @@ function determineStatus(mr: MetricResult, metric: Metric | undefined): Guardrai
   };
 }
 
-export function GuardrailSection({ guardrailResults, metrics }: GuardrailSectionProps) {
+export function GuardrailSection({ guardrailResults, metrics, selectedVariationIds }: GuardrailSectionProps) {
   if (guardrailResults.length === 0) return null;
 
   const metricById = new Map(metrics.map((m) => [m.id, m]));
-  const statuses = guardrailResults.map((mr) => determineStatus(mr, metricById.get(mr.metricId)));
+  const filteredResults = selectedVariationIds
+    ? guardrailResults.map((mr) => ({
+        ...mr,
+        variationResults: mr.variationResults.filter(
+          (vr) => selectedVariationIds.includes(vr.variationId)
+        ),
+      }))
+    : guardrailResults;
+  const statuses = filteredResults.map((mr) => determineStatus(mr, metricById.get(mr.metricId)));
 
   const anyViolated = statuses.some((s) => s.status === 'violated');
   const anyBorderline = statuses.some((s) => s.status === 'borderline');

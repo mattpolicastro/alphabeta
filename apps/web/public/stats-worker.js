@@ -20,6 +20,7 @@
 
 const PYODIDE_VERSION = '0.26.2';
 const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+const CACHE_NAME = 'pyodide-v' + PYODIDE_VERSION;
 
 let pyodide = null;
 
@@ -27,13 +28,29 @@ function postStatus(message) {
   self.postMessage({ type: 'status', message });
 }
 
+async function cachedFetch(url) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(url);
+  if (cached) return cached;
+  const response = await fetch(url);
+  if (response.ok) {
+    cache.put(url, response.clone());
+  }
+  return response;
+}
+
 async function initPyodide() {
   if (pyodide) return pyodide;
 
-  postStatus('Loading stats engine… (one-time download, ~35 MB)');
+  // Check whether assets are already cached to show appropriate status message
+  const cache = await caches.open(CACHE_NAME);
+  const cachedKeys = await cache.keys();
+  const isCached = cachedKeys.length > 0;
+
+  postStatus(isCached ? 'Loading stats engine… (cached)' : 'Loading stats engine… (one-time download, ~35 MB)');
 
   importScripts(`${PYODIDE_CDN}pyodide.js`);
-  pyodide = await loadPyodide({ indexURL: PYODIDE_CDN });
+  pyodide = await loadPyodide({ indexURL: PYODIDE_CDN, fetch: cachedFetch });
 
   postStatus('Loading scientific packages…');
   await pyodide.loadPackage(['numpy', 'scipy', 'pandas', 'micropip']);

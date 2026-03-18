@@ -475,6 +475,26 @@ export default function SettingsPage() {
           )}
         </div>
       </section>
+
+      {/* Stats Engine Cache */}
+      <section className="card mb-4">
+        <div className="card-body">
+          <h5 className="card-title">Stats Engine Cache</h5>
+          <p className="text-muted small">
+            Pyodide and scientific packages are cached in your browser for faster loading.
+            Clear the cache to force a fresh download on next analysis.
+          </p>
+          <button
+            className="btn btn-outline-warning btn-sm"
+            onClick={async () => {
+              const deleted = await caches.delete('pyodide-v0.26.2');
+              alert(deleted ? 'Stats engine cache cleared.' : 'No cache found.');
+            }}
+          >
+            Clear Stats Cache
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

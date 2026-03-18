@@ -17,13 +17,17 @@ export interface ResultsTableProps {
   metricById: Map<string, Metric>;
   showLift: 'relative' | 'absolute';
   annotations?: Annotation[];
+  selectedVariationIds?: string[];
 }
 
-export function ResultsTable({ result, experiment, metricIds, metricById, showLift, annotations = [] }: ResultsTableProps) {
+export function ResultsTable({ result, experiment, metricIds, metricById, showLift, annotations = [], selectedVariationIds }: ResultsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
   const control = experiment.variations.find((v) => v.isControl);
-  const treatmentVariations = experiment.variations.filter((v) => !v.isControl);
+  const allTreatmentVariations = experiment.variations.filter((v) => !v.isControl);
+  const treatmentVariations = selectedVariationIds
+    ? allTreatmentVariations.filter((v) => selectedVariationIds.includes(v.id))
+    : allTreatmentVariations;
   const metricResults = result.perMetricResults.filter((mr) => metricIds.includes(mr.metricId));
 
   if (metricResults.length === 0) {
@@ -65,7 +69,7 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
             const hasAnnotation = annotatedMetricIds.has(mr.metricId);
 
             return mr.variationResults
-              .filter((vr) => vr.variationId !== control?.id)
+              .filter((vr) => vr.variationId !== control?.id && (!selectedVariationIds || selectedVariationIds.includes(vr.variationId)))
               .flatMap((vr) => {
                 const rowKey = `${mr.metricId}-${vr.variationId}`;
                 const isExpanded = expandedRows.has(rowKey);

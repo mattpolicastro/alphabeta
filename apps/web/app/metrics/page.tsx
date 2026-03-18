@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Fragment } from 'react';
 import {
   getMetrics,
   createMetric,
   updateMetric,
   deleteMetric,
   db,
+  getExperimentsUsingMetric,
   type Metric,
+  type Experiment,
 } from '@/lib/db';
 
 interface MetricLibraryExport {
@@ -37,6 +39,8 @@ export default function MetricsPage() {
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
+  const [usedByExperiments, setUsedByExperiments] = useState<Experiment[]>([]);
 
   const load = useCallback(async () => {
     const results = await getMetrics(
@@ -135,6 +139,16 @@ export default function MetricsPage() {
       // Reset file input so re-selecting the same file triggers onChange
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  }
+
+  async function toggleMetricDetail(metricId: string) {
+    if (expandedMetricId === metricId) {
+      setExpandedMetricId(null);
+      return;
+    }
+    const exps = await getExperimentsUsingMetric(metricId);
+    setUsedByExperiments(exps);
+    setExpandedMetricId(metricId);
   }
 
   return (
@@ -364,31 +378,74 @@ export default function MetricsPage() {
           </thead>
           <tbody>
             {filtered.map((m) => (
-              <tr key={m.id}>
-                <td className="fw-medium">{m.name}</td>
-                <td>
-                  <span className="badge bg-body-secondary border">
-                    {m.type}
-                  </span>
-                </td>
-                <td className="text-muted small">{m.normalization}</td>
-                <td>{m.higherIsBetter ? '↑ Higher' : '↓ Lower'}</td>
-                <td>{m.isGuardrail ? '🛡' : ''}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-outline-secondary me-1"
-                    onClick={() => openEdit(m)}
+              <Fragment key={m.id}>
+                <tr>
+                  <td
+                    className="fw-medium"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => toggleMetricDetail(m.id)}
                   >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={() => handleDelete(m.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+                    {expandedMetricId === m.id ? '▾' : '▸'} {m.name}
+                    {m.description && <br />}
+                    {m.description && (
+                      <span className="text-muted small fw-normal">{m.description}</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="badge bg-body-secondary border">
+                      {m.type}
+                    </span>
+                  </td>
+                  <td className="text-muted small">{m.normalization}</td>
+                  <td>{m.higherIsBetter ? '↑ Higher' : '↓ Lower'}</td>
+                  <td>{m.isGuardrail ? '🛡' : ''}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-outline-secondary me-1"
+                      onClick={() => openEdit(m)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleDelete(m.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+                {expandedMetricId === m.id && (
+                  <tr key={`${m.id}-detail`} className="bg-body-secondary">
+                    <td colSpan={6} className="px-4 py-3">
+                      <strong className="small">Used by experiments:</strong>
+                      {usedByExperiments.length === 0 ? (
+                        <p className="text-muted small mb-0 mt-1">
+                          Not used by any experiments.
+                        </p>
+                      ) : (
+                        <ul className="mb-0 mt-1 small">
+                          {usedByExperiments.map((exp) => (
+                            <li key={exp.id}>
+                              <a href={`/experiments/view?id=${exp.id}`}>{exp.name}</a>
+                              <span className="text-muted ms-1">({exp.status})</span>
+                              {exp.primaryMetricIds.includes(m.id) && (
+                                <span className="badge bg-body-secondary border ms-1">
+                                  primary
+                                </span>
+                              )}
+                              {exp.guardrailMetricIds.includes(m.id) && (
+                                <span className="badge bg-body-secondary border ms-1">
+                                  guardrail
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
             {filtered.length === 0 && (
               <tr>

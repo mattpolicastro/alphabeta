@@ -124,6 +124,20 @@ export async function deleteExperiment(id: string): Promise<void> {
   );
 }
 
+// ----- Cross-entity queries -----
+
+export async function getExperimentsUsingMetric(
+  metricId: string,
+): Promise<Experiment[]> {
+  const all = await db.experiments.toArray();
+  return all.filter(
+    (e) =>
+      e.primaryMetricIds.includes(metricId) ||
+      e.guardrailMetricIds.includes(metricId) ||
+      e.activationMetricId === metricId,
+  );
+}
+
 // ----- Metric queries -----
 
 export async function getMetrics(filters?: {

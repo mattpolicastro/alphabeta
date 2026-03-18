@@ -48,6 +48,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   const [selectedDimensionValue, setSelectedDimensionValue] = useState<string>('');
   const [showHidden, setShowHidden] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedVariationIds, setSelectedVariationIds] = useState<string[] | null>(null);
 
   useEffect(() => { load(); }, [experimentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -74,6 +75,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
 
   const activeResult = allResults.find((r) => r.id === selectedResultId) ?? allResults[0] ?? null;
   const metricById = new Map(metrics.map((m) => [m.id, m]));
+  const treatmentVars = experiment ? experiment.variations.filter((v) => !v.isControl) : [];
 
   async function handleExport() {
     if (!experiment) return;
@@ -222,13 +224,59 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
               >
                 Download Request JSON
               </button>
+              {/* Variation filter — only show if >1 treatment */}
+              {treatmentVars.length > 1 && (
+                <div className="dropdown me-2">
+                  <button
+                    className="btn btn-outline-secondary btn-sm dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                  >
+                    {selectedVariationIds === null
+                      ? `All variations (${treatmentVars.length})`
+                      : `${selectedVariationIds.length} of ${treatmentVars.length} variations`}
+                  </button>
+                  <ul className="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <button className="dropdown-item" onClick={() => setSelectedVariationIds(null)}>
+                        Show all
+                      </button>
+                    </li>
+                    <li><hr className="dropdown-divider" /></li>
+                    {treatmentVars.map((v) => (
+                      <li key={v.id}>
+                        <button
+                          className="dropdown-item d-flex align-items-center gap-2"
+                          onClick={() => {
+                            setSelectedVariationIds((prev) => {
+                              if (prev === null) {
+                                return [v.id];
+                              }
+                              if (prev.includes(v.id)) {
+                                const next = prev.filter((id) => id !== v.id);
+                                return next.length === 0 ? null : next;
+                              }
+                              return [...prev, v.id];
+                            });
+                          }}
+                        >
+                          <span style={{ width: '1.2em' }}>
+                            {(selectedVariationIds === null || selectedVariationIds.includes(v.id)) ? '✓' : ''}
+                          </span>
+                          {v.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="btn-group btn-group-sm">
                 <button className={`btn ${showLift === 'relative' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('relative')}>Relative</button>
                 <button className={`btn ${showLift === 'absolute' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('absolute')}>Absolute</button>
               </div>
             </div>
           </div>
-          <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.primaryMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
+          <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.primaryMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} selectedVariationIds={selectedVariationIds ?? undefined} />
 
           {experiment.guardrailMetricIds.length > 0 && (
             <>
@@ -236,8 +284,9 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
               <GuardrailSection
                 guardrailResults={activeResult.perMetricResults.filter((mr) => experiment.guardrailMetricIds.includes(mr.metricId))}
                 metrics={metrics}
+                selectedVariationIds={selectedVariationIds ?? undefined}
               />
-              <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} />
+              <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} selectedVariationIds={selectedVariationIds ?? undefined} />
             </>
           )}
 
@@ -253,6 +302,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
               selectedDimensionValue={selectedDimensionValue}
               onDimensionChange={(dim) => { setSelectedDimension(dim); setSelectedDimensionValue(''); }}
               onDimensionValueChange={setSelectedDimensionValue}
+              selectedVariationIds={selectedVariationIds ?? undefined}
             />
           )}
         </>
@@ -302,6 +352,7 @@ function DimensionSliceSection({
   selectedDimensionValue,
   onDimensionChange,
   onDimensionValueChange,
+  selectedVariationIds,
 }: {
   activeResult: ExperimentResult;
   experiment: Experiment;
@@ -312,6 +363,7 @@ function DimensionSliceSection({
   selectedDimensionValue: string;
   onDimensionChange: (dim: string) => void;
   onDimensionValueChange: (val: string) => void;
+  selectedVariationIds?: string[];
 }) {
   const sliceResults = activeResult.sliceResults!;
   const dimensionNames = Object.keys(sliceResults).sort();
@@ -364,6 +416,7 @@ function DimensionSliceSection({
             metricById={metricById}
             showLift={showLift}
             annotations={annotations}
+            selectedVariationIds={selectedVariationIds}
           />
           {experiment.guardrailMetricIds.length > 0 && (
             <ResultsTable
@@ -373,6 +426,7 @@ function DimensionSliceSection({
               metricById={metricById}
               showLift={showLift}
               annotations={annotations}
+              selectedVariationIds={selectedVariationIds}
             />
           )}
         </>
