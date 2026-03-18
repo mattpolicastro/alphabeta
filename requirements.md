@@ -44,15 +44,15 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 | Raw p-value display (multiple comparison correction) | Low | Done | When BH or Holm correction applied, both raw and adjusted p-values shown in results table and detail panel |
 | Update template CSV download | Low | Done | Explicit `format` parameter; each upload section gets its own template |
 
-### 1.2 Sequential Testing Engine — *Deferred to v3*
+### 1.2 Sequential Testing Engine — *Deferred beyond v2*
 
-> Moved to v3 scope. See "Deferred to v3" section.
+> Moved out of v2 scope. See "Deferred beyond v2" section.
 
 ---
 
-## ~~v2 Visualizations~~ — *Deferred to v3*
+## ~~v2 Visualizations~~ — *Deferred beyond v2*
 
-> Originally planned as a v2 phase. Moved to v3 scope. See "Deferred to v3" section.
+> Originally planned as a v2 phase. Moved out of scope. See "Deferred beyond v2" section.
 
 ---
 
@@ -100,9 +100,9 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 | Filter ResultsTable + GuardrailSection by selected variations | Low | Done |
 | Persist selection per experiment in session | Low | Done (component state, resets on navigation) |
 
-### 3.4 Bayesian Prior Configuration — *Deferred to v3*
+### 3.4 Bayesian Prior Configuration — *Deferred beyond v2*
 
-> Moved to v3 scope. See "Deferred to v3" section.
+> Moved out of v2 scope. See "Deferred beyond v2" section.
 
 ### 3.5 Metric Detail View
 
@@ -115,7 +115,7 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 |------|--------|--------|
 | Reverse lookup: experiments using metric (Dexie query) | Low | Done |
 | Expandable metric detail panel with experiment list | Medium | Done |
-| Historical trend of metric across experiments (stretch) | High | Deferred to v3 |
+| Historical trend of metric across experiments (stretch) | High | Deferred beyond v2 |
 
 ### 3.6 Annotation Improvements
 
@@ -200,15 +200,15 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 
 ---
 
-## Deferred to v3
+## Deferred beyond v2
 
-> Features scoped for v2 but moved to v3 to keep the release focused.
+> Features scoped for v2 but moved out to keep the release focused.
 
 - **§1.2 Sequential Testing Engine** — mSPRT-based continuous monitoring. Requires gbstats API research (does it support sequential proportion tests?). Type exists in schema but removed from all UI selectors.
 - **§2.x Visualizations** — Recharts-based charts (CI bar chart, violin plot, traffic split donut, cumulative time series). Inline CSS bars in the detail panel are functional for now.
 - **§3.4 Bayesian Prior Configuration** — Informative priors per metric. Power-user feature for metrics with strong historical baselines.
 
-## Deferred Beyond v3
+## Deferred indefinitely
 
 > Items from the v1 spec (§12) that remain out of scope.
 
@@ -253,7 +253,7 @@ v2 Phase 2 (quality of life): ✅ complete
   §3.5 metric detail view, §3.6 annotations, §3.7 status management,
   §3.8 loading overlay, §3.9 experiment deletion, §3.10 platform ID,
   §3.11 site title, CI test/lint runner
-v3 (deferred): §1.2 sequential testing, §2.x visualizations, §3.4 Bayesian priors,
+deferred beyond v2: §1.2 sequential testing, §2.x visualizations, §3.4 Bayesian priors,
   §3.5 metric historical trends
 ```
 

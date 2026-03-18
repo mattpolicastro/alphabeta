@@ -36,7 +36,7 @@ All v1 gaps have been addressed: 5 functional features, 137 unit tests across 4 
 - **Styling:** Raw Bootstrap 5 CSS classes via `className`. No `react-bootstrap` component library, no Tailwind.
 - **gbstats API:** Class-based (`EffectBayesianABTest`, `TwoSidedTTest`, `ProportionStatistic`), NOT bare functions (`proportion_test`, `frequentist_test`) as requirements.md assumed. See `architecture.md`.
 - **Pyodide:** Pinned to 0.26.2 (not 0.27.0) due to numpy 2.x conflict. gbstats installed with `deps=False`.
-- **Sequential engine:** Deferred to v3. Type exists in schema but removed from all UI selectors.
+- **Sequential engine:** Deferred beyond v2. Type exists in schema but removed from all UI selectors.
 - **CUPED:** Schema field preserved but toggle disabled in UI; not implemented in analysis logic.
 - **File organization:** `lib/store/` (not `lib/stores/`), `lib/csv/buildRequest.ts` (not `lib/stats/buildRequest.ts`). DB operations are in `lib/db/index.ts` (not split into per-entity files). See `architecture.md` for actual layout.
 - **Shared components:** Variation editing, stats config, and metric picker are extracted into shared components (`VariationEditor`, `StatsConfigEditor`, `MetricPicker`) used by both the wizard and config panel.
