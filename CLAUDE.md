@@ -188,3 +188,51 @@ gh pr create --base main --title "Add my-module" --body "..."
 ```
 
 After merge, delete the remote branch (`gh pr merge --delete-branch` or `git push origin --delete feat/my-module`).
+
+## Versioning & Release Tagging
+
+This project follows [Semantic Versioning](https://semver.org/) with a `v` prefix on git tags.
+
+### Version format: `vMAJOR.MINOR.PATCH`
+
+| Component | When to bump | Examples |
+|-----------|-------------|----------|
+| **MAJOR** | Breaking changes to data model, CSV format, or export schema that would require user migration | Changing IndexedDB schema in a non-backward-compatible way, removing a CSV format |
+| **MINOR** | New features, new planned feature phases completing, non-breaking additions to data model | Adding continuous metrics (v0.2.0), adding sequential testing |
+| **PATCH** | Bug fixes, doc-only changes, CI fixes, non-functional improvements | Fixing a CSS contrast issue, adding a missing npm script |
+
+While the project is `0.x.y` (pre-1.0), minor versions may include small breaking changes without a major bump — but document them in the tag annotation.
+
+### When to tag
+
+- Tag **after** CI passes on the commit you intend to release. Never tag a commit that hasn't been pushed and verified.
+- Tag at **natural milestones**, not after every commit. Good moments:
+  - All tasks in a phase/module are complete and tested
+  - A meaningful set of features ships together
+  - A bug fix that warrants calling out to users
+- Do **not** tag intermediate work-in-progress states.
+
+### How to tag
+
+```bash
+# Lightweight tag (preferred for now)
+git tag v0.3.0
+git push origin v0.3.0
+
+# Annotated tag (use for significant releases or when you want a message)
+git tag -a v1.0.0 -m "First stable release"
+git push origin v1.0.0
+
+# Tagging a past commit
+git tag v0.1.0 <commit-hash>
+git push origin v0.1.0
+```
+
+### Release history
+
+| Tag | Commit | Milestone |
+|-----|--------|-----------|
+| `v0.1.0` | `e3177da` | v1 complete — all core features implemented, 137 tests passing |
+| `v0.2.0` | `068015f` | v2 complete — continuous metrics, dark mode, worker resilience, Cache API, variation filter, metric detail view, CI pipeline |
+
+Update this table when creating new tags.
