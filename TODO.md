@@ -14,7 +14,7 @@
 - `[~]` — In progress (note who/which agent)
 - `[x]` — Merged to main
 - `[!]` — Blocked (note reason)
-- `[-]` — Descoped / deferred to v2
+- `[-]` — Descoped / deferred
 - **P0** — Must land first; other modules depend on it
 - **P1** — Core feature; can parallelize after P0
 - **P2** — Important but not blocking other work
@@ -36,7 +36,7 @@ All v1 gaps have been addressed: 5 functional features, 137 unit tests across 4 
 - **Styling:** Raw Bootstrap 5 CSS classes via `className`. No `react-bootstrap` component library, no Tailwind.
 - **gbstats API:** Class-based (`EffectBayesianABTest`, `TwoSidedTTest`, `ProportionStatistic`), NOT bare functions (`proportion_test`, `frequentist_test`) as requirements.md assumed. See `architecture.md`.
 - **Pyodide:** Pinned to 0.26.2 (not 0.27.0) due to numpy 2.x conflict. gbstats installed with `deps=False`.
-- **Sequential engine:** Deferred to v2. Type exists in schema but removed from all UI selectors.
+- **Sequential engine:** Deferred to v3. Type exists in schema but removed from all UI selectors.
 - **CUPED:** Schema field preserved but toggle disabled in UI; not implemented in analysis logic.
 - **File organization:** `lib/store/` (not `lib/stores/`), `lib/csv/buildRequest.ts` (not `lib/stats/buildRequest.ts`). DB operations are in `lib/db/index.ts` (not split into per-entity files). See `architecture.md` for actual layout.
 - **Shared components:** Variation editing, stats config, and metric picker are extracted into shared components (`VariationEditor`, `StatsConfigEditor`, `MetricPicker`) used by both the wizard and config panel.
@@ -123,7 +123,7 @@ Req: §5.2, §7.3
 - [x] Metric list page: filterable by type, searchable
 - [x] Create/edit metric form: name, type, normalization, higherIsBetter, isGuardrail, tags
 - [x] Import/export metric library as standalone JSON (versioned envelope, bulkPut merge)
-- [-] Metric detail view: recent experiments using this metric — not implemented
+- [x] Metric detail view: expandable rows showing experiments using this metric (§3.5)
 - [x] capValue/capType, minSampleSize — surfaced in create/edit metric form
 - [x] Tests: CRUD, validation, referential integrity
 
@@ -205,7 +205,7 @@ Req: §6.5a, §10.2, §13.1
 - [x] Multiple comparison corrections (Holm-Bonferroni, Benjamini-Hochberg)
 - [x] Dimension slice computation
 - [x] Full parity with Lambda handler
-- [-] Cache API integration for Pyodide assets — deferred (relies on browser HTTP cache for now)
+- [x] Cache API integration for Pyodide assets — `cachedFetch` in stats-worker.js (§3.2)
 - [x] Worker crash recovery / fallback prompt — 3-min timeout, auto-restart, Lambda fallback after 2+ failures (§3.2)
 - [-] Tests — Pyodide worker not testable in Jest (runs in real browser only)
 
@@ -245,7 +245,7 @@ Req: §7.2, §8.3
 - [x] Export results as CSV
 - [x] Export raw `AnalysisRequest` as JSON
 - [x] Scaled uplift — `scaledImpact` computed in `transformResponse`, displayed in detail panel
-- [-] Variation filter for multi-variant — not implemented (all non-control variations shown)
+- [x] Variation filter for multi-variant — `selectedVariationIds` prop + dropdown (§3.3)
 - [x] Tests: GuardrailSection status logic, significance states
 
 ### Module: Results Visualizations (Recharts)

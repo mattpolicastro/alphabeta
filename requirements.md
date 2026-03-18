@@ -46,19 +46,19 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 
 ### 1.2 Sequential Testing Engine — *Deferred to v3*
 
-> Moved to v3 scope. See "Deferred Beyond v2" section.
+> Moved to v3 scope. See "Deferred to v3" section.
 
 ---
 
-## ~~v2 Phase 2 — Visualizations~~ — *Deferred to v3*
+## ~~v2 Visualizations~~ — *Deferred to v3*
 
-> Moved to v3 scope. See "Deferred Beyond v2" section.
+> Originally planned as a v2 phase. Moved to v3 scope. See "Deferred to v3" section.
 
 ---
 
 ## v2 Phase 2 — Quality of Life
 
-> Independent features that can be built in parallel alongside Phase 1-2 work.
+> Independent features built in parallel alongside Phase 1 work. All complete.
 
 ### 3.1 Dark Mode
 
@@ -102,7 +102,7 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 
 ### 3.4 Bayesian Prior Configuration — *Deferred to v3*
 
-> Moved to v3 scope. See "Deferred Beyond v2" section.
+> Moved to v3 scope. See "Deferred to v3" section.
 
 ### 3.5 Metric Detail View
 
@@ -257,7 +257,6 @@ v3 (deferred): §1.2 sequential testing, §2.x visualizations, §3.4 Bayesian pr
   §3.5 metric historical trends
 ```
 
----
 ---
 
 ## Appendices (from v1 spec)

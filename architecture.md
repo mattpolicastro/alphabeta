@@ -90,7 +90,7 @@ CSV file → parseCSVFile() → ColumnMapper (user assigns roles)
 - **gbstats uses class-based API:** `EffectBayesianABTest`, `TwoSidedTTest`, `ProportionStatistic`, `check_srm`. NOT bare functions.
 - **All data stays in IndexedDB.** No server-side persistence. Export/import via JSON.
 - **Bootstrap 5 for styling.** No Tailwind. Use `className` with Bootstrap utility classes.
-- **Sequential engine deferred to v2.** Type exists in schema but removed from UI; do not re-add without implementing mSPRT logic.
+- **Sequential engine deferred to v3.** Type exists in schema but removed from UI; do not re-add without implementing mSPRT logic.
 - **Lambda CORS is wide open (`*`).** Intentionally deferred — WASM is the primary path.
 - **Dark mode via Bootstrap 5** `data-bs-theme` attribute. ThemeProvider reads from settingsStore; supports light/dark/auto (OS preference). Use `bg-body-secondary` not `bg-light text-dark` for theme-adaptive badges.
 - **Worker resilience.** Stats worker has 3-minute analysis timeout with auto-restart. `engineStatusStore.failureCount` tracks consecutive failures; UploadView prompts Lambda fallback after 2+.

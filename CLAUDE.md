@@ -8,7 +8,7 @@
 
 ```bash
 cd apps/web && npm run build    # static export to out/; must pass before merging
-npm test                        # once Jest is configured (see TODO.md Infrastructure)
+npm test                        # Jest configured; also runs in CI via deploy.yml
 ```
 
 ## Multi-Agent Protocol
