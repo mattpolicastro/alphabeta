@@ -33,6 +33,25 @@ export default function RootLayout({
           <main className="container" style={{ maxWidth: '80rem' }}>
             {children}
           </main>
+          <footer className="text-center text-muted py-3 small">
+            <a
+              href={`https://github.com/mattpolicastro/alphabeta/releases/tag/${process.env.NEXT_PUBLIC_APP_VERSION}`}
+              className="text-muted text-decoration-none"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {process.env.NEXT_PUBLIC_APP_VERSION || 'dev'}
+            </a>
+            {' · '}
+            <a
+              href="https://github.com/mattpolicastro/alphabeta"
+              className="text-muted text-decoration-none"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </footer>
         </ThemeProvider>
       </body>
     </html>
