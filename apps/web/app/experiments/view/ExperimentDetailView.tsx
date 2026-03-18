@@ -375,6 +375,7 @@ function ConfigPanel({
   onClose: () => void;
 }) {
   const [name, setName] = useState(experiment.name);
+  const [experimentId, setExperimentId] = useState(experiment.experimentId ?? '');
   const [hypothesis, setHypothesis] = useState(experiment.hypothesis);
   const [description, setDescription] = useState(experiment.description ?? '');
   const [tags, setTags] = useState(experiment.tags.join(', '));
@@ -393,6 +394,7 @@ function ConfigPanel({
     setSaving(true);
     await onSave({
       name,
+      experimentId: experimentId || undefined,
       hypothesis,
       description: description || undefined,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -420,6 +422,11 @@ function ConfigPanel({
           <div className="col-md-6">
             <label className="form-label">Name</label>
             <input className="form-control" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Experiment ID</label>
+            <input className="form-control" value={experimentId} onChange={(e) => setExperimentId(e.target.value)} placeholder="Platform experiment ID" />
+            <div className="form-text">Matches <code>experiment_id</code> in CSV uploads.</div>
           </div>
           <div className="col-md-6">
             <label className="form-label">Tags (comma-separated)</label>

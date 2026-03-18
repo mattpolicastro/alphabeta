@@ -13,6 +13,7 @@ export interface Variation {
 
 export interface Experiment {
   id: string; // nanoid
+  experimentId?: string; // optional platform/external experiment ID used for CSV filtering
   name: string;
   hypothesis: string;
   description?: string;

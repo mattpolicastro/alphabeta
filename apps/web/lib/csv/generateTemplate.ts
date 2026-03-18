@@ -14,11 +14,12 @@ export function generateTemplateCSV(
   metrics: Metric[],
   format: TemplateFormat = 'agg-v1',
 ): string {
+  const csvExperimentId = experiment.experimentId || experiment.id;
   const variationKeys = experiment.variations.map((v) => v.key);
   const metricNames = metrics.map((m) => m.name.toLowerCase().replace(/\s+/g, '_'));
 
   if (format === 'row-v1') {
-    return generateRowLevelTemplate(experiment.id, variationKeys, metricNames);
+    return generateRowLevelTemplate(csvExperimentId, variationKeys, metricNames);
   }
 
   // agg-v1 pre-aggregated template
@@ -29,12 +30,12 @@ export function generateTemplateCSV(
 
   // Overall rows (all dimensions = "all")
   for (const varKey of variationKeys) {
-    rows.push([experiment.id, varKey, 'all', '', ...metricNames.map(() => '')]);
+    rows.push([csvExperimentId, varKey, 'all', '', ...metricNames.map(() => '')]);
   }
 
   // One example dimension slice
   for (const varKey of variationKeys) {
-    rows.push([experiment.id, varKey, 'example_slice', '', ...metricNames.map(() => '')]);
+    rows.push([csvExperimentId, varKey, 'example_slice', '', ...metricNames.map(() => '')]);
   }
 
   const lines = [

@@ -25,6 +25,7 @@ type Correction = 'none' | 'holm-bonferroni' | 'benjamini-hochberg';
 
 interface WizardState {
   name: string;
+  experimentId: string;
   hypothesis: string;
   description: string;
   tags: string;
@@ -50,6 +51,7 @@ export default function NewExperimentPage() {
 
   const [form, setForm] = useState<WizardState>({
     name: '',
+    experimentId: '',
     hypothesis: '',
     description: '',
     tags: '',
@@ -84,6 +86,7 @@ export default function NewExperimentPage() {
   async function handleSave(status: 'draft' | 'running') {
     await createExperiment({
       name: form.name,
+      experimentId: form.experimentId || undefined,
       hypothesis: form.hypothesis,
       description: form.description || undefined,
       status,
@@ -138,6 +141,16 @@ export default function NewExperimentPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Experiment ID</label>
+            <input
+              className="form-control"
+              value={form.experimentId}
+              onChange={(e) => setForm({ ...form, experimentId: e.target.value })}
+              placeholder="e.g. exp_001 — matches experiment_id in your CSV"
+            />
+            <div className="form-text">Optional. The identifier your platform uses for this experiment. Used to filter CSV rows and pre-fill templates.</div>
           </div>
           <div className="mb-3">
             <label className="form-label">Hypothesis</label>
@@ -209,6 +222,9 @@ export default function NewExperimentPage() {
           <div className="card mb-3">
             <div className="card-body">
               <h5>{form.name}</h5>
+              {form.experimentId && (
+                <p className="small text-muted mb-1"><strong>Experiment ID:</strong> <code>{form.experimentId}</code></p>
+              )}
               {form.hypothesis && (
                 <p className="text-muted">{form.hypothesis}</p>
               )}

@@ -46,17 +46,22 @@ export function buildAnalysisRequest(
     return buildAnalysisRequestV2(parsed, experiment, metrics, mapping, multipleExposureCount);
   }
 
-  const experimentId = experiment.id;
+  // Use the platform experiment ID if set, otherwise fall back to the internal nanoid.
+  const experimentId = experiment.experimentId || experiment.id;
 
-  // Filter rows to this experiment. If no exact match, fall back to all rows —
-  // the user already selected the experiment in the UI, so a single-experiment
-  // CSV with a different experiment_id format (e.g., human-readable name vs nanoid)
-  // should still work.
+  // Filter rows to this experiment. Try the configured experimentId first,
+  // then fall back to the internal id if different. If neither matches and the
+  // CSV has a single unique experiment_id, use all rows.
   let rows = parsed.rows.filter(
     (r) => r['experiment_id']?.trim() === experimentId,
   );
+  if (rows.length === 0 && experiment.experimentId && experiment.experimentId !== experiment.id) {
+    // Try internal id as fallback
+    rows = parsed.rows.filter(
+      (r) => r['experiment_id']?.trim() === experiment.id,
+    );
+  }
   if (rows.length === 0) {
-    // Check if there's exactly one unique experiment_id — safe to use all rows
     const uniqueIds = new Set(parsed.rows.map((r) => r['experiment_id']?.trim()).filter(Boolean));
     if (uniqueIds.size === 1) {
       rows = parsed.rows;
