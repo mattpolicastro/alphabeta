@@ -392,7 +392,7 @@ export default function MetricsPage() {
                     )}
                   </td>
                   <td>
-                    <span className="badge bg-body-secondary border">
+                    <span className="badge bg-body-secondary text-body border">
                       {m.type}
                     </span>
                   </td>
@@ -429,12 +429,12 @@ export default function MetricsPage() {
                               <a href={`/experiments/view?id=${exp.id}`}>{exp.name}</a>
                               <span className="text-muted ms-1">({exp.status})</span>
                               {exp.primaryMetricIds.includes(m.id) && (
-                                <span className="badge bg-body-secondary border ms-1">
+                                <span className="badge bg-body-secondary text-body border ms-1">
                                   primary
                                 </span>
                               )}
                               {exp.guardrailMetricIds.includes(m.id) && (
-                                <span className="badge bg-body-secondary border ms-1">
+                                <span className="badge bg-body-secondary text-body border ms-1">
                                   guardrail
                                 </span>
                               )}

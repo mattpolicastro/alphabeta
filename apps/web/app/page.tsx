@@ -169,7 +169,7 @@ export default function DashboardPage() {
                       {exp.tags.map((t) => (
                         <span
                           key={t}
-                          className="badge bg-body-secondary border me-1"
+                          className="badge bg-body-secondary text-body border me-1"
                         >
                           {t}
                         </span>

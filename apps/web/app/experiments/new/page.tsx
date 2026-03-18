@@ -266,10 +266,10 @@ export default function NewExperimentPage() {
                 </div>
               </div>
               <div className="mt-2">
-                <span className="badge bg-body-secondary border me-1">
+                <span className="badge bg-body-secondary text-body border me-1">
                   {form.statsEngine}
                 </span>
-                <span className="badge bg-body-secondary border me-1">
+                <span className="badge bg-body-secondary text-body border me-1">
                   {form.correction === 'none' ? 'no correction' : form.correction}
                 </span>
                 {form.cuped && (

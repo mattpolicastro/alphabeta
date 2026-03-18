@@ -89,9 +89,9 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                       <span className="fw-medium">{metric?.name ?? mr.metricId}</span>
                       {hasAnnotation && <span className="ms-1" title="Has annotations">📝</span>}
                       <br />
-                      <span className="badge bg-body-secondary border">{metric?.type}</span>
+                      <span className="badge bg-body-secondary text-body border">{metric?.type}</span>
                       {metric && (
-                        <span className="badge bg-body-secondary border ms-1">
+                        <span className="badge bg-body-secondary text-body border ms-1">
                           {metric.higherIsBetter ? '↑ higher is better' : '↓ lower is better'}
                         </span>
                       )}

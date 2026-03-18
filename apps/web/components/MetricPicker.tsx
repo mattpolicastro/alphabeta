@@ -65,7 +65,7 @@ export function MetricPicker({
             />
             <label className="form-check-label" htmlFor={`${idPrefix}-primary-${m.id}`}>
               {m.name}{' '}
-              <span className="badge bg-body-secondary border">{m.type}</span>
+              <span className="badge bg-body-secondary text-body border">{m.type}</span>
             </label>
           </div>
         ))}
