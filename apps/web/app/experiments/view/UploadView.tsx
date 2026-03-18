@@ -297,6 +297,11 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
         </div>
       )}
 
+      {/* Metric coverage — always visible */}
+      <div className="mb-4">
+        {renderMetricCoverage()}
+      </div>
+
       <div className="row g-4">
         {/* Aggregated section */}
         <div className="col-lg-6">
@@ -325,20 +330,16 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
         </div>
       </div>
 
-      {/* Metric coverage + submit */}
+      {/* Submit */}
       {hasAnyData && (
-        <div className="mt-4">
-          {renderMetricCoverage()}
-
-          <div className="d-flex justify-content-end mt-3">
-            <button
-              className="btn btn-primary"
-              disabled={anyBlockingErrors || totalMapped === 0 || aggValidationErrors || rowValidationErrors || analyzing}
-              onClick={handleSubmit}
-            >
-              Run Analysis
-            </button>
-          </div>
+        <div className="d-flex justify-content-end mt-4">
+          <button
+            className="btn btn-primary"
+            disabled={anyBlockingErrors || totalMapped === 0 || aggValidationErrors || rowValidationErrors || analyzing}
+            onClick={handleSubmit}
+          >
+            Run Analysis
+          </button>
         </div>
       )}
     </div>
