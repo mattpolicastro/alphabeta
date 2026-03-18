@@ -48,14 +48,27 @@ export function buildAnalysisRequest(
 
   const experimentId = experiment.id;
 
-  // Filter rows to this experiment
-  const rows = parsed.rows.filter(
+  // Filter rows to this experiment. If no exact match, fall back to all rows —
+  // the user already selected the experiment in the UI, so a single-experiment
+  // CSV with a different experiment_id format (e.g., human-readable name vs nanoid)
+  // should still work.
+  let rows = parsed.rows.filter(
     (r) => r['experiment_id']?.trim() === experimentId,
   );
   if (rows.length === 0) {
-    throw new Error(
-      `No rows found for experiment_id "${experimentId}". Check that the CSV contains matching data.`,
-    );
+    // Check if there's exactly one unique experiment_id — safe to use all rows
+    const uniqueIds = new Set(parsed.rows.map((r) => r['experiment_id']?.trim()).filter(Boolean));
+    if (uniqueIds.size === 1) {
+      rows = parsed.rows;
+    } else if (uniqueIds.size > 1) {
+      throw new Error(
+        `No rows found for experiment_id "${experimentId}" and CSV contains multiple experiment IDs (${[...uniqueIds].map((id) => `"${id}"`).join(', ')}). Ensure one matches the experiment.`,
+      );
+    } else {
+      throw new Error(
+        `No rows found for experiment_id "${experimentId}". Check that the CSV contains matching data.`,
+      );
+    }
   }
 
   // Identify mapped columns by role, filtering out stale metric references
