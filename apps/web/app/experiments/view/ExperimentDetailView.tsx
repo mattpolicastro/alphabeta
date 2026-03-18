@@ -13,6 +13,7 @@ import {
   exportExperiment,
   cloneExperiment,
   updateExperiment,
+  deleteExperiment,
   type Experiment,
   type Metric,
   type ExperimentResult,
@@ -46,6 +47,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [selectedDimensionValue, setSelectedDimensionValue] = useState<string>('');
   const [showHidden, setShowHidden] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => { load(); }, [experimentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -94,6 +96,12 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
     setExperiment({ ...experiment, status });
   }
 
+  async function handleDelete() {
+    if (!experiment) return;
+    await deleteExperiment(experiment.id);
+    window.location.href = '/';
+  }
+
   async function handleConfigSave(patch: Partial<Experiment>) {
     if (!experiment) return;
     await updateExperiment(experiment.id, patch);
@@ -133,9 +141,23 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
             {experiment.status === 'stopped' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Resume</button>}
             {experiment.status === 'archived' && <button className="btn btn-outline-secondary" onClick={() => handleStatusChange('stopped')}>Unarchive</button>}
             {experiment.status !== 'archived' && <button className="btn btn-outline-danger" onClick={() => handleStatusChange('archived')}>Archive</button>}
+            <button className="btn btn-outline-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button>
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="alert alert-danger d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <strong>Are you sure?</strong> This will permanently delete this experiment, all analysis results, notes, and column mappings. This action cannot be undone.
+          </div>
+          <div className="d-flex gap-2 ms-3 flex-shrink-0">
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete permanently</button>
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Hypothesis */}
       {experiment.hypothesis && !showConfig && <div className="card mb-3"><div className="card-body py-2"><strong>Hypothesis:</strong> {experiment.hypothesis}</div></div>}
