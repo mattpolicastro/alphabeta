@@ -234,6 +234,7 @@ git push origin v0.1.0
 |-----|--------|-----------|
 | `v0.1.0` | `e3177da` | v1 complete — all core features implemented, 137 tests passing |
 | `v0.2.0` | `068015f` | v2 complete — continuous metrics, dark mode, worker resilience, Cache API, variation filter, metric detail view, CI pipeline |
+| `v0.2.1` | `065fdf6` | Auto-versioned footer with git tag + GitHub repo link |
 
 Update this table when creating new tags.
 
