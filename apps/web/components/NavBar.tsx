@@ -23,10 +23,10 @@ export function NavBar() {
   }
 
   const statusBadge: Record<string, { className: string; label: string }> = {
-    uninitialised: { className: 'bg-secondary', label: 'Stats Engine: idle' },
-    loading: { className: 'bg-warning text-dark', label: 'Stats Engine: loading…' },
-    ready: { className: 'bg-success', label: 'Stats Engine: ready' },
-    error: { className: 'bg-danger', label: 'Stats Engine: error' },
+    uninitialised: { className: 'bg-secondary', label: 'Stats Engine: Idle' },
+    loading: { className: 'bg-warning text-dark', label: 'Stats Engine: Loading…' },
+    ready: { className: 'bg-success', label: 'Stats Engine: Ready' },
+    error: { className: 'bg-danger', label: 'Stats Engine: Error' },
   };
 
   const badge = statusBadge[engineStatus];
