@@ -115,7 +115,7 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
 
                 if (isExpanded) {
                   rows.push(
-                    <tr key={`${rowKey}-detail`} className="bg-light">
+                    <tr key={`${rowKey}-detail`} className="bg-body-secondary">
                       <td />
                       <td colSpan={5 + treatmentVariations.length}>
                         <DetailPanel
@@ -262,12 +262,12 @@ function DetailPanel({
             {isBayesian ? <CredibleIntervalTip /> : <ConfidenceIntervalTip />} (relative uplift)
           </div>
           <div
-            className="position-relative bg-white border rounded"
+            className="position-relative bg-body border rounded"
             style={{ height: '3rem' }}
           >
             {/* Zero line */}
             <div
-              className="position-absolute top-0 bottom-0 border-start border-dark"
+              className="position-absolute top-0 bottom-0 border-start border-secondary"
               style={{ left: `${toPercent(0)}%` }}
             />
             <div
