@@ -362,8 +362,8 @@ Req: §10.5
 
 - [x] Frontend deploy workflow: `npm run build` → deploy to GitHub Pages
 - [-] Lambda deploy workflow — deferred (Lambda path is secondary)
-- [ ] Test runner in CI — Jest is configured; add `npm test` to deploy workflow
-- [ ] Lint check in CI — ESLint configured; add `npm run lint` to deploy workflow
+- [x] Test runner in CI — `npm test` step in deploy workflow
+- [x] Lint check in CI — `npm run lint` step in deploy workflow
 
 ### Module: Dark Mode
 Touches: `app/layout.tsx`, `components/ThemeProvider.tsx`, `components/NavBar.tsx`, `app/settings/page.tsx`
@@ -405,7 +405,7 @@ Req: §3.2
 - [x] 3-minute analysis timeout via `Promise.race`
 - [x] Failure counter in engineStatusStore with auto-restart
 - [x] Lambda fallback prompt in UploadView after 2+ failures
-- [ ] Pyodide Cache API for faster restarts
+- [x] Pyodide Cache API for faster restarts — `cachedFetch` in stats-worker.js, "Clear Stats Cache" in Settings
 
 ### Module: Analysis Progress Overlay
 Touches: `components/AnalysisOverlay.tsx`, `app/experiments/view/UploadView.tsx`
@@ -414,6 +414,22 @@ Req: §3.8
 - [x] AnalysisOverlay component with 4 progress steps
 - [x] Worker status messages drive step transitions
 - [x] Replaces simple spinner in UploadView
+
+### Module: Variation Filter
+Touches: `app/experiments/view/ExperimentDetailView.tsx`, `components/ResultsTable.tsx`, `components/GuardrailSection.tsx`
+Req: §3.3
+
+- [x] `selectedVariationIds` prop on ResultsTable and GuardrailSection
+- [x] Multi-select dropdown in ExperimentDetailView (shows when >1 treatment)
+- [x] Filters applied to primary metrics, guardrail metrics, and dimension slices
+
+### Module: Metric Detail View
+Touches: `app/metrics/page.tsx`, `lib/db/index.ts`
+Req: §3.5
+
+- [x] `getExperimentsUsingMetric()` query in lib/db
+- [x] Expandable rows in metrics table showing experiments that reference each metric
+- [x] Primary/guardrail badges per experiment
 
 ---
 

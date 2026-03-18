@@ -85,18 +85,20 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 | Detect worker termination (`onerror` / heartbeat) | Low | Done (onerror + timeout) |
 | Auto-restart worker on next analysis attempt | Low | Done (worker nulled on crash, recreated on next call) |
 | "Switch to cloud analysis?" prompt on repeated failure | Low | Done (after 2+ failures, if Lambda configured) |
-| Pyodide Cache API for faster restarts | Low-Med | Not started |
+| Pyodide Cache API for faster restarts | Low-Med | Done (`cachedFetch` in stats-worker.js, "Clear Stats Cache" in Settings) |
 
 ### 3.3 Variation Filter (Multi-Variant)
 
 **Effort:** Low
 **Motivation:** Experiments with 3-5 variations produce cluttered results tables. Allow filtering to a subset of variations.
 
-| Task | Effort |
-|------|--------|
-| Dropdown in results table header | Low |
-| Filter `MetricResult[]` by selected variations | Low |
-| Persist selection per experiment in session | Low |
+**Implemented:** Multi-select dropdown in experiment detail view (visible when >1 treatment variation). Filters apply to ResultsTable, GuardrailSection, and dimension slices. Selection uses `null` = show all, array of IDs = filtered. Bootstrap dropdown with checkmarks.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Dropdown in results view header | Low | Done |
+| Filter ResultsTable + GuardrailSection by selected variations | Low | Done |
+| Persist selection per experiment in session | Low | Done (component state, resets on navigation) |
 
 ### 3.4 Bayesian Prior Configuration — *Deferred to v3*
 
@@ -107,11 +109,13 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 **Effort:** Medium
 **Motivation:** Users want to see which experiments use a given metric and how it has performed historically.
 
-| Task | Effort |
-|------|--------|
-| Reverse lookup: experiments using metric (Dexie query) | Low |
-| Metric detail page/panel with experiment list | Medium |
-| Historical trend of metric across experiments (stretch) | High |
+**Implemented:** Expandable rows in the metric library table. Clicking a metric name reveals which experiments reference it (as primary or guardrail), with links to each experiment's detail view. Uses `getExperimentsUsingMetric()` DB query.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Reverse lookup: experiments using metric (Dexie query) | Low | Done |
+| Expandable metric detail panel with experiment list | Medium | Done |
+| Historical trend of metric across experiments (stretch) | High | Deferred to v3 |
 
 ### 3.6 Annotation Improvements
 
@@ -234,8 +238,8 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Test runner in CI | Low | Jest is configured — add `npm test` step to deploy workflow |
-| Lint check in CI | Low | ESLint configured; add `npm run lint` step to deploy workflow |
+| Test runner in CI | Low | Done — `npm test` step in deploy workflow |
+| Lint check in CI | Low | Done — `npm run lint` step in deploy workflow |
 
 ---
 
@@ -244,13 +248,13 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 ```
 v1: ✅ complete
 v2 Phase 1 (continuous metrics): ✅ complete
-v2 Phase 2 (quality of life):
-  ✅ §3.1 dark mode, §3.2 worker resilience (except Cache API), §3.6 annotations,
-     §3.7 status management, §3.8 loading overlay, §3.9 experiment deletion,
-     §3.10 platform ID, §3.11 site title
-  remaining: §3.2 Pyodide Cache API, §3.3 variation filter, §3.5 metric detail view,
-     CI test/lint runner
-v3 (deferred): §1.2 sequential testing, §2.x visualizations, §3.4 Bayesian priors
+v2 Phase 2 (quality of life): ✅ complete
+  §3.1 dark mode, §3.2 worker resilience + Cache API, §3.3 variation filter,
+  §3.5 metric detail view, §3.6 annotations, §3.7 status management,
+  §3.8 loading overlay, §3.9 experiment deletion, §3.10 platform ID,
+  §3.11 site title, CI test/lint runner
+v3 (deferred): §1.2 sequential testing, §2.x visualizations, §3.4 Bayesian priors,
+  §3.5 metric historical trends
 ```
 
 ---
