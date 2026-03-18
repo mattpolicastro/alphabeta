@@ -14,7 +14,13 @@
 
 **Motivation:** v1 treats all metrics as proportions (`p = total / units`). This works for conversion rates but not for revenue-per-user, session duration, or other continuous metrics where variance can't be derived from the rate alone. This was identified as the primary v2 feature in §12 of the v1 spec.
 
-**Approach:** Support a second CSV format — one row per user per variation — that provides raw values from which the frontend computes mean, variance, and sample size before sending to the engine.
+**Approach:** Support a second CSV format (`#schema:row-v1`) — one row per user per variation — that provides raw values from which the frontend computes mean, variance, and sample size before sending to the engine. Schema naming uses a parallel convention (`agg-v1` / `row-v1`) rather than sequential versioning, to allow independent evolution. Row-level files are capped at **100k rows** (blocking error above this); parsing runs in a **Web Worker** while `agg-v1` stays synchronous on the main thread.
+
+A single experiment can combine both an aggregated CSV (proportion/count metrics with dimension slices) and a row-level CSV (any metric type). If a metric appears in both, row-level data takes precedence. `buildMergedAnalysisRequest` merges both into one `AnalysisRequest`, including dimension slices from both sources (row-level wins on overlap).
+
+Both aggregated and row-level column mappings are saved to IndexedDB (keyed by experiment ID + column fingerprint) on analysis submit. On re-upload, saved mappings are restored if the column schema matches, and the ColumnMapper shows a "saved mapping" banner with the date.
+
+The csv-worker computes dimension slices for ALL non-reserved columns regardless of auto-classification, up to a cardinality cap of 200 unique values per column. This allows users to override the auto-classification (e.g., change a numeric column to "dimension") without losing slice data. Columns exceeding the cap are silently dropped from slice aggregation.
 
 | Task | Effort | Status | Details |
 |------|--------|--------|---------|
@@ -37,14 +43,6 @@
 | Revenue metric formatting | Low | Done | Revenue values display with configurable currency symbol (default `$`) + 2dp; continuous as plain 2dp; proportion as percentage |
 | Raw p-value display (multiple comparison correction) | Low | Done | When BH or Holm correction applied, both raw and adjusted p-values shown in results table and detail panel |
 | Update template CSV download | Low | Done | Explicit `format` parameter; each upload section gets its own template |
-
-**Decisions (resolved):**
-- Maximum row count: **100k rows**. Reject with a blocking error above this threshold; user must pre-aggregate.
-- Row-level parsing runs in a **Web Worker** (`row-v1` only). `agg-v1` pre-aggregated format stays synchronous on the main thread.
-- Schema naming: parallel convention (`#schema:agg-v1`, `#schema:row-v1`) rather than sequential versioning, to allow independent evolution.
-- **Dual uploads supported.** A single experiment can combine an aggregated CSV (proportion/count/revenue metrics with dimension slices) and a row-level CSV (any metric type, overall only). If a metric appears in both, row-level data takes precedence. The `buildMergedAnalysisRequest` function merges both into one `AnalysisRequest`. Dimension slices are merged from both sources; row-level takes precedence on overlap.
-- **Column mapping persistence for both formats.** Both aggregated and row-level column mappings are saved to IndexedDB (keyed by experiment ID + column fingerprint) on analysis submit. On re-upload, saved mappings are restored if the column schema matches. The ColumnMapper shows a "saved mapping" banner with the date when a previous mapping is loaded.
-- **Worker slicing is classification-independent.** The csv-worker computes dimension slices for ALL non-reserved columns regardless of auto-classification, up to a cardinality cap of 200 unique values per column. This allows users to override the auto-classification (e.g., change a numeric column to "dimension") without losing slice data. Columns exceeding the cardinality cap are silently dropped from slice aggregation.
 
 ### 1.2 Sequential Testing Engine
 
@@ -172,11 +170,13 @@
 **Effort:** Low
 **Motivation:** Status transitions are currently scattered and incomplete. Drafts can only be launched during creation (not from the detail view), stopped experiments can't be resumed, and archived experiments are terminal with no escape hatch. Users need a clear, consistent way to manage experiment lifecycle from the detail view.
 
-**Current state:**
-- Draft → Running: only in creation wizard ("Launch" button); no way to launch an existing draft
+**Implemented transitions:**
+- Draft → Running: "Launch" button in detail view (single click, no confirmation modal)
 - Running → Stopped: "Stop" in detail view dropdown
-- Any → Archived: "Archive" in detail view dropdown; terminal (no unarchive)
-- Upload/analysis does not auto-transition status
+- Stopped → Running: "Resume" in detail view dropdown
+- Any → Archived: "Archive" in detail view dropdown
+- Archived → Stopped: "Unarchive" in detail view dropdown
+- First analysis on a non-running experiment prompts status transition via `window.confirm`
 
 | Task | Effort | Status |
 |------|--------|--------|
@@ -184,11 +184,6 @@
 | "Resume" action for stopped experiments | Low | Done |
 | "Unarchive" action | Low | Done (→ stopped) |
 | Auto-transition on first analysis | Low | Done (always prompt via `window.confirm`) |
-
-**Decisions (resolved):**
-- Launch is a single click (no confirmation modal).
-- Unarchive goes to stopped.
-- Auto-transition on first analysis always prompts via `window.confirm`.
 
 ### 3.8 Full-Page Loading Overlay with Progress Steps
 

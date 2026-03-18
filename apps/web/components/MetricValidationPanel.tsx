@@ -55,6 +55,7 @@ export function computeMetricSummaries(
 
   return metricCols.map(({ col, metricId }) => {
     const metric = metricById.get(metricId);
+    const isPreNormalized = metric?.normalization === 'pre_normalized';
     return {
       metricId,
       metricName: metric?.name ?? metricId,
@@ -64,8 +65,11 @@ export function computeMetricSummaries(
         );
         const row = varRows[0];
         const units = row ? Number(row['units']) || 0 : 0;
-        const total = row ? Number(row[col]) || 0 : 0;
-        const rate = units > 0 ? total / units : 0;
+        const rawValue = row ? Number(row[col]) || 0 : 0;
+        // pre_normalized: CSV value is already a rate/mean — use directly
+        // raw_total: CSV value is a count — divide by units to get rate
+        const total = isPreNormalized ? rawValue * units : rawValue;
+        const rate = isPreNormalized ? rawValue : (units > 0 ? rawValue / units : 0);
         return { variationKey: varKey, units, total, rate };
       }),
     };

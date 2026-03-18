@@ -95,6 +95,33 @@ describe('computeMetricSummaries()', () => {
     const result = computeMetricSummaries(rows, mapping, [], ['control']);
     expect(result[0].metricName).toBe('m1');
   });
+
+  it('uses CSV value directly as rate for pre_normalized metrics', () => {
+    const preNormMetrics: Metric[] = [
+      makeMetric({ id: 'm1', name: 'CTR', normalization: 'pre_normalized' }),
+    ];
+    // CSV value 0.096 = 9.6% rate, units = 5000
+    const preNormRows: Record<string, string>[] = [
+      { variation_id: 'control', units: '5000', revenue: '0.096' },
+      { variation_id: 'treatment', units: '5100', revenue: '0.12' },
+    ];
+    const result = computeMetricSummaries(preNormRows, mapping, preNormMetrics, ['control', 'treatment']);
+    const [ctrl, trt] = result[0].variations;
+    // rate should be the raw value (already a rate), not divided by units
+    expect(ctrl.rate).toBeCloseTo(0.096, 6);
+    expect(trt.rate).toBeCloseTo(0.12, 6);
+    // total should be rate * units (for consistency with raw_total path)
+    expect(ctrl.total).toBeCloseTo(480, 1);
+    expect(trt.total).toBeCloseTo(612, 1);
+  });
+
+  it('divides by units for raw_total (default) normalization', () => {
+    const result = computeMetricSummaries(rows, mapping, metrics, ['control', 'treatment']);
+    const ctrl = result[0].variations[0];
+    // rate = 2500 / 500 = 5.0
+    expect(ctrl.rate).toBeCloseTo(5.0, 3);
+    expect(ctrl.total).toBe(2500);
+  });
 });
 
 // ── hasBlockingValidationErrors() pure function tests ─────────────────────
