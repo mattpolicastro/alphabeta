@@ -178,12 +178,16 @@ def _run_tests(variation_data, engine, metrics, control_key, non_controls, alpha
                 results.append(_run_mean_test(mid, var["id"], stat_a, stat_b, mean_ctrl, mean_trt, n_trt, engine, alpha))
         else:
             n_ctrl = ctrl["units"]
-            cv_ctrl = ctrl["metrics"][mid]
+            cv_ctrl = ctrl.get("metrics", {}).get(mid)
+            if cv_ctrl is None:
+                continue
             stat_a = ProportionStatistic(n=n_ctrl, sum=cv_ctrl)
             for var in non_controls:
                 trt = variation_data[var["key"]]
                 n_trt = trt["units"]
-                cv_trt = trt["metrics"][mid]
+                cv_trt = trt.get("metrics", {}).get(mid)
+                if cv_trt is None:
+                    continue
                 stat_b = ProportionStatistic(n=n_trt, sum=cv_trt)
                 if engine == "bayesian":
                     results.append(_run_bayesian(mid, var["id"], stat_a, stat_b, n_ctrl, cv_ctrl, n_trt, cv_trt, alpha))

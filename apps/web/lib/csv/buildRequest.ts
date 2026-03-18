@@ -58,13 +58,15 @@ export function buildAnalysisRequest(
     );
   }
 
-  // Identify mapped columns by role
+  // Identify mapped columns by role, filtering out stale metric references
+  // (e.g., a saved mapping referencing a metric that was removed from the experiment)
+  const metricById = new Map(metrics.map((m) => [m.id, m]));
   const dimensionCols: string[] = [];
   const metricCols: { column: string; metricId: string }[] = [];
 
   for (const [col, config] of Object.entries(mapping)) {
     if (config.role === 'dimension') dimensionCols.push(col);
-    if (config.role === 'metric' && config.metricId) {
+    if (config.role === 'metric' && config.metricId && metricById.has(config.metricId)) {
       metricCols.push({ column: col, metricId: config.metricId });
     }
   }
@@ -72,9 +74,6 @@ export function buildAnalysisRequest(
   if (metricCols.length === 0) {
     throw new Error('At least one metric column must be mapped.');
   }
-
-  // Build metric lookup for normalization
-  const metricById = new Map(metrics.map((m) => [m.id, m]));
 
   // Variation keys from experiment config (normalized)
   const variationKeys = experiment.variations.map((v) => v.key);
@@ -308,11 +307,12 @@ function buildAnalysisRequestV2(
 ): AnalysisRequest {
   const v2Agg = parsed.rowLevelAggregates!;
 
-  // Identify mapped columns by role
+  // Identify mapped columns by role, filtering out stale metric references
+  const metricById = new Map(metrics.map((m) => [m.id, m]));
   const metricCols: { column: string; metricId: string }[] = [];
   const dimensionCols: string[] = [];
   for (const [col, config] of Object.entries(mapping)) {
-    if (config.role === 'metric' && config.metricId) {
+    if (config.role === 'metric' && config.metricId && metricById.has(config.metricId)) {
       metricCols.push({ column: col, metricId: config.metricId });
     }
     if (config.role === 'dimension') {
@@ -322,8 +322,6 @@ function buildAnalysisRequestV2(
   if (metricCols.length === 0) {
     throw new Error('At least one metric column must be mapped.');
   }
-
-  const metricById = new Map(metrics.map((m) => [m.id, m]));
   const variationKeys = experiment.variations.map((v) => v.key);
 
   // Helper: build variation data from a set of aggregates (reused for overall + slices)
