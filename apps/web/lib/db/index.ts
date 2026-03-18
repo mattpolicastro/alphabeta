@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   backupReminderDays: 30,
   lastExportedAt: null,
   currencySymbol: '$',
+  theme: 'auto',
 };
 
 export async function getSettings(): Promise<AppSettings> {

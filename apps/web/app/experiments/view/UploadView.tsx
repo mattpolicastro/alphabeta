@@ -12,8 +12,10 @@ import { transformResponse } from '@/lib/stats/transformResponse';
 import { downloadTemplateCSV } from '@/lib/csv/generateTemplate';
 import type { TemplateFormat } from '@/lib/csv/generateTemplate';
 import { useSettingsStore } from '@/lib/store/settingsStore';
+import { useEngineStatusStore } from '@/lib/store/engineStatusStore';
 import { ColumnMapper } from '@/components/ColumnMapper';
 import { MetricValidationPanel, computeMetricSummaries, computeMetricSummariesFromAggregates, hasBlockingValidationErrors, type MetricSummary } from '@/components/MetricValidationPanel';
+import { AnalysisOverlay, type AnalysisStep } from '@/components/AnalysisOverlay';
 
 // Per-section upload state
 interface UploadSlot {
@@ -52,6 +54,9 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
   const [rowDragOver, setRowDragOver] = useState(false);
   const lastRequestRef = useRef<AnalysisRequest | null>(null);
   const settings = useSettingsStore();
+  const [analysisStep, setAnalysisStep] = useState<AnalysisStep | null>(null);
+  const engineMessage = useEngineStatusStore((s) => s.message);
+  const failureCount = useEngineStatusStore((s) => s.failureCount);
 
   const [agg, setAgg] = useState<UploadSlot>(emptySlot());
   const [row, setRow] = useState<UploadSlot>(emptySlot());
@@ -67,6 +72,17 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     }
     load();
   }, [experimentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (analyzing && engineMessage) {
+      // Detect engine loading from worker status messages
+      if (engineMessage.includes('Loading') || engineMessage.includes('Installing')) {
+        setAnalysisStep('loading-engine');
+      } else if (engineMessage.includes('ready') || engineMessage.includes('complete')) {
+        setAnalysisStep('running-analysis');
+      }
+    }
+  }, [analyzing, engineMessage]);
 
   // ---------- Aggregated upload ----------
 
@@ -189,7 +205,9 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
     lastRequestRef.current = request;
     setAnalyzing(true); setAnalyzeError(null);
     try {
+      setAnalysisStep('parsing');
       const response = await runAnalysis(request);
+      setAnalysisStep('saving-results');
       const transformed = transformResponse(response, request);
       const resultRecord: ExperimentResult = {
         id: nanoid(), experimentId: experiment.id, computedAt: Date.now(),
@@ -211,6 +229,7 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
       setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
       setAnalyzing(false);
+      setAnalysisStep(null);
     }
   }
 
@@ -278,7 +297,7 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
       <div className="py-4">
         <h1 className="mb-1">Upload Data</h1>
         <p className="text-muted mb-4">{experiment.name}</p>
-        <div className="text-center py-5"><div className="spinner-border mb-3" role="status" /><p>Running analysis…</p></div>
+        <AnalysisOverlay currentStep={analysisStep} message={engineMessage} />
       </div>
     );
   }
@@ -294,6 +313,21 @@ export default function UploadView({ experimentId }: { experimentId: string }) {
           {lastRequestRef.current && (
             <button className="btn btn-outline-danger btn-sm ms-3 flex-shrink-0" onClick={handleRetry} disabled={analyzing}>Retry</button>
           )}
+        </div>
+      )}
+
+      {analyzeError && failureCount >= 2 && settings.computeEngine === 'wasm' && settings.lambdaUrl && (
+        <div className="alert alert-info d-flex justify-content-between align-items-center">
+          <span>The WASM engine has failed multiple times. Would you like to try cloud analysis instead?</span>
+          <button
+            className="btn btn-outline-primary btn-sm ms-3 flex-shrink-0"
+            onClick={async () => {
+              await settings.updateSetting('computeEngine', 'lambda');
+              if (lastRequestRef.current) handleRetry();
+            }}
+          >
+            Switch to cloud
+          </button>
         </div>
       )}
 

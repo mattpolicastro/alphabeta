@@ -129,6 +129,7 @@ export interface AppSettings {
   backupReminderDays: number;
   lastExportedAt: number | null; // epoch ms
   currencySymbol: string; // e.g. '$', '€', '£'
+  theme: 'light' | 'dark' | 'auto';
 }
 
 // ----- Database class -----

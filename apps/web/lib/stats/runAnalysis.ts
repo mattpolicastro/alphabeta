@@ -33,6 +33,14 @@ let statsWorker: Worker | null = null;
 // Pending analysis promise callbacks — only one analysis at a time
 let pendingResolve: ((value: AnalysisResponse) => void) | null = null;
 let pendingReject: ((reason: Error) => void) | null = null;
+let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+function clearPendingTimeout(): void {
+  if (pendingTimeoutId !== null) {
+    clearTimeout(pendingTimeoutId);
+    pendingTimeoutId = null;
+  }
+}
 
 /**
  * Terminate the existing stats worker (if any) and reset engine status to
@@ -43,6 +51,7 @@ export function terminateStatsWorker(): void {
     statsWorker.terminate();
     statsWorker = null;
   }
+  clearPendingTimeout();
   // Reject any in-flight analysis
   pendingReject?.(new Error('Worker terminated by user'));
   pendingResolve = null;
@@ -70,6 +79,8 @@ function getOrCreateStatsWorker(): Worker {
 
     if (msg.type === 'result') {
       useEngineStatusStore.getState().setStatus('ready', 'Analysis complete');
+      useEngineStatusStore.getState().resetFailures();
+      clearPendingTimeout();
       pendingResolve?.(msg.data);
       pendingResolve = null;
       pendingReject = null;
@@ -77,6 +88,8 @@ function getOrCreateStatsWorker(): Worker {
 
     if (msg.type === 'error') {
       useEngineStatusStore.getState().setStatus('error', msg.message);
+      useEngineStatusStore.getState().recordFailure();
+      clearPendingTimeout();
       pendingReject?.(new Error(msg.message));
       pendingResolve = null;
       pendingReject = null;
@@ -85,6 +98,8 @@ function getOrCreateStatsWorker(): Worker {
 
   worker.onerror = (err) => {
     useEngineStatusStore.getState().setStatus('error', err.message);
+    useEngineStatusStore.getState().recordFailure();
+    clearPendingTimeout();
     pendingReject?.(new Error(`Worker error: ${err.message}`));
     pendingResolve = null;
     pendingReject = null;
@@ -96,15 +111,39 @@ function getOrCreateStatsWorker(): Worker {
   return worker;
 }
 
+const ANALYSIS_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+
 function runAnalysisInWorker(
   request: AnalysisRequest,
 ): Promise<AnalysisResponse> {
-  return new Promise((resolve, reject) => {
+  const analysisPromise = new Promise<AnalysisResponse>((resolve, reject) => {
     const worker = getOrCreateStatsWorker();
     pendingResolve = resolve;
     pendingReject = reject;
     worker.postMessage(request);
   });
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    pendingTimeoutId = setTimeout(() => {
+      pendingTimeoutId = null;
+      const timeoutError = new Error(
+        'Analysis timed out after 3 minutes. The engine may be unresponsive.',
+      );
+      useEngineStatusStore.getState().setStatus('error', timeoutError.message);
+      useEngineStatusStore.getState().recordFailure();
+      // Terminate and reset the worker so the next call creates a fresh one
+      if (statsWorker) {
+        statsWorker.terminate();
+        statsWorker = null;
+      }
+      // Clear pending callbacks to avoid double-rejection via onerror
+      pendingResolve = null;
+      pendingReject = null;
+      reject(timeoutError);
+    }, ANALYSIS_TIMEOUT_MS);
+  });
+
+  return Promise.race([analysisPromise, timeoutPromise]);
 }
 
 // ----- Path B: Lambda Function URL -----

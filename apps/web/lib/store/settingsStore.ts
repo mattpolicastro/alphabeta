@@ -31,6 +31,7 @@ const defaults: SettingsValues = {
   backupReminderDays: 30,
   lastExportedAt: null,
   currencySymbol: '$',
+  theme: 'auto',
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

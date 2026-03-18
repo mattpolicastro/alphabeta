@@ -96,6 +96,52 @@ export default function SettingsPage() {
     <div className="py-4">
       <h1 className="mb-4">Settings</h1>
 
+      {/* Appearance */}
+      <section className="card mb-4">
+        <div className="card-body">
+          <h5 className="card-title">Appearance</h5>
+          <div className="mb-3">
+            <div className="form-check form-check-inline">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="theme-light"
+                checked={settings.theme === 'light'}
+                onChange={() => settings.updateSetting('theme', 'light')}
+              />
+              <label className="form-check-label" htmlFor="theme-light">
+                Light
+              </label>
+            </div>
+            <div className="form-check form-check-inline">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="theme-dark"
+                checked={settings.theme === 'dark'}
+                onChange={() => settings.updateSetting('theme', 'dark')}
+              />
+              <label className="form-check-label" htmlFor="theme-dark">
+                Dark
+              </label>
+            </div>
+            <div className="form-check form-check-inline">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="theme-auto"
+                checked={settings.theme === 'auto'}
+                onChange={() => settings.updateSetting('theme', 'auto')}
+              />
+              <label className="form-check-label" htmlFor="theme-auto">
+                Auto (follow system)
+              </label>
+            </div>
+          </div>
+          <div className="form-text">Uses your operating system&apos;s color scheme preference.</div>
+        </div>
+      </section>
+
       {/* Compute Engine */}
       <section className="card mb-4">
         <div className="card-body">
