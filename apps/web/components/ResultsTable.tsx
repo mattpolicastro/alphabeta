@@ -85,9 +85,9 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                       <span className="fw-medium">{metric?.name ?? mr.metricId}</span>
                       {hasAnnotation && <span className="ms-1" title="Has annotations">📝</span>}
                       <br />
-                      <span className="badge bg-light text-dark border">{metric?.type}</span>
+                      <span className="badge bg-body-secondary border">{metric?.type}</span>
                       {metric && (
-                        <span className="badge bg-light text-dark border ms-1">
+                        <span className="badge bg-body-secondary border ms-1">
                           {metric.higherIsBetter ? '↑ higher is better' : '↓ lower is better'}
                         </span>
                       )}
@@ -249,7 +249,7 @@ function DetailPanel({
               {vr.cupedApplied && (
                 <tr>
                   <td className="text-muted"><CUPEDTip /></td>
-                  <td><span className="badge bg-info text-dark">Applied</span></td>
+                  <td><span className="badge bg-info-subtle text-info-emphasis">Applied</span></td>
                 </tr>
               )}
             </tbody>

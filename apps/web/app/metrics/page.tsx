@@ -367,7 +367,7 @@ export default function MetricsPage() {
               <tr key={m.id}>
                 <td className="fw-medium">{m.name}</td>
                 <td>
-                  <span className="badge bg-light text-dark border">
+                  <span className="badge bg-body-secondary border">
                     {m.type}
                   </span>
                 </td>
