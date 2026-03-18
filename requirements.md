@@ -44,82 +44,48 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 | Raw p-value display (multiple comparison correction) | Low | Done | When BH or Holm correction applied, both raw and adjusted p-values shown in results table and detail panel |
 | Update template CSV download | Low | Done | Explicit `format` parameter; each upload section gets its own template |
 
-### 1.2 Sequential Testing Engine
+### 1.2 Sequential Testing Engine — *Deferred to v3*
 
-**Motivation:** Frequentist tests require a fixed sample size; peeking inflates false positive rate. Sequential testing (mSPRT) allows safe continuous monitoring. The type already exists in the schema but was removed from all UI selectors in v1. See Appendix C (gbstats Reference) for API details.
-
-| Task | Effort | Details |
-|------|--------|---------|
-| Research gbstats sequential API | Low | Confirm available class/function signatures; gbstats may use `SequentialTTest` or similar |
-| Implement sequential engine path in worker | Medium | Add mSPRT-based test alongside Bayesian/Frequentist |
-| Implement sequential engine path in Lambda | Medium | Mirror worker logic |
-| Re-enable sequential option in StatsConfigEditor | Low | Unhide from engine selector dropdown |
-| Sequential-specific result fields | Medium | Adjusted p-value, always-valid CI, monitoring boundary |
-| UI: monitoring boundary visualization | Medium | Show where the test currently sits relative to the stopping boundary |
-| UI: "safe to peek" indicator | Low | Green/amber badge on results when using sequential engine |
-| Documentation: when to use sequential | Low | Tooltip or help text explaining trade-offs vs fixed-horizon |
-
-**Decisions needed:**
-- Does gbstats support sequential proportion tests, or only mean tests?
-- Should sequential results show a cumulative history (implies storing multiple result snapshots over time)?
+> Moved to v3 scope. See "Deferred Beyond v2" section.
 
 ---
 
-## v2 Phase 2 — Visualizations
+## ~~v2 Phase 2 — Visualizations~~ — *Deferred to v3*
 
-> Recharts-based charts to replace the CSS-positioned interval bars in v1. Install `recharts` as a dependency.
-
-### 2.1 Chart Components
-
-| Chart | Effort | When to show | Details |
-|-------|--------|-------------|---------|
-| CI / Credible Interval bar chart | Medium | All results | Horizontal bars per variation showing interval spans; replaces inline CSS bars |
-| Violin / density plot | Medium-High | Bayesian results | Posterior distribution of relative uplift; requires sampling or KDE from posterior params |
-| Traffic split donut | Low | All results | Observed vs expected allocation; highlights SRM visually |
-| Cumulative time series | High | Requires timestamp column | Metric values over time per variation; needs CSV schema extension or separate upload |
-
-**Decisions needed:**
-- Does the cumulative time series require a new CSV column (`timestamp` / `period`), or should it use multiple result snapshots?
-- Should charts be interactive (hover for values) or static?
-- Responsive behavior below 1280px?
-
-### 2.2 Chart Integration Points
-
-| Location | Chart(s) | Notes |
-|----------|----------|-------|
-| ResultsTable expanded row | CI bar chart, violin plot | Conditional on engine type |
-| Results dashboard header | Traffic split donut | Next to SRM warning |
-| New "Trends" tab (if time series) | Cumulative time series | Only if timestamp data available |
+> Moved to v3 scope. See "Deferred Beyond v2" section.
 
 ---
 
-## v2 Phase 3 — Quality of Life
+## v2 Phase 2 — Quality of Life
 
 > Independent features that can be built in parallel alongside Phase 1-2 work.
 
 ### 3.1 Dark Mode
 
 **Effort:** Low-Medium
-**Approach:** Bootstrap 5's `data-bs-theme="dark"` attribute on `<html>`. Store preference in settings. Auto-detect via `prefers-color-scheme` media query.
+**Approach:** Bootstrap 5's `data-bs-theme="dark"` attribute on `<html>` via a `ThemeProvider` client component. Store preference (`light` / `dark` / `auto`) in `AppSettings.theme`. Auto-detect via `prefers-color-scheme` media query when set to `auto`. Toggle button in NavBar cycles light → dark → auto. Radio buttons in Settings page.
 
-| Task | Effort |
-|------|--------|
-| Theme toggle in settings + navbar | Low |
-| Persist preference in settingsStore | Low |
-| Audit all pages for hardcoded colors | Medium |
-| Test charts/visualizations in dark mode | Low |
+| Task | Effort | Status |
+|------|--------|--------|
+| ThemeProvider component + layout wiring | Low | Done |
+| Theme toggle in settings + navbar | Low | Done |
+| Persist preference in settingsStore | Low | Done |
+| Audit all pages for hardcoded colors | Medium | Done (`bg-light text-dark` → `bg-body-secondary`, `bg-info text-dark` → `bg-info-subtle text-info-emphasis`) |
+| Test charts/visualizations in dark mode | Low | N/A — no Recharts charts yet |
 
 ### 3.2 Worker Resilience
 
 **Effort:** Medium
 **Motivation:** If the Pyodide worker crashes mid-session (OOM, unhandled exception), users currently see an opaque error. v2 should detect the crash, offer recovery, and optionally fall back to Lambda.
 
-| Task | Effort |
-|------|--------|
-| Detect worker termination (`onerror` / heartbeat) | Low |
-| Auto-restart worker on next analysis attempt | Low |
-| "Switch to cloud analysis?" prompt on repeated failure | Low |
-| Pyodide Cache API for faster restarts | Low-Med |
+**Implemented:** 3-minute analysis timeout via `Promise.race` in `runAnalysisInWorker`. On crash/timeout, worker is terminated and reset for fresh creation on next attempt. `engineStatusStore.failureCount` tracks consecutive failures; UploadView shows "Switch to cloud analysis?" banner after 2+ failures (only when Lambda URL is configured). Success resets the counter.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Detect worker termination (`onerror` / heartbeat) | Low | Done (onerror + timeout) |
+| Auto-restart worker on next analysis attempt | Low | Done (worker nulled on crash, recreated on next call) |
+| "Switch to cloud analysis?" prompt on repeated failure | Low | Done (after 2+ failures, if Lambda configured) |
+| Pyodide Cache API for faster restarts | Low-Med | Not started |
 
 ### 3.3 Variation Filter (Multi-Variant)
 
@@ -132,17 +98,9 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 | Filter `MetricResult[]` by selected variations | Low |
 | Persist selection per experiment in session | Low |
 
-### 3.4 Bayesian Prior Configuration
+### 3.4 Bayesian Prior Configuration — *Deferred to v3*
 
-**Effort:** Medium
-**Motivation:** Power users want informative priors for metrics with strong historical baselines. Currently defaults to uninformative priors.
-
-| Task | Effort |
-|------|--------|
-| Prior settings UI in StatsConfigEditor (per-metric prior mean + variance) | Medium |
-| Plumb priors through `AnalysisRequest` to engine | Low |
-| Pass priors to `EffectBayesianABTest` constructor | Low |
-| Sensible defaults + validation (prevent degenerate priors) | Low |
+> Moved to v3 scope. See "Deferred Beyond v2" section.
 
 ### 3.5 Metric Detail View
 
@@ -190,17 +148,65 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 **Effort:** Low-Medium
 **Motivation:** During analysis, users see a simple spinner. A stepped progress indicator (parsing → building request → running engine → saving results) provides better feedback, especially for first-time WASM loads.
 
-| Task | Effort |
-|------|--------|
-| Define progress step enum | Low |
-| Wire worker status messages to overlay component | Low-Med |
-| Animated step transitions | Low |
+**Implemented:** `AnalysisOverlay` component with 4 progress steps (parsing → loading engine → running analysis → saving results). Worker status messages drive step transitions via `engineStatusStore.message`. Replaces simple spinner in UploadView.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Define progress step enum | Low | Done (`AnalysisStep` type in `AnalysisOverlay.tsx`) |
+| Wire worker status messages to overlay component | Low-Med | Done (UploadView watches `engineMessage` to set steps) |
+| Animated step transitions | Low | Done (spinner for active, checkmark for completed) |
+
+### 3.9 Experiment Deletion
+
+**Effort:** Low
+**Motivation:** Users need a way to permanently remove experiments beyond archiving. The `deleteExperiment()` DB function already handled cascading cleanup; it just needed UI wiring.
+
+**Implemented:** "Delete" button in experiment detail view header. Clicking shows an inline danger alert explaining that the experiment, all analysis results, notes, and column mappings will be permanently deleted. "Delete permanently" confirms; "Cancel" dismisses. Redirects to experiment list after deletion.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Delete button with confirmation banner | Low | Done |
+| Cascade delete (results, annotations, column mappings) | Low | Done (already existed in `deleteExperiment()`) |
+
+### 3.10 Platform Experiment ID
+
+**Effort:** Low
+**Motivation:** Most experimentation platforms use an internal identifier. Adding an optional platform experiment ID field keeps things consistent across environments.
+
+**Implemented:** Optional `experimentId` field on `Experiment` schema. Editable in creation wizard (Step 1) and config panel. CSV filtering uses `experiment.experimentId || experiment.id` as primary match, with fallback to internal nanoid, then single-experiment fallback. Template generation uses platform ID when available.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Add `experimentId` to schema + wizard + config panel | Low | Done |
+| CSV filtering with platform ID priority | Low | Done |
+| Template generation with platform ID | Low | Done |
+
+### 3.11 Configurable Site Title
+
+**Effort:** Low
+**Motivation:** Allow build-time customization of the app title for teams deploying their own instance.
+
+**Implemented:** `NEXT_PUBLIC_APP_TITLE` env var (default: `⍺lphaβeta` in `apps/web/.env`). Read by NavBar and layout metadata. Override via `.env.local` or shell environment. Documented in README.md.
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Env var in NavBar + layout metadata | Low | Done |
+| `.env` file with default | Low | Done |
+| README documentation | Low | Done |
 
 ---
 
-## Deferred Beyond v2
+## Deferred to v3
 
-> Items from the v1 spec (§12) that remain out of scope for v2.
+> Features scoped for v2 but moved to v3 to keep the release focused.
+
+- **§1.2 Sequential Testing Engine** — mSPRT-based continuous monitoring. Requires gbstats API research (does it support sequential proportion tests?). Type exists in schema but removed from all UI selectors.
+- **§2.x Visualizations** — Recharts-based charts (CI bar chart, violin plot, traffic split donut, cumulative time series). Inline CSS bars in the detail panel are functional for now.
+- **§3.4 Bayesian Prior Configuration** — Informative priors per metric. Power-user feature for metrics with strong historical baselines.
+
+## Deferred Beyond v3
+
+> Items from the v1 spec (§12) that remain out of scope.
 
 - Warehouse SQL connectivity
 - User authentication / access control / multi-tenancy
@@ -209,7 +215,7 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 - Server-side rendering or persistent backend
 - Full offline PWA support (app shell caching)
 - Export to Jupyter Notebook
-- CUPED (variance reduction) — requires covariate data not in current CSV schemas; revisit after continuous metrics land
+- CUPED (variance reduction) — requires covariate data not in current CSV schemas
 
 ---
 
@@ -229,18 +235,22 @@ The csv-worker computes dimension slices for ALL non-reserved columns regardless
 | Item | Effort | Notes |
 |------|--------|-------|
 | Test runner in CI | Low | Jest is configured — add `npm test` step to deploy workflow |
-| Lint check in CI | Low | Blocked on ESLint configuration |
+| Lint check in CI | Low | ESLint configured; add `npm run lint` step to deploy workflow |
 
 ---
 
 ## Suggested Build Order
 
 ```
-v1 cleanup: ✅ tests + polish complete; remaining: ESLint + CI test runner
-  → v2 Phase 1a: continuous metrics (CSV → engine → UI)
-  → v2 Phase 1b: sequential testing (parallel with 1a if different contributors)
-  → v2 Phase 2: visualizations (depends on Phase 1 for continuous metric charts)
-  → v2 Phase 3: quality of life (parallel throughout)
+v1: ✅ complete
+v2 Phase 1 (continuous metrics): ✅ complete
+v2 Phase 2 (quality of life):
+  ✅ §3.1 dark mode, §3.2 worker resilience (except Cache API), §3.6 annotations,
+     §3.7 status management, §3.8 loading overlay, §3.9 experiment deletion,
+     §3.10 platform ID, §3.11 site title
+  remaining: §3.2 Pyodide Cache API, §3.3 variation filter, §3.5 metric detail view,
+     CI test/lint runner
+v3 (deferred): §1.2 sequential testing, §2.x visualizations, §3.4 Bayesian priors
 ```
 
 ---
@@ -264,6 +274,7 @@ import Dexie, { Table } from 'dexie';
 
 export interface Experiment {
   id: string;                        // nanoid
+  experimentId?: string;             // optional platform experiment ID (used for CSV filtering)
   name: string;
   hypothesis: string;
   description?: string;
@@ -359,6 +370,7 @@ export interface AppSettings {
   backupReminderDays: number;
   lastExportedAt: number | null;
   currencySymbol: string;          // e.g. '$', '€', '£' — used for revenue metric display
+  theme: 'light' | 'dark' | 'auto'; // UI theme preference; 'auto' follows OS prefers-color-scheme
 }
 
 export interface ColumnMapping {
@@ -380,6 +392,7 @@ export interface Annotation {
   resultId?: string;        // optional — if set, annotation is pinned to a specific result snapshot
   metricId?: string;        // optional — if set, annotation is pinned to a specific metric row
   body: string;             // free-text, markdown supported
+  hidden?: boolean;          // soft-delete for append-only audit trail
   createdAt: number;
   updatedAt: number;
 }

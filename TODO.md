@@ -205,8 +205,8 @@ Req: §6.5a, §10.2, §13.1
 - [x] Multiple comparison corrections (Holm-Bonferroni, Benjamini-Hochberg)
 - [x] Dimension slice computation
 - [x] Full parity with Lambda handler
-- [-] Cache API integration for Pyodide assets — deferred to v2 §3.2 (relies on browser HTTP cache for now)
-- [-] Worker crash recovery / fallback prompt — deferred to v2 §3.2
+- [-] Cache API integration for Pyodide assets — deferred (relies on browser HTTP cache for now)
+- [x] Worker crash recovery / fallback prompt — 3-min timeout, auto-restart, Lambda fallback after 2+ failures (§3.2)
 - [-] Tests — Pyodide worker not testable in Jest (runs in real browser only)
 
 > **Important:** `public/stats-worker.js` is the actual runtime file. `lib/stats/worker.ts` is the typed reference. Both contain identical Python code and must be kept in sync.
@@ -274,7 +274,7 @@ Req: §5.3, §5.4, §8.4
 - [x] Merged analysis via `buildMergedAnalysisRequest` at submit time
 - [x] Download template CSV pre-filled with experiment's variations and metrics (per-section format)
 - [x] Error state with message
-- [-] Full-page loading overlay with progress steps (simple spinner + "Running analysis…" instead)
+- [x] Full-page loading overlay with progress steps — `AnalysisOverlay` component with 4 steps (§3.8)
 - [x] Retry with preserved request payload — implemented via `lastRequestRef` in UploadView
 - [ ] Tests: upload flow integration — not yet covered
 
@@ -363,12 +363,57 @@ Req: §10.5
 - [x] Frontend deploy workflow: `npm run build` → deploy to GitHub Pages
 - [-] Lambda deploy workflow — deferred (Lambda path is secondary)
 - [ ] Test runner in CI — Jest is configured; add `npm test` to deploy workflow
+- [ ] Lint check in CI — ESLint configured; add `npm run lint` to deploy workflow
 
 ### Module: Dark Mode
-Touches: `app/layout.tsx`, theme config
-Req: §8.2
+Touches: `app/layout.tsx`, `components/ThemeProvider.tsx`, `components/NavBar.tsx`, `app/settings/page.tsx`
+Req: §3.1
 
-- [-] Deferred to post-v1. Would use Bootstrap's `data-bs-theme="dark"` (not Tailwind `dark:` classes as requirements assumed).
+- [x] ThemeProvider component — reads settingsStore, resolves `auto` via `prefers-color-scheme`, sets `data-bs-theme` on `<html>`
+- [x] Theme toggle in NavBar — cycles light → dark → auto
+- [x] Appearance section in Settings — radio buttons for light/dark/auto
+- [x] Hardcoded color audit — `bg-light text-dark` → `bg-body-secondary`, `bg-info text-dark` → `bg-info-subtle text-info-emphasis`
+
+### Module: Experiment Deletion
+Touches: `app/experiments/view/ExperimentDetailView.tsx`
+Req: §3.9
+
+- [x] Delete button with inline confirmation banner
+- [x] Cascading delete via existing `deleteExperiment()` (results, annotations, column mappings)
+
+### Module: Platform Experiment ID
+Touches: `lib/db/schema.ts`, `app/experiments/new/page.tsx`, `app/experiments/view/ExperimentDetailView.tsx`, `lib/csv/buildRequest.ts`, `lib/csv/generateTemplate.ts`
+Req: §3.10
+
+- [x] Optional `experimentId` field on Experiment schema
+- [x] Editable in wizard (Step 1) and config panel
+- [x] CSV filtering uses platform ID with fallback chain
+- [x] Template generation uses platform ID
+
+### Module: Configurable Site Title
+Touches: `apps/web/.env`, `components/NavBar.tsx`, `app/layout.tsx`, `README.md`
+Req: §3.11
+
+- [x] `NEXT_PUBLIC_APP_TITLE` env var with `.env` default
+- [x] NavBar and layout metadata read from env var
+- [x] README documents override pattern
+
+### Module: Worker Resilience
+Touches: `lib/stats/runAnalysis.ts`, `lib/store/engineStatusStore.ts`, `app/experiments/view/UploadView.tsx`
+Req: §3.2
+
+- [x] 3-minute analysis timeout via `Promise.race`
+- [x] Failure counter in engineStatusStore with auto-restart
+- [x] Lambda fallback prompt in UploadView after 2+ failures
+- [ ] Pyodide Cache API for faster restarts
+
+### Module: Analysis Progress Overlay
+Touches: `components/AnalysisOverlay.tsx`, `app/experiments/view/UploadView.tsx`
+Req: §3.8
+
+- [x] AnalysisOverlay component with 4 progress steps
+- [x] Worker status messages drive step transitions
+- [x] Replaces simple spinner in UploadView
 
 ---
 

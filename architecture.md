@@ -1,6 +1,6 @@
 # Architecture Overview
 
-A/B test analysis tool. Static Next.js app (GitHub Pages) + client-side IndexedDB. Stats run in-browser via Pyodide/WASM or optionally in AWS Lambda. No backend server, no auth, no database.
+⍺lphaβeta — A/B test analysis tool. Static Next.js app (GitHub Pages) + client-side IndexedDB. Stats run in-browser via Pyodide/WASM or optionally in AWS Lambda. No backend server, no auth, no database.
 
 ## Tech Stack
 
@@ -32,6 +32,8 @@ apps/web/
     MetricValidationPanel.tsx  # pre-submission data quality checks
     GuardrailSection.tsx  #   safe/borderline/violated status badges
     PowerCalculator.tsx   #   sample size calculator (Cohen's h)
+    ThemeProvider.tsx      #   applies data-bs-theme from settings (light/dark/auto)
+    AnalysisOverlay.tsx    #   stepped progress overlay during analysis runs
     NavBar.tsx, CSVUploadZone.tsx, AnnotationEditor.tsx, ExperimentList.tsx
   lib/
     db/
@@ -50,8 +52,8 @@ apps/web/
       lambda.ts           # Lambda HTTP client
       transformResponse.ts # AnalysisResponse → MetricResult[] (overall + slices)
     store/
-      settingsStore.ts    # Zustand: compute engine, defaults, thresholds
-      engineStatusStore.ts # Zustand: WASM/Lambda readiness
+      settingsStore.ts    # Zustand: compute engine, defaults, thresholds, theme preference
+      engineStatusStore.ts # Zustand: WASM/Lambda readiness, failure tracking for auto-restart
       wizardStore.ts      # Zustand: experiment creation wizard state
   public/
     stats-worker.js       # ← THE ACTUAL RUNTIME WORKER (serves as /stats-worker.js)
@@ -90,3 +92,6 @@ CSV file → parseCSVFile() → ColumnMapper (user assigns roles)
 - **Bootstrap 5 for styling.** No Tailwind. Use `className` with Bootstrap utility classes.
 - **Sequential engine deferred to v2.** Type exists in schema but removed from UI; do not re-add without implementing mSPRT logic.
 - **Lambda CORS is wide open (`*`).** Intentionally deferred — WASM is the primary path.
+- **Dark mode via Bootstrap 5** `data-bs-theme` attribute. ThemeProvider reads from settingsStore; supports light/dark/auto (OS preference). Use `bg-body-secondary` not `bg-light text-dark` for theme-adaptive badges.
+- **Worker resilience.** Stats worker has 3-minute analysis timeout with auto-restart. `engineStatusStore.failureCount` tracks consecutive failures; UploadView prompts Lambda fallback after 2+.
+- **Site title configurable** via `NEXT_PUBLIC_APP_TITLE` env var (build-time). Default in `apps/web/.env`.
