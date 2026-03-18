@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { NavBar } from '@/components/NavBar';
 import { GlobalLoadingIndicator } from '@/components/GlobalLoadingIndicator';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const appTitle = process.env.NEXT_PUBLIC_APP_TITLE || '⍺lphaβeta';
 
@@ -18,19 +19,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <GlobalLoadingIndicator />
-        <NavBar />
-        <div
-          className="alert alert-warning text-center mb-0 rounded-0 py-2"
-          role="alert"
-          style={{ fontSize: '0.875rem' }}
-        >
-          This app is in active alpha development. Backup often as breaking changes may
-          be released frequently.
-        </div>
-        <main className="container" style={{ maxWidth: '80rem' }}>
-          {children}
-        </main>
+        <ThemeProvider>
+          <GlobalLoadingIndicator />
+          <NavBar />
+          <div
+            className="alert alert-warning text-center mb-0 rounded-0 py-2"
+            role="alert"
+            style={{ fontSize: '0.875rem' }}
+          >
+            This app is in active alpha development. Backup often as breaking changes may
+            be released frequently.
+          </div>
+          <main className="container" style={{ maxWidth: '80rem' }}>
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );
