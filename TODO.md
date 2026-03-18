@@ -2,7 +2,7 @@
 
 > **How to use this file:** Each module is self-contained. Agents should claim a module by marking tasks `[~]` (in progress). Before starting, read the **Depends on** line and confirm those items are merged to `main`. Mark `[x]` when merged. Use branch naming convention `feat/<module-slug>`.
 >
-> **Req doc reference:** `requirements.md` in repo root. Section numbers cited inline as `§N.N` refer to the original v1 spec (now archived as `archive/requirements-v1-archived.md`).
+> **Req doc reference:** `requirements.md` in repo root. Section numbers cited inline as `§N.N` refer to the original v1 spec (archived as `archive/requirements-v1-archived.md`). The v2 planning doc is archived as `archive/requirements-v2-archived.md`.
 >
 > **Architecture reference:** `architecture.md` in repo root — read this first for directory layout, data flow, and key conventions.
 
