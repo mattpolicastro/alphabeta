@@ -592,6 +592,112 @@ describe('transformResponse', () => {
     });
   });
 
+  describe('rawPValue preservation', () => {
+    it('should pass through rawPValue when present in response', () => {
+      const request: AnalysisRequest = {
+        engine: 'frequentist',
+        correction: 'holm-bonferroni',
+        alpha: 0.05,
+        srmThreshold: 0.001,
+        variations: [
+          { id: 'var-control', key: 'control', weight: 0.5, isControl: true },
+          { id: 'var-treatment', key: 'treatment', weight: 0.5, isControl: false },
+        ],
+        metrics: [{ id: 'metric-1', name: 'CTR', isGuardrail: false }],
+        data: {
+          overall: {
+            control: { units: 2000, metrics: { 'metric-1': 300 } },
+            treatment: { units: 2000, metrics: { 'metric-1': 330 } },
+          },
+          slices: {},
+        },
+        multipleExposureCount: 0,
+      };
+
+      const response: AnalysisResponse = {
+        srmPValue: 0.6,
+        srmFlagged: false,
+        multipleExposureFlagged: false,
+        overall: [
+          {
+            metricId: 'metric-1',
+            variationId: 'var-treatment',
+            units: 2000,
+            rate: 0.165,
+            relativeUplift: 0.1,
+            absoluteUplift: 0.015,
+            significant: true,
+            pValue: 0.04,       // corrected
+            rawPValue: 0.02,    // pre-correction
+            confidenceIntervalLower: 0.152,
+            confidenceIntervalUpper: 0.178,
+          },
+        ],
+        slices: {},
+        warnings: [],
+      };
+
+      const result = transformResponse(response, request);
+      const treatmentVar = result.overall[0].variationResults.find(
+        (v) => v.variationId === 'var-treatment'
+      );
+
+      expect(treatmentVar!.pValue).toBe(0.04);
+      expect(treatmentVar!.rawPValue).toBe(0.02);
+    });
+
+    it('should leave rawPValue undefined when not present in response', () => {
+      const request: AnalysisRequest = {
+        engine: 'frequentist',
+        correction: 'none',
+        alpha: 0.05,
+        srmThreshold: 0.001,
+        variations: [
+          { id: 'var-control', key: 'control', weight: 0.5, isControl: true },
+          { id: 'var-treatment', key: 'treatment', weight: 0.5, isControl: false },
+        ],
+        metrics: [{ id: 'metric-1', name: 'CTR', isGuardrail: false }],
+        data: {
+          overall: {
+            control: { units: 2000, metrics: { 'metric-1': 300 } },
+            treatment: { units: 2000, metrics: { 'metric-1': 330 } },
+          },
+          slices: {},
+        },
+        multipleExposureCount: 0,
+      };
+
+      const response: AnalysisResponse = {
+        srmPValue: 0.6,
+        srmFlagged: false,
+        multipleExposureFlagged: false,
+        overall: [
+          {
+            metricId: 'metric-1',
+            variationId: 'var-treatment',
+            units: 2000,
+            rate: 0.165,
+            relativeUplift: 0.1,
+            absoluteUplift: 0.015,
+            significant: true,
+            pValue: 0.02,
+            confidenceIntervalLower: 0.152,
+            confidenceIntervalUpper: 0.178,
+          },
+        ],
+        slices: {},
+        warnings: [],
+      };
+
+      const result = transformResponse(response, request);
+      const treatmentVar = result.overall[0].variationResults.find(
+        (v) => v.variationId === 'var-treatment'
+      );
+
+      expect(treatmentVar!.rawPValue).toBeUndefined();
+    });
+  });
+
   describe('stddev calculation', () => {
     it('should correctly calculate stddev for treatment variation', () => {
       const request: AnalysisRequest = {

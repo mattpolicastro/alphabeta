@@ -3,7 +3,7 @@
  * and the "all" sentinel sentinel logic.
  */
 
-import { buildAnalysisRequest } from '../buildRequest';
+import { buildAnalysisRequest, buildMergedAnalysisRequest } from '../buildRequest';
 import type { ColumnMappingConfig } from '../buildRequest';
 import type { ParsedCSV } from '../parser';
 import type { Experiment, Metric } from '@/lib/db/schema';
@@ -147,10 +147,18 @@ describe('buildAnalysisRequest — overall payload structure', () => {
     expect(result.multipleExposureCount).toBe(42);
   });
 
-  it('throws when no rows match the experiment_id', () => {
+  it('throws when no rows match the experiment_id and CSV has multiple experiments', () => {
+    const multiExpParsed: ParsedCSV = {
+      headers: ['experiment_id', 'variation_id', 'units', 'purchases'],
+      schema: 'agg-v1',
+      rows: [
+        { experiment_id: 'exp-other-1', variation_id: 'control',   units: '1000', purchases: '100' },
+        { experiment_id: 'exp-other-2', variation_id: 'variant_a', units: '950',  purchases: '130' },
+      ],
+    };
     const experiment = makeExperiment({ id: 'nonexistent' });
     expect(() =>
-      buildAnalysisRequest(OVERALL_PARSED, experiment, [makeMetric()], BASE_MAPPING),
+      buildAnalysisRequest(multiExpParsed, experiment, [makeMetric()], BASE_MAPPING),
     ).toThrow(/nonexistent/);
   });
 
@@ -239,5 +247,342 @@ describe('buildAnalysisRequest — pre_normalized metrics', () => {
     const result = buildAnalysisRequest(parsed, makeExperiment(), [preNormMetric], BASE_MAPPING);
     expect(result.data.overall['control'].metrics['metric-purchases']).toBeCloseTo(100);
     expect(result.data.overall['variant_a'].metrics['metric-purchases']).toBeCloseTo(114);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stale metric ID filtering
+// ---------------------------------------------------------------------------
+describe('buildAnalysisRequest — stale metric filtering', () => {
+  it('ignores mapping entries referencing a metric ID not in the metrics array', () => {
+    const staleMapping: ColumnMappingConfig = {
+      purchases: { role: 'metric', metricId: 'metric-purchases' },
+      revenue:   { role: 'metric', metricId: 'metric-deleted' }, // stale
+    };
+    const parsed: ParsedCSV = {
+      headers: ['experiment_id', 'variation_id', 'units', 'purchases', 'revenue'],
+      schema: 'agg-v1',
+      rows: [
+        { experiment_id: 'exp1', variation_id: 'control',   units: '1000', purchases: '100', revenue: '5000' },
+        { experiment_id: 'exp1', variation_id: 'variant_a', units: '950',  purchases: '130', revenue: '6000' },
+      ],
+    };
+    const result = buildAnalysisRequest(parsed, makeExperiment(), [makeMetric()], staleMapping);
+
+    // Only the valid metric should be in the request
+    expect(result.metrics).toHaveLength(1);
+    expect(result.metrics[0].id).toBe('metric-purchases');
+    // The stale metric should not appear in variation data
+    expect(result.data.overall['control'].metrics).not.toHaveProperty('metric-deleted');
+  });
+
+  it('throws when all mapped metrics are stale', () => {
+    const allStaleMapping: ColumnMappingConfig = {
+      purchases: { role: 'metric', metricId: 'metric-deleted' },
+    };
+    expect(() =>
+      buildAnalysisRequest(OVERALL_PARSED, makeExperiment(), [makeMetric()], allStaleMapping),
+    ).toThrow(/metric/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// experiment_id fallback
+// ---------------------------------------------------------------------------
+describe('buildAnalysisRequest — experiment_id fallback', () => {
+  it('uses all rows when CSV has a single experiment_id that does not match', () => {
+    const parsed: ParsedCSV = {
+      headers: ['experiment_id', 'variation_id', 'units', 'purchases'],
+      schema: 'agg-v1',
+      rows: [
+        { experiment_id: 'human-readable-name', variation_id: 'control',   units: '1000', purchases: '100' },
+        { experiment_id: 'human-readable-name', variation_id: 'variant_a', units: '950',  purchases: '130' },
+      ],
+    };
+    // experiment.id is 'exp1' (nanoid) — doesn't match 'human-readable-name'
+    const result = buildAnalysisRequest(parsed, makeExperiment(), [makeMetric()], BASE_MAPPING);
+
+    expect(result.data.overall['control'].units).toBe(1000);
+    expect(result.data.overall['variant_a'].units).toBe(950);
+  });
+
+  it('throws when CSV has multiple experiment_ids and none match', () => {
+    const parsed: ParsedCSV = {
+      headers: ['experiment_id', 'variation_id', 'units', 'purchases'],
+      schema: 'agg-v1',
+      rows: [
+        { experiment_id: 'other-exp-1', variation_id: 'control',   units: '500', purchases: '50' },
+        { experiment_id: 'other-exp-2', variation_id: 'variant_a', units: '500', purchases: '60' },
+      ],
+    };
+    expect(() =>
+      buildAnalysisRequest(parsed, makeExperiment(), [makeMetric()], BASE_MAPPING),
+    ).toThrow(/multiple experiment IDs/i);
+  });
+
+  it('throws when CSV has no experiment_id values at all', () => {
+    const parsed: ParsedCSV = {
+      headers: ['experiment_id', 'variation_id', 'units', 'purchases'],
+      schema: 'agg-v1',
+      rows: [
+        { experiment_id: '', variation_id: 'control',   units: '500', purchases: '50' },
+        { experiment_id: '', variation_id: 'variant_a', units: '500', purchases: '60' },
+      ],
+    };
+    expect(() =>
+      buildAnalysisRequest(parsed, makeExperiment(), [makeMetric()], BASE_MAPPING),
+    ).toThrow(/No rows found/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildAnalysisRequestV2 (row-level data path)
+// ---------------------------------------------------------------------------
+describe('buildAnalysisRequest — row-level (v2) path', () => {
+  const ROW_LEVEL_PARSED: ParsedCSV = {
+    headers: ['experiment_id', 'variation_id', 'user_id', 'purchases', 'revenue'],
+    schema: 'row-v1',
+    rows: [], // preview rows not used by v2 path
+    rowLevelAggregates: {
+      control: {
+        purchases: { mean: 0.1, variance: 0.09, n: 1000 },
+        revenue:   { mean: 5.0, variance: 20.0, n: 1000 },
+      },
+      variant_a: {
+        purchases: { mean: 0.13, variance: 0.113, n: 950 },
+        revenue:   { mean: 5.5, variance: 22.0, n: 950 },
+      },
+    },
+  };
+
+  const ROW_LEVEL_MAPPING: ColumnMappingConfig = {
+    purchases: { role: 'metric', metricId: 'metric-purchases' },
+    revenue:   { role: 'metric', metricId: 'metric-revenue' },
+  };
+
+  const revenueMetric = makeMetric({ id: 'metric-revenue', name: 'Revenue', type: 'revenue' });
+
+  it('routes row-v1 data through the v2 builder', () => {
+    const result = buildAnalysisRequest(
+      ROW_LEVEL_PARSED,
+      makeExperiment(),
+      [makeMetric({ type: 'count' }), revenueMetric],
+      ROW_LEVEL_MAPPING,
+    );
+
+    // Count metric (proportion path): mean * n
+    expect(result.data.overall['control'].metrics['metric-purchases']).toBeCloseTo(100);
+    // Revenue metric (continuous path): should be in continuousMetrics
+    expect(result.data.overall['control'].continuousMetrics?.['metric-revenue']).toBeDefined();
+    expect(result.data.overall['control'].continuousMetrics!['metric-revenue'].mean).toBe(5.0);
+  });
+
+  it('populates continuousMetrics for revenue/continuous metric types', () => {
+    const result = buildAnalysisRequest(
+      ROW_LEVEL_PARSED,
+      makeExperiment(),
+      [revenueMetric],
+      { revenue: { role: 'metric', metricId: 'metric-revenue' } },
+    );
+
+    const ctrl = result.data.overall['control'];
+    expect(ctrl.continuousMetrics?.['metric-revenue']).toEqual({
+      mean: 5.0, variance: 20.0, n: 1000,
+    });
+    const trt = result.data.overall['variant_a'];
+    expect(trt.continuousMetrics?.['metric-revenue']).toEqual({
+      mean: 5.5, variance: 22.0, n: 950,
+    });
+  });
+
+  it('sets metricType on request metrics for the v2 path', () => {
+    const result = buildAnalysisRequest(
+      ROW_LEVEL_PARSED,
+      makeExperiment(),
+      [makeMetric({ type: 'count' }), revenueMetric],
+      ROW_LEVEL_MAPPING,
+    );
+
+    const purchasesMeta = result.metrics.find((m) => m.id === 'metric-purchases');
+    const revenueMeta = result.metrics.find((m) => m.id === 'metric-revenue');
+    expect(purchasesMeta?.metricType).toBe('proportion');
+    expect(revenueMeta?.metricType).toBe('continuous');
+  });
+
+  it('builds dimension slices from rowLevelSliceAggregates', () => {
+    const parsedWithSlices: ParsedCSV = {
+      ...ROW_LEVEL_PARSED,
+      rowLevelSliceAggregates: {
+        country: {
+          us: {
+            control:   { purchases: { mean: 0.12, variance: 0.1, n: 600 } },
+            variant_a: { purchases: { mean: 0.14, variance: 0.12, n: 570 } },
+          },
+          uk: {
+            control:   { purchases: { mean: 0.08, variance: 0.07, n: 400 } },
+            variant_a: { purchases: { mean: 0.11, variance: 0.1, n: 380 } },
+          },
+        },
+      },
+    };
+    const mapping: ColumnMappingConfig = {
+      purchases: { role: 'metric', metricId: 'metric-purchases' },
+      country:   { role: 'dimension' },
+    };
+    const result = buildAnalysisRequest(
+      parsedWithSlices,
+      makeExperiment(),
+      [makeMetric({ type: 'count' })],
+      mapping,
+    );
+
+    expect(result.data.slices['country']).toBeDefined();
+    expect(result.data.slices['country']['us']).toBeDefined();
+    expect(result.data.slices['country']['uk']).toBeDefined();
+    // count metric → proportion path → mean * n
+    expect(result.data.slices['country']['us']['control'].metrics['metric-purchases']).toBeCloseTo(72);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildMergedAnalysisRequest
+// ---------------------------------------------------------------------------
+describe('buildMergedAnalysisRequest', () => {
+  const aggParsed: ParsedCSV = {
+    headers: ['experiment_id', 'variation_id', 'units', 'clicks'],
+    schema: 'agg-v1',
+    rows: [
+      { experiment_id: 'exp1', variation_id: 'control',   units: '1000', clicks: '200' },
+      { experiment_id: 'exp1', variation_id: 'variant_a', units: '950',  clicks: '230' },
+    ],
+  };
+  const aggMapping: ColumnMappingConfig = {
+    clicks: { role: 'metric', metricId: 'metric-clicks' },
+  };
+
+  const rowParsed: ParsedCSV = {
+    headers: ['experiment_id', 'variation_id', 'user_id', 'revenue'],
+    schema: 'row-v1',
+    rows: [],
+    rowLevelAggregates: {
+      control:   { revenue: { mean: 5.0, variance: 20.0, n: 1000 } },
+      variant_a: { revenue: { mean: 5.5, variance: 22.0, n: 950 } },
+    },
+  };
+  const rowMapping: ColumnMappingConfig = {
+    revenue: { role: 'metric', metricId: 'metric-revenue' },
+  };
+
+  const clicksMetric = makeMetric({ id: 'metric-clicks', name: 'Clicks', type: 'count' });
+  const revenueMetric = makeMetric({ id: 'metric-revenue', name: 'Revenue', type: 'revenue' });
+
+  it('delegates to agg-only when rowLevelParsed is null', () => {
+    const result = buildMergedAnalysisRequest(
+      aggParsed, aggMapping, null, {}, makeExperiment(), [clicksMetric],
+    );
+    expect(result.metrics).toHaveLength(1);
+    expect(result.metrics[0].id).toBe('metric-clicks');
+    expect(result.data.overall['control'].metrics['metric-clicks']).toBe(200);
+  });
+
+  it('delegates to row-only when aggParsed is null', () => {
+    const result = buildMergedAnalysisRequest(
+      null, {}, rowParsed, rowMapping, makeExperiment(), [revenueMetric],
+    );
+    expect(result.metrics).toHaveLength(1);
+    expect(result.metrics[0].id).toBe('metric-revenue');
+  });
+
+  it('throws when both sources are null', () => {
+    expect(() =>
+      buildMergedAnalysisRequest(null, {}, null, {}, makeExperiment(), [clicksMetric]),
+    ).toThrow(/at least one data source/i);
+  });
+
+  it('merges metrics from both sources without duplicates', () => {
+    const result = buildMergedAnalysisRequest(
+      aggParsed, aggMapping, rowParsed, rowMapping,
+      makeExperiment(), [clicksMetric, revenueMetric],
+    );
+
+    const metricIds = result.metrics.map((m) => m.id);
+    expect(metricIds).toContain('metric-clicks');
+    expect(metricIds).toContain('metric-revenue');
+    expect(metricIds).toHaveLength(2);
+  });
+
+  it('uses agg units when both sources provide data', () => {
+    const result = buildMergedAnalysisRequest(
+      aggParsed, aggMapping, rowParsed, rowMapping,
+      makeExperiment(), [clicksMetric, revenueMetric],
+    );
+    // Agg source has explicit units=1000 for control
+    expect(result.data.overall['control'].units).toBe(1000);
+  });
+
+  it('merges slices from both sources', () => {
+    const aggWithSlices: ParsedCSV = {
+      ...aggParsed,
+      headers: [...aggParsed.headers, 'country'],
+      rows: [
+        { experiment_id: 'exp1', variation_id: 'control',   units: '1000', clicks: '200', country: 'all' },
+        { experiment_id: 'exp1', variation_id: 'variant_a', units: '950',  clicks: '230', country: 'all' },
+        { experiment_id: 'exp1', variation_id: 'control',   units: '600',  clicks: '120', country: 'US' },
+        { experiment_id: 'exp1', variation_id: 'variant_a', units: '570',  clicks: '140', country: 'US' },
+      ],
+    };
+    const aggMappingWithDim: ColumnMappingConfig = {
+      clicks:  { role: 'metric', metricId: 'metric-clicks' },
+      country: { role: 'dimension' },
+    };
+
+    const rowWithSlices: ParsedCSV = {
+      ...rowParsed,
+      rowLevelSliceAggregates: {
+        browser: {
+          chrome: {
+            control:   { revenue: { mean: 5.2, variance: 21.0, n: 700 } },
+            variant_a: { revenue: { mean: 5.8, variance: 23.0, n: 650 } },
+          },
+        },
+      },
+    };
+    const rowMappingWithDim: ColumnMappingConfig = {
+      revenue: { role: 'metric', metricId: 'metric-revenue' },
+      browser: { role: 'dimension' },
+    };
+
+    const result = buildMergedAnalysisRequest(
+      aggWithSlices, aggMappingWithDim, rowWithSlices, rowMappingWithDim,
+      makeExperiment(), [clicksMetric, revenueMetric],
+    );
+
+    // Agg slices
+    expect(result.data.slices['country']).toBeDefined();
+    expect(result.data.slices['country']['us']).toBeDefined();
+    // Row-level slices
+    expect(result.data.slices['browser']).toBeDefined();
+    expect(result.data.slices['browser']['chrome']).toBeDefined();
+  });
+
+  it('row-level metric wins when same metric appears in both sources', () => {
+    // Both sources have a "purchases" metric mapped to the same metric ID
+    const aggMappingDup: ColumnMappingConfig = {
+      clicks: { role: 'metric', metricId: 'metric-shared' },
+    };
+    const rowMappingDup: ColumnMappingConfig = {
+      revenue: { role: 'metric', metricId: 'metric-shared' },
+    };
+    const sharedMetric = makeMetric({ id: 'metric-shared', name: 'Shared', type: 'revenue' });
+
+    const result = buildMergedAnalysisRequest(
+      aggParsed, aggMappingDup, rowParsed, rowMappingDup,
+      makeExperiment(), [sharedMetric],
+    );
+
+    // Should only have one entry for the shared metric
+    expect(result.metrics.filter((m) => m.id === 'metric-shared')).toHaveLength(1);
+    // The row-level version should win (has metricType)
+    expect(result.metrics.find((m) => m.id === 'metric-shared')?.metricType).toBe('continuous');
   });
 });
