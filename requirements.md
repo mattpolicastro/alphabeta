@@ -104,6 +104,54 @@ Informative priors per metric for users with strong historical baselines. Curren
 
 Cross-experiment performance history for a given metric. Stretch goal from the metric detail view — would show how a metric has performed across all experiments that reference it.
 
+### GrowthBook API Alignment
+
+**Principle:** Follow GrowthBook's data models and API conventions wherever possible. Only augment their structure when adding capabilities they don't expose (e.g., sequential analysis checkpoints, sample size estimates). This keeps the door open for future GrowthBook integration and ensures the data model reflects well-established experimentation patterns.
+
+**Current alignment (Experiment model):**
+
+| Field | GrowthBook | alphabeta | Status |
+|-------|-----------|-----------|--------|
+| Status | `draft`, `running`, `stopped` + `archived` boolean | `draft`, `running`, `stopped`, `archived` as status | Minor divergence — GB uses a flag for archived |
+| Variations | `id`, `key`, `name`; weights in phases | `id`, `key`, `name`, `weight`, `isControl` | Weights/control embedded on variation — acceptable augmentation |
+| Goal metrics | `metrics` (goal) | `primaryMetricIds` | Naming only |
+| Guardrail metrics | `guardrailMetrics` | `guardrailMetricIds` | Aligned |
+| Secondary metrics | `secondaryMetrics` | Not implemented | Gap — add if needed |
+| Activation metric | `activationMetric` | `activationMetricId` | Aligned |
+| Stats engine | `bayesian`, `frequentist` | Same + `sequential` (deferred) | Aligned; sequential is an augmentation |
+
+**Current divergence (Metric types) — open decision:**
+
+GrowthBook splits metric types by *statistical treatment*; we split by *business semantics*. GB's taxonomy maps more cleanly to the underlying gbstats classes.
+
+| GrowthBook | gbstats class | alphabeta | Notes |
+|-----------|--------------|-----------|-------|
+| `proportion` | `ProportionStatistic` | `binomial` | Direct equivalent |
+| `mean` | `SampleMeanStatistic` | `revenue`, `continuous`, partially `count` | GB uses one type; we have three |
+| `ratio` | Custom denominator | Not implemented | Enables metrics like AOV (revenue / orders) |
+| `quantile` | Quantile comparison | Not implemented | P99 latency, etc. |
+| `retention` | Proportion over time window | Not implemented | Requires timestamp data |
+| `daily participation` | Daily active proportion | Not implemented | Requires timestamp data |
+
+**Recommended direction:** Adopt GB's `proportion` / `mean` split as the primary taxonomy. Preserve `revenue` as a display-formatting flag (currency symbol, 2dp) rather than a distinct statistical type. This would:
+- Eliminate the ambiguous `continuous` and `count` types
+- Align the schema with GrowthBook's API for potential future integration
+- Simplify the metric creation UI for business users
+
+**Migration path:** Add a `displayFormat` field (`default`, `currency`, `percentage`, `duration`) and collapse the statistical type to `proportion` | `mean`. Existing `binomial` → `proportion`, `count`/`revenue`/`continuous` → `mean`. Revenue metrics get `displayFormat: 'currency'`.
+
+**Breaking change — export/import migration required:**
+
+This is a schema-level change that affects three data surfaces:
+
+1. **IndexedDB (live data)** — Dexie schema version bump with an `.upgrade()` callback to rewrite `Metric.type` values in place and add `displayFormat`.
+2. **Full database export** (`ExportData`, currently `version: 1`) — Bump to `version: 2`. The import path must continue accepting `version: 1` files with a normalizer that maps old type values (`binomial` → `proportion`, `count`/`revenue`/`continuous` → `mean`) and infers `displayFormat`.
+3. **Metric library export** (`MetricLibraryExport`, currently `version: 1`) — Same version bump and backward-compatible import normalizer.
+
+Both import paths currently `bulkPut` raw JSON with no transformation, so a normalization step must be added before the `bulkPut` call. The `ExperimentResult.rawRequest` payloads in existing result snapshots also contain metric type references — these are historical records and should be left as-is (document that `rawRequest` reflects the types at analysis time).
+
+See Appendix D for the current mapping between metric types and gbstats statistic classes.
+
 ### Other Deferred Items
 
 - Warehouse SQL connectivity
