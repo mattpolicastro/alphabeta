@@ -174,6 +174,7 @@ export function buildAnalysisRequest(
       id: metricId,
       name: metricDef?.name ?? metricId,
       isGuardrail: experiment.guardrailMetricIds.includes(metricId),
+      metricType: (isContinuousMetric(metricDef?.type) ? 'continuous' : 'proportion') as 'proportion' | 'continuous',
     };
   });
 

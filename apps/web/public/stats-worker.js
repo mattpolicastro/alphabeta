@@ -180,19 +180,63 @@ def _run_tests(variation_data, engine, metrics, control_key, non_controls, alpha
         ctrl = variation_data[control_key]
 
         if metric_type == "continuous":
-            continuous = ctrl.get("continuousMetrics", {}).get(mid, {})
-            n_ctrl = continuous.get("n", 0)
-            mean_ctrl = continuous.get("mean", 0)
-            var_ctrl = continuous.get("variance", 0)
-            stat_a = _make_mean_stat(mean_ctrl, var_ctrl, n_ctrl) if n_ctrl > 1 else ProportionStatistic(n=1, sum=0)
-            for var in non_controls:
-                trt = variation_data[var["key"]]
-                trt_cont = trt.get("continuousMetrics", {}).get(mid, {})
-                n_trt = trt_cont.get("n", 0)
-                mean_trt = trt_cont.get("mean", 0)
-                var_trt = trt_cont.get("variance", 0)
-                stat_b = _make_mean_stat(mean_trt, var_trt, n_trt) if n_trt > 1 else ProportionStatistic(n=1, sum=0)
-                results.append(_run_mean_test(mid, var["id"], stat_a, stat_b, mean_ctrl, mean_trt, n_trt, engine, alpha))
+            continuous = ctrl.get("continuousMetrics", {}).get(mid, None)
+            if continuous:
+                # Row-level continuous data available (continuousMetrics block)
+                n_ctrl = continuous.get("n", 0)
+                mean_ctrl = continuous.get("mean", 0)
+                var_ctrl = continuous.get("variance", 0)
+                has_variance = n_ctrl > 1 and var_ctrl > 0
+                if has_variance:
+                    stat_a = _make_mean_stat(mean_ctrl, var_ctrl, n_ctrl)
+                for var in non_controls:
+                    trt = variation_data[var["key"]]
+                    trt_cont = trt.get("continuousMetrics", {}).get(mid, {})
+                    n_trt = trt_cont.get("n", 0)
+                    mean_trt = trt_cont.get("mean", 0)
+                    var_trt = trt_cont.get("variance", 0)
+                    trt_has_variance = n_trt > 1 and var_trt > 0
+                    if has_variance and trt_has_variance:
+                        stat_b = _make_mean_stat(mean_trt, var_trt, n_trt)
+                        results.append(_run_mean_test(mid, var["id"], stat_a, stat_b, mean_ctrl, mean_trt, n_trt, engine, alpha))
+                    else:
+                        # No variance data — compute uplift only, skip significance testing
+                        abs_uplift = mean_trt - mean_ctrl if mean_ctrl != 0 else 0
+                        rel_uplift = abs_uplift / abs(mean_ctrl) if mean_ctrl != 0 else 0
+                        results.append({
+                            "metricId": mid,
+                            "variationId": var["id"],
+                            "units": n_trt,
+                            "rate": mean_trt,
+                            "mean": mean_trt,
+                            "relativeUplift": rel_uplift,
+                            "absoluteUplift": abs_uplift,
+                            "significant": False,
+                            "skippedSignificance": True,
+                        })
+            elif mid in ctrl.get("metrics", {}):
+                # Agg-only continuous metrics (no continuousMetrics block — pre-aggregated totals only)
+                cv_ctrl = ctrl["metrics"][mid]
+                n_ctrl_units = ctrl["units"]
+                ctrl_rate = cv_ctrl / n_ctrl_units if n_ctrl_units > 0 else 0
+                for var in non_controls:
+                    trt = variation_data[var["key"]]
+                    n_trt_units = trt["units"]
+                    cv_trt = trt.get("metrics", {}).get(mid, 0)
+                    trt_rate = cv_trt / n_trt_units if n_trt_units > 0 else 0
+                    abs_uplift = trt_rate - ctrl_rate
+                    rel_uplift = abs_uplift / abs(ctrl_rate) if ctrl_rate != 0 else 0
+                    results.append({
+                        "metricId": mid,
+                        "variationId": var["id"],
+                        "units": n_trt_units,
+                        "rate": trt_rate,
+                        "mean": trt_rate,
+                        "relativeUplift": rel_uplift,
+                        "absoluteUplift": abs_uplift,
+                        "significant": False,
+                        "skippedSignificance": True,
+                    })
         else:
             n_ctrl = ctrl["units"]
             cv_ctrl = ctrl.get("metrics", {}).get(mid)
@@ -238,8 +282,13 @@ def _benjamini_hochberg(p_values):
 def _apply_correction(results, metrics, correction):
     if not results:
         return results
+    # Separate results that have significance data from those that were skipped
+    assessed_indices = []
     p_values = []
-    for r in results:
+    for i, r in enumerate(results):
+        if r.get("skippedSignificance"):
+            continue
+        assessed_indices.append(i)
         if "pValue" in r and r["pValue"] is not None:
             p_values.append(r["pValue"])
         elif "chanceToBeatControl" in r and r["chanceToBeatControl"] is not None:
@@ -255,13 +304,14 @@ def _apply_correction(results, metrics, correction):
         adjusted = _benjamini_hochberg(p_values)
     else:
         return results
-    for i, r in enumerate(results):
+    for j, idx in enumerate(assessed_indices):
+        r = results[idx]
         if "pValue" in r and r["pValue"] is not None:
             r["rawPValue"] = r["pValue"]
-            r["pValue"] = adjusted[i]
-            r["significant"] = adjusted[i] < 0.05
+            r["pValue"] = adjusted[j]
+            r["significant"] = adjusted[j] < 0.05
         elif "chanceToBeatControl" in r:
-            r["significant"] = adjusted[i] < 0.05
+            r["significant"] = adjusted[j] < 0.05
     return results
 
 def _compute_slices(slices, engine, metrics, control_key, non_controls, alpha, correction="none"):

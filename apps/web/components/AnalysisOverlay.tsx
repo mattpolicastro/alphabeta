@@ -53,7 +53,7 @@ export function AnalysisOverlay({ currentStep, message }: AnalysisOverlayProps) 
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
       }}
     >
-      <div className="card" style={{ maxWidth: '480px' }}>
+      <div className="card" style={{ width: '400px' }}>
         <div className="card-body">
           <h5 className="card-title mb-4">Running Analysis</h5>
 

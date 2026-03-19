@@ -69,6 +69,7 @@ export interface VariationResult {
   absoluteUplift: number;
   scaledImpact?: number;
   significant: boolean;
+  skippedSignificance?: boolean; // true when variance data unavailable (uplift-only)
   cupedApplied: boolean;
 }
 

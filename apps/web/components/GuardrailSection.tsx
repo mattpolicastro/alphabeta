@@ -15,7 +15,7 @@ export interface GuardrailSectionProps {
   selectedVariationIds?: string[];
 }
 
-type GuardrailStatus = 'safe' | 'borderline' | 'violated';
+export type GuardrailStatus = 'safe' | 'borderline' | 'violated';
 
 interface GuardrailMetricStatus {
   metricId: string;
@@ -24,13 +24,13 @@ interface GuardrailMetricStatus {
   detail: string;
 }
 
-const STATUS_CONFIG: Record<GuardrailStatus, { badge: string; icon: string }> = {
+export const STATUS_CONFIG: Record<GuardrailStatus, { badge: string; icon: string }> = {
   safe: { badge: 'bg-success', icon: '\u2705' },
   borderline: { badge: 'bg-warning text-dark', icon: '\u26A0\uFE0F' },
   violated: { badge: 'bg-danger', icon: '\uD83D\uDED1' },
 };
 
-function determineStatus(mr: MetricResult, metric: Metric | undefined): GuardrailMetricStatus {
+export function determineStatus(mr: MetricResult, metric: Metric | undefined): GuardrailMetricStatus {
   const name = metric?.name ?? mr.metricId;
   const higherIsBetter = metric?.higherIsBetter ?? true;
 

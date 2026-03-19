@@ -75,20 +75,34 @@ function transformSlice(
     if (controlData) {
       if (isContinuous) {
         const cont = controlData.continuousMetrics?.[metric.id];
-        const controlMean = cont?.mean ?? 0;
-        const controlN = cont?.n ?? 0;
-        const controlVar = cont?.variance ?? 0;
-
-        variationResults.push({
-          variationId: controlVariation.id,
-          users: controlN,
-          mean: controlMean,
-          stddev: controlN > 0 ? Math.sqrt(controlVar / controlN) : 0,
-          relativeUplift: 0,
-          absoluteUplift: 0,
-          significant: false,
-          cupedApplied: false,
-        });
+        if (cont) {
+          // Row-level continuous data available
+          variationResults.push({
+            variationId: controlVariation.id,
+            users: cont.n ?? 0,
+            mean: cont.mean ?? 0,
+            stddev: cont.n > 0 ? Math.sqrt((cont.variance ?? 0) / cont.n) : 0,
+            relativeUplift: 0,
+            absoluteUplift: 0,
+            significant: false,
+            cupedApplied: false,
+          });
+        } else {
+          // Agg-only: fall back to metrics/units (same as proportion path)
+          const controlUnits = controlData.units;
+          const controlTotal = controlData.metrics[metric.id] ?? 0;
+          const controlMean = controlUnits > 0 ? controlTotal / controlUnits : 0;
+          variationResults.push({
+            variationId: controlVariation.id,
+            users: controlUnits,
+            mean: controlMean,
+            stddev: 0,
+            relativeUplift: 0,
+            absoluteUplift: 0,
+            significant: false,
+            cupedApplied: false,
+          });
+        }
       } else {
         const controlUnits = controlData.units;
         const controlTotal = controlData.metrics[metric.id] ?? 0;
@@ -146,6 +160,7 @@ function mapToVariationResult(mvr: MetricVariationResult, baselineUnits: number,
     absoluteUplift: mvr.absoluteUplift,
     scaledImpact: baselineUnits > 0 ? mvr.absoluteUplift * baselineUnits : undefined,
     significant: mvr.significant,
+    skippedSignificance: mvr.skippedSignificance,
     cupedApplied: false,
   };
 }

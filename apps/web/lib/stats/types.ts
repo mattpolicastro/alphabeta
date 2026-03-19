@@ -69,6 +69,7 @@ export interface MetricVariationResult {
   relativeUplift: number;
   absoluteUplift: number;
   significant: boolean;
+  skippedSignificance?: boolean; // true when variance data unavailable (uplift-only result)
   // Bayesian
   chanceToBeatControl?: number;
   expectedLoss?: number;

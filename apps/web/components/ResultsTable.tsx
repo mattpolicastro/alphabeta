@@ -9,6 +9,7 @@ import { useState } from 'react';
 import type { ExperimentResult, Experiment, Metric, Annotation } from '@/lib/db/schema';
 import { useSettingsStore } from '@/lib/store/settingsStore';
 import { PValueTip, CTWTip, CredibleIntervalTip, ConfidenceIntervalTip, ExpectedLossTip, CUPEDTip } from '@/components/StatTooltip';
+import { type GuardrailStatus, STATUS_CONFIG } from '@/components/GuardrailSection';
 
 export interface ResultsTableProps {
   result: ExperimentResult;
@@ -18,9 +19,10 @@ export interface ResultsTableProps {
   showLift: 'relative' | 'absolute';
   annotations?: Annotation[];
   selectedVariationIds?: string[];
+  guardrailStatuses?: Map<string, { status: GuardrailStatus; detail: string }>;
 }
 
-export function ResultsTable({ result, experiment, metricIds, metricById, showLift, annotations = [], selectedVariationIds }: ResultsTableProps) {
+export function ResultsTable({ result, experiment, metricIds, metricById, showLift, annotations = [], selectedVariationIds, guardrailStatuses }: ResultsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
   const control = experiment.variations.find((v) => v.isControl);
@@ -80,11 +82,11 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                 const rows = [
                   <tr
                     key={rowKey}
-                    className={vr.significant ? (isPositive ? 'table-success' : 'table-danger') : ''}
+                    className={vr.significant && !vr.skippedSignificance ? (isPositive ? 'table-success' : 'table-danger') : ''}
                     onClick={() => toggleRow(rowKey)}
                     style={{ cursor: 'pointer' }}
                   >
-                    <td className="text-muted small">{isExpanded ? '▾' : '▸'}</td>
+                    <td className="text-muted" style={{ fontSize: '1.3rem', lineHeight: 1 }}>{isExpanded ? '▾' : '▸'}</td>
                     <td>
                       <span className="fw-medium">{metric?.name ?? mr.metricId}</span>
                       {hasAnnotation && <span className="ms-1" title="Has annotations">📝</span>}
@@ -95,6 +97,15 @@ export function ResultsTable({ result, experiment, metricIds, metricById, showLi
                           {metric.higherIsBetter ? '↑ higher is better' : '↓ lower is better'}
                         </span>
                       )}
+                      {guardrailStatuses?.has(mr.metricId) && (() => {
+                        const gs = guardrailStatuses.get(mr.metricId)!;
+                        const config = STATUS_CONFIG[gs.status];
+                        return (
+                          <span className={`badge ${config.badge} ms-1`} title={gs.detail}>
+                            {gs.status}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td>
                       {controlVR
@@ -344,7 +355,14 @@ function formatValue(value: number, metricType?: string, currencySymbol: string 
   return formatRate(value);
 }
 
-function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; rawPValue?: number; significant: boolean }): React.ReactNode {
+function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; rawPValue?: number; significant: boolean; skippedSignificance?: boolean }): React.ReactNode {
+  if (vr.skippedSignificance) {
+    return (
+      <span className="text-warning-emphasis" title="Upload row-level data to enable significance testing for continuous metrics">
+        N/A <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">no row-level data</span>
+      </span>
+    );
+  }
   if (vr.chanceToBeatControl != null) {
     return (
       <span>

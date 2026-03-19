@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -21,7 +21,7 @@ import {
   type Annotation,
 } from '@/lib/db';
 import { ResultsTable } from '@/components/ResultsTable';
-import { GuardrailSection } from '@/components/GuardrailSection';
+import { determineStatus } from '@/components/GuardrailSection';
 import { VariationEditor, variationsValid } from '@/components/VariationEditor';
 import { StatsConfigEditor } from '@/components/StatsConfigEditor';
 import { MetricPicker } from '@/components/MetricPicker';
@@ -175,20 +175,42 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           </p>
         </div>
         <div className="d-flex gap-2">
+          {/* Project dropdown */}
+          <Dropdown label="Project">
+            <li><button className="dropdown-item" onClick={() => setShowConfig(!showConfig)}>Configure</button></li>
+            <li><button className="dropdown-item" onClick={handleClone}>Clone</button></li>
+            <li><hr className="dropdown-divider" /></li>
+            <li><button className="dropdown-item text-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button></li>
+          </Dropdown>
+
+          {/* Status dropdown */}
+          <Dropdown label="Status">
+            {experiment.status === 'draft' && <li><button className="dropdown-item" onClick={() => handleStatusChange('running')}>Launch</button></li>}
+            {experiment.status === 'running' && <li><button className="dropdown-item" onClick={() => handleStatusChange('stopped')}>Stop</button></li>}
+            {experiment.status === 'stopped' && <li><button className="dropdown-item" onClick={() => handleStatusChange('running')}>Resume</button></li>}
+            {experiment.status === 'stopped' && <li><button className="dropdown-item" onClick={() => handleStatusChange('archived')}>Archive</button></li>}
+            {experiment.status === 'archived' && <li><button className="dropdown-item" onClick={() => handleStatusChange('stopped')}>Unarchive</button></li>}
+            {experiment.status === 'running' && <li><button className="dropdown-item" onClick={() => handleStatusChange('archived')}>Archive</button></li>}
+          </Dropdown>
+
+          {/* Analysis button */}
           <Link href={`/experiments/view?id=${experiment.id}&view=upload`} className="btn btn-primary">{activeResult ? 'Re-run Analysis' : 'Upload Data'}</Link>
-          <div className="btn-group">
-            <button className="btn btn-outline-secondary" onClick={() => setShowConfig(!showConfig)}>Configure</button>
-            <button className="btn btn-outline-secondary" onClick={handleClone}>Clone</button>
-            <button className="btn btn-outline-secondary" onClick={handleExport}>Export</button>
-            {activeResult && <button className="btn btn-outline-secondary" onClick={() => exportResultsCSV(activeResult, experiment, metrics)}>Export Results CSV</button>}
-            {activeResult && <button className="btn btn-outline-secondary" onClick={handleExportPdf} disabled={exportingPdf}>{exportingPdf ? 'Exporting\u2026' : 'Export PDF'}</button>}
-            {experiment.status === 'draft' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Launch</button>}
-            {experiment.status === 'running' && <button className="btn btn-outline-warning" onClick={() => handleStatusChange('stopped')}>Stop</button>}
-            {experiment.status === 'stopped' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Resume</button>}
-            {experiment.status === 'archived' && <button className="btn btn-outline-secondary" onClick={() => handleStatusChange('stopped')}>Unarchive</button>}
-            {experiment.status !== 'archived' && <button className="btn btn-outline-danger" onClick={() => handleStatusChange('archived')}>Archive</button>}
-            <button className="btn btn-outline-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button>
-          </div>
+
+          {/* Export dropdown */}
+          <Dropdown label="Export">
+            <li><button className="dropdown-item" onClick={handleExport}>Experiment JSON</button></li>
+            {activeResult && <li><button className="dropdown-item" onClick={() => exportResultsCSV(activeResult, experiment, metrics)}>Results CSV</button></li>}
+            {activeResult && <li><button className="dropdown-item" onClick={handleExportPdf} disabled={exportingPdf}>{exportingPdf ? 'Exporting\u2026' : 'Results PDF'}</button></li>}
+            {activeResult && activeResult.rawRequest && (
+              <li><button className="dropdown-item" onClick={() => {
+                const blob = new Blob([JSON.stringify(activeResult.rawRequest, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const date = new Date(activeResult.computedAt).toISOString().slice(0, 10);
+                const a = document.createElement('a'); a.href = url; a.download = `analysis-request-${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${date}.json`; a.click();
+                URL.revokeObjectURL(url);
+              }}>Analysis Request JSON</button></li>
+            )}
+          </Dropdown>
         </div>
       </div>
 
@@ -257,65 +279,46 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h4 className="mb-0">Primary Metrics</h4>
             <div className="d-flex align-items-center gap-2">
-              <button
-                className="btn btn-outline-secondary btn-sm"
-                title="Download the raw analysis request payload for reproducibility"
-                onClick={() => {
-                  if (!activeResult.rawRequest) return;
-                  const blob = new Blob([JSON.stringify(activeResult.rawRequest, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const date = new Date(activeResult.computedAt).toISOString().slice(0, 10);
-                  const a = document.createElement('a'); a.href = url; a.download = `analysis-request-${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${date}.json`; a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                Download Request JSON
-              </button>
               {/* Variation filter — only show if >1 treatment */}
               {treatmentVars.length > 1 && (
-                <div className="dropdown me-2">
-                  <button
-                    className="btn btn-outline-secondary btn-sm dropdown-toggle"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                  >
-                    {selectedVariationIds === null
-                      ? `All variations (${treatmentVars.length})`
-                      : `${selectedVariationIds.length} of ${treatmentVars.length} variations`}
-                  </button>
-                  <ul className="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <button className="dropdown-item" onClick={() => setSelectedVariationIds(null)}>
-                        Show all
+                <Dropdown
+                  label={selectedVariationIds === null
+                    ? `All variations (${treatmentVars.length})`
+                    : `${selectedVariationIds.length} of ${treatmentVars.length} variations`}
+                  btnClass="btn btn-outline-secondary btn-sm"
+                  keepOpen
+                >
+                  <li>
+                    <button className="dropdown-item" onClick={() => setSelectedVariationIds(null)}>
+                      Show all
+                    </button>
+                  </li>
+                  <li><hr className="dropdown-divider" /></li>
+                  {treatmentVars.map((v) => (
+                    <li key={v.id}>
+                      <button
+                        className="dropdown-item d-flex align-items-center gap-2"
+                        onClick={() => {
+                          setSelectedVariationIds((prev) => {
+                            if (prev === null) {
+                              return [v.id];
+                            }
+                            if (prev.includes(v.id)) {
+                              const next = prev.filter((id) => id !== v.id);
+                              return next.length === 0 ? null : next;
+                            }
+                            return [...prev, v.id];
+                          });
+                        }}
+                      >
+                        <span style={{ width: '1.2em' }}>
+                          {(selectedVariationIds === null || selectedVariationIds.includes(v.id)) ? '✓' : ''}
+                        </span>
+                        {v.name}
                       </button>
                     </li>
-                    <li><hr className="dropdown-divider" /></li>
-                    {treatmentVars.map((v) => (
-                      <li key={v.id}>
-                        <button
-                          className="dropdown-item d-flex align-items-center gap-2"
-                          onClick={() => {
-                            setSelectedVariationIds((prev) => {
-                              if (prev === null) {
-                                return [v.id];
-                              }
-                              if (prev.includes(v.id)) {
-                                const next = prev.filter((id) => id !== v.id);
-                                return next.length === 0 ? null : next;
-                              }
-                              return [...prev, v.id];
-                            });
-                          }}
-                        >
-                          <span style={{ width: '1.2em' }}>
-                            {(selectedVariationIds === null || selectedVariationIds.includes(v.id)) ? '✓' : ''}
-                          </span>
-                          {v.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  ))}
+                </Dropdown>
               )}
               <div className="btn-group btn-group-sm">
                 <button className={`btn ${showLift === 'relative' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setShowLift('relative')}>Relative</button>
@@ -328,12 +331,18 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           {experiment.guardrailMetricIds.length > 0 && (
             <>
               <h4 className="mt-4 mb-2">Guardrail Metrics</h4>
-              <GuardrailSection
-                guardrailResults={activeResult.perMetricResults.filter((mr) => experiment.guardrailMetricIds.includes(mr.metricId))}
-                metrics={metrics}
-                selectedVariationIds={selectedVariationIds ?? undefined}
-              />
-              <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} selectedVariationIds={selectedVariationIds ?? undefined} />
+              <ResultsTable result={activeResult} experiment={experiment} metricIds={experiment.guardrailMetricIds} metricById={metricById} showLift={showLift} annotations={annotations} selectedVariationIds={selectedVariationIds ?? undefined} guardrailStatuses={(() => {
+                const guardrailResults = activeResult.perMetricResults.filter((mr) => experiment.guardrailMetricIds.includes(mr.metricId));
+                const filtered = selectedVariationIds
+                  ? guardrailResults.map((mr) => ({ ...mr, variationResults: mr.variationResults.filter((vr) => selectedVariationIds.includes(vr.variationId)) }))
+                  : guardrailResults;
+                const map = new Map<string, { status: 'safe' | 'borderline' | 'violated'; detail: string }>();
+                for (const mr of filtered) {
+                  const s = determineStatus(mr, metricById.get(mr.metricId));
+                  map.set(mr.metricId, { status: s.status, detail: s.detail });
+                }
+                return map;
+              })()} />
             </>
           )}
 
@@ -482,6 +491,45 @@ function DimensionSliceSection({
       ) : (
         <p className="text-muted">No slice data available for this selection.</p>
       )}
+    </div>
+  );
+}
+
+// ----- Dropdown -----
+
+function Dropdown({ label, btnClass, children, keepOpen }: {
+  label: React.ReactNode;
+  btnClass?: string;
+  children: React.ReactNode;
+  keepOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const close = useCallback((e: MouseEvent) => {
+    if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (open) document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open, close]);
+
+  return (
+    <div className="dropdown" ref={ref}>
+      <button
+        className={`${btnClass ?? 'btn btn-outline-secondary'} dropdown-toggle`}
+        type="button"
+        onClick={() => setOpen(!open)}
+      >
+        {label}
+      </button>
+      <ul
+        className={`dropdown-menu dropdown-menu-end${open ? ' show' : ''}`}
+        onClick={() => { if (!keepOpen) setOpen(false); }}
+      >
+        {children}
+      </ul>
     </div>
   );
 }
