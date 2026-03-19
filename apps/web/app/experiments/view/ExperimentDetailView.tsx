@@ -86,7 +86,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
     const data = await exportExperiment(experiment.id);
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `experiment-${experiment.id}.json`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -265,7 +265,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
                   const blob = new Blob([JSON.stringify(activeResult.rawRequest, null, 2)], { type: 'application/json' });
                   const url = URL.createObjectURL(blob);
                   const date = new Date(activeResult.computedAt).toISOString().slice(0, 10);
-                  const a = document.createElement('a'); a.href = url; a.download = `analysis-request-${experimentId}-${date}.json`; a.click();
+                  const a = document.createElement('a'); a.href = url; a.download = `analysis-request-${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${date}.json`; a.click();
                   URL.revokeObjectURL(url);
                 }}
               >

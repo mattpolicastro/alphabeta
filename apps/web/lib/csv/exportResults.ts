@@ -93,7 +93,7 @@ export function exportResultsCSV(
   const a = document.createElement('a');
   a.href = url;
   const date = new Date().toISOString().slice(0, 10);
-  a.download = `results-${experiment.id}-${date}.csv`;
+  a.download = `results-${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${date}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

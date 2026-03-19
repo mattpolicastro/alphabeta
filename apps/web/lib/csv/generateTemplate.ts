@@ -87,7 +87,7 @@ export function downloadTemplateCSV(
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${experiment.id}-${format}-template.csv`;
+  a.download = `${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${format}-template.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
