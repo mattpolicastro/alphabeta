@@ -239,6 +239,7 @@ git push origin v0.1.0
 | `v0.2.1` | `065fdf6` | Auto-versioned footer with git tag + GitHub repo link |
 | `v0.2.2` | `0c6f8f1` | Fix light-on-light badge text in light theme |
 | `v0.2.3` | `1a6672d` | PDF export for experiment results |
+| `v0.2.4` | `1af1495` | Experiment import, doc cleanup, unused dep removal |
 
 Update this table when creating new tags.
 
