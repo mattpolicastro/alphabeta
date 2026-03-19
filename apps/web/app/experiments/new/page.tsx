@@ -119,7 +119,7 @@ export default function NewExperimentPage() {
                 ? 'bg-primary text-white'
                 : s < step
                   ? 'bg-success text-white'
-                  : 'bg-light text-muted'
+                  : 'bg-body-secondary text-body-secondary'
             }`}
           >
             {['Hypothesis', 'Variations', 'Metrics', 'Stats Config', 'Review'][
