@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -49,6 +49,8 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   const [showHidden, setShowHidden] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedVariationIds, setSelectedVariationIds] = useState<string[] | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { load(); }, [experimentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -118,6 +120,45 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
     setMetrics(m);
   }
 
+  async function handleExportPdf() {
+    if (!resultsRef.current || !experiment) return;
+    setExportingPdf(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const date = activeResult ? new Date(activeResult.computedAt).toISOString().slice(0, 10) : 'no-results';
+      const filename = `${experiment.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${date}.pdf`;
+
+      // Clone the results into an offscreen container with light theme
+      // so the visible UI is never affected.
+      const clone = resultsRef.current.cloneNode(true) as HTMLElement;
+      const offscreen = document.createElement('div');
+      offscreen.setAttribute('data-bs-theme', 'light');
+      offscreen.style.position = 'absolute';
+      offscreen.style.left = '-9999px';
+      offscreen.style.top = '0';
+      offscreen.style.width = resultsRef.current.offsetWidth + 'px';
+      offscreen.appendChild(clone);
+      document.body.appendChild(offscreen);
+
+      try {
+        await html2pdf()
+          .set({
+            margin: [10, 10, 10, 10],
+            filename,
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          })
+          .from(clone)
+          .save();
+      } finally {
+        document.body.removeChild(offscreen);
+      }
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   if (loading) return <div className="py-4 text-center"><div className="spinner-border" role="status" /></div>;
   if (!experiment) return <div className="py-4"><div className="alert alert-danger">Experiment not found.</div><Link href="/">Back to experiments</Link></div>;
 
@@ -138,6 +179,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
             <button className="btn btn-outline-secondary" onClick={handleClone}>Clone</button>
             <button className="btn btn-outline-secondary" onClick={handleExport}>Export</button>
             {activeResult && <button className="btn btn-outline-secondary" onClick={() => exportResultsCSV(activeResult, experiment, metrics)}>Export Results CSV</button>}
+            {activeResult && <button className="btn btn-outline-secondary" onClick={handleExportPdf} disabled={exportingPdf}>{exportingPdf ? 'Exporting\u2026' : 'Export PDF'}</button>}
             {experiment.status === 'draft' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Launch</button>}
             {experiment.status === 'running' && <button className="btn btn-outline-warning" onClick={() => handleStatusChange('stopped')}>Stop</button>}
             {experiment.status === 'stopped' && <button className="btn btn-outline-success" onClick={() => handleStatusChange('running')}>Resume</button>}
@@ -173,6 +215,9 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           onClose={() => setShowConfig(false)}
         />
       )}
+
+      {/* PDF export region */}
+      <div ref={resultsRef}>
 
       {/* Warnings */}
       {activeResult?.srmFlagged && (
@@ -336,6 +381,8 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
           ))}
         </div>
       )}
+
+      </div>{/* end PDF export region */}
     </div>
   );
 }
