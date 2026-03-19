@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,10 +17,8 @@
     "next": "^15.3.3",
     "papaparse": "^5.5.2",
     "react": "^19.1.0",
-    "react-bootstrap": "^2.10.9",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
-    "recharts": "^2.15.3",
     "simple-statistics": "^7.8.8",
     "zustand": "^5.0.5"
   },

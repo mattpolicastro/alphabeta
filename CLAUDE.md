@@ -214,14 +214,16 @@ While the project is `0.x.y` (pre-1.0), minor versions may include small breakin
 
 ### How to tag
 
+**Important:** Tag *before* pushing so the CI build sees the tag. Push the tag and commits together so `git describe --tags` resolves correctly during the build.
+
 ```bash
-# Lightweight tag (preferred for now)
+# Lightweight tag (preferred for now) — tag then push both at once
 git tag v0.3.0
-git push origin v0.3.0
+git push origin main v0.3.0
 
 # Annotated tag (use for significant releases or when you want a message)
 git tag -a v1.0.0 -m "First stable release"
-git push origin v1.0.0
+git push origin main v1.0.0
 
 # Tagging a past commit
 git tag v0.1.0 <commit-hash>
@@ -235,6 +237,8 @@ git push origin v0.1.0
 | `v0.1.0` | `e3177da` | v1 complete — all core features implemented, 137 tests passing |
 | `v0.2.0` | `068015f` | v2 complete — continuous metrics, dark mode, worker resilience, Cache API, variation filter, metric detail view, CI pipeline |
 | `v0.2.1` | `065fdf6` | Auto-versioned footer with git tag + GitHub repo link |
+| `v0.2.2` | `0c6f8f1` | Fix light-on-light badge text in light theme |
+| `v0.2.3` | `1a6672d` | PDF export for experiment results |
 
 Update this table when creating new tags.
 

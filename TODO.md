@@ -24,7 +24,7 @@
 
 ## ~~v1 Remaining Gaps~~ ✅ All Complete
 
-All v1 gaps have been addressed: 5 functional features, 137 unit tests across 4 modules, and 3 polish items.
+All v1 functional gaps have been addressed: 5 functional features, 137 unit tests across 4 modules, and 3 polish items. Some additional test coverage items remain unchecked below — these are aspirational and not blocking.
 
 ---
 
@@ -60,8 +60,8 @@ Req: §3.1, §3.5, §10.1
 - [x] Jest + SWC test config via `next/jest` preset (§3.6)
 - [x] Install test deps: `@testing-library/react`, `fake-indexeddb`, `jest`
 - [x] ESLint — `next/core-web-vitals` + `next/typescript` via flat config
-- [-] `react-bootstrap` — not used; raw Bootstrap classes instead
-- [-] `recharts` — not installed; visualizations deferred (see P1 charts module)
+- [x] `react-bootstrap` — removed; raw Bootstrap classes instead
+- [-] `recharts` — removed (was unused); reinstall when visualizations are implemented
 
 ### Module: Shared Types & Interfaces
 Touches: `lib/stats/types.ts`, `lib/db/schema.ts`
@@ -132,7 +132,7 @@ Touches: `lib/csv/`
 Req: §4.2, §4.3, §5.3
 
 - [x] PapaParse integration (synchronous parse after `file.text()`, not worker mode — acceptable for pre-aggregated data)
-- [x] Schema version check: first line must be `#schema_version:1`
+- [x] Schema version check: first line must be `#schema:agg-v1` or `#schema:row-v1`
 - [x] Required column detection: `experiment_id`, `variation_id`, `units`
 - [x] Variation ID normalization: trim + lowercase
 - [x] Validation rules: file size ≤ 50MB, various data quality checks
@@ -180,7 +180,6 @@ Req: §5.4, §6.3
 - [x] Handle `"all"` sentinel for dimension grouping
 - [x] Tests: correct payload construction
 
-> **Note:** `buildRequest.ts` lives in `lib/csv/`, not `lib/stats/` as the original TODO assumed.
 
 ### Module: Stats Engine — runAnalysis Router
 Touches: `lib/stats/runAnalysis.ts`, `lib/stats/lambda.ts`
@@ -257,7 +256,7 @@ Req: §7.2 Visualizations
 - [-] Traffic split donut — observed vs expected (deferred)
 - [-] Cumulative time series — requires timestamp column, not in v1 CSV schema (deferred)
 
-> **Note:** The ResultsTable detail panel includes a basic interval visualization using CSS positioning. Full Recharts-based charts are deferred. `recharts` is not yet installed.
+> **Note:** The ResultsTable detail panel includes a basic interval visualization using CSS positioning. Full Recharts-based charts are deferred. `recharts` is installed but not yet integrated.
 
 ### Module: CSV Upload Flow (Full Page)
 Touches: `app/experiments/view/UploadView.tsx`
