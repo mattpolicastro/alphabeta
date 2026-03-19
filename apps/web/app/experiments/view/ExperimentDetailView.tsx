@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import {
   getExperimentById,
@@ -35,6 +36,7 @@ const STATUS_BADGES: Record<Experiment['status'], string> = {
 };
 
 export default function ExperimentDetailView({ experimentId }: { experimentId: string }) {
+  const router = useRouter();
   const [experiment, setExperiment] = useState<Experiment | null>(null);
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [allMetrics, setAllMetrics] = useState<Metric[]>([]);
@@ -91,7 +93,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   async function handleClone() {
     if (!experiment) return;
     const clone = await cloneExperiment(experiment.id);
-    window.location.href = `/experiments/view?id=${clone.id}`;
+    router.push(`/experiments/view?id=${clone.id}`);
   }
 
   async function handleStatusChange(status: Experiment['status']) {
@@ -103,7 +105,7 @@ export default function ExperimentDetailView({ experimentId }: { experimentId: s
   async function handleDelete() {
     if (!experiment) return;
     await deleteExperiment(experiment.id);
-    window.location.href = '/';
+    router.push('/');
   }
 
   async function handleConfigSave(patch: Partial<Experiment>) {
