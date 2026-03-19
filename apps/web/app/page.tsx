@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   getExperiments,
   checkBackupReminder,
   isDatabaseEmpty,
+  importData,
   type Experiment,
+  type ExportData,
 } from '@/lib/db';
 import { useSettingsStore } from '@/lib/store/settingsStore';
 
@@ -24,6 +26,7 @@ export default function DashboardPage() {
   const [showBackupBanner, setShowBackupBanner] = useState(false);
   const [empty, setEmpty] = useState(false);
   const [loading, setLoading] = useState(true);
+  const importFileRef = useRef<HTMLInputElement>(null);
   const loadSettings = useSettingsStore((s) => s.loadFromDB);
 
   useEffect(() => {
@@ -66,6 +69,32 @@ export default function DashboardPage() {
     [experiments, tagFilter],
   );
 
+  async function handleImportExperiment(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as ExportData;
+      if (data.version !== 1 || !Array.isArray(data.experiments)) {
+        alert('Invalid experiment file. Expected a version 1 export with an experiments array.');
+        return;
+      }
+      const expNames = data.experiments.map((exp) => exp.name).join(', ');
+      const details = [
+        `${data.experiments.length} experiment${data.experiments.length !== 1 ? 's' : ''}: ${expNames}`,
+        `${data.metrics.length} metric${data.metrics.length !== 1 ? 's' : ''}`,
+        `${data.results.length} result snapshot${data.results.length !== 1 ? 's' : ''}`,
+      ];
+      if (!confirm(`Import the following?\n\n${details.join('\n')}\n\nExisting items with matching IDs will be updated.`)) return;
+      await importData(data, 'merge');
+      window.location.reload();
+    } catch {
+      alert('Failed to read or parse the selected file.');
+    } finally {
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  }
+
   if (loading) {
     return (
       <div className="py-4 text-center">
@@ -92,9 +121,24 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="mb-0">Experiments</h1>
-        <Link href="/experiments/new" className="btn btn-primary">
-          Create Experiment
-        </Link>
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => importFileRef.current?.click()}
+          >
+            Import Experiment
+          </button>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".json"
+            className="d-none"
+            onChange={handleImportExperiment}
+          />
+          <Link href="/experiments/new" className="btn btn-primary">
+            Create Experiment
+          </Link>
+        </div>
       </div>
 
       {/* Empty state / demo prompt */}
