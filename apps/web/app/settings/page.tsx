@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore } from '@/lib/store/settingsStore';
 import { useEngineStatusStore } from '@/lib/store/engineStatusStore';
+import { useRepoStore } from '@/lib/store/repoStore';
 import { exportAllData, importData, type ExportData, previewImport } from '@/lib/db';
 import { testLambdaConnection } from '@/lib/stats/lambda';
 import { terminateStatsWorker } from '@/lib/stats/runAnalysis';
+import { testRepoConnection, exportToRepo, importFromRepo } from '@/lib/repo/operations';
 
 export default function SettingsPage() {
   const settings = useSettingsStore();
@@ -21,9 +23,14 @@ export default function SettingsPage() {
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const [importPreview, setImportPreview] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<ExportData | null>(null);
+  const repo = useRepoStore();
+  const [repoTestResult, setRepoTestResult] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
+  const [showToken, setShowToken] = useState(false);
+  const [repoPullMode, setRepoPullMode] = useState<'merge' | 'replace'>('merge');
 
   useEffect(() => {
     settings.loadFromDB();
+    repo.loadFromLocalStorage();
     estimateStorage();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -77,6 +84,29 @@ export default function SettingsPage() {
     const ok = await testLambdaConnection(settings.lambdaUrl);
     setLambdaTestResult(ok ? 'ok' : 'fail');
   }
+
+  async function handleTestRepo() {
+    setRepoTestResult('testing');
+    const ok = await testRepoConnection(repo.getConfig());
+    setRepoTestResult(ok ? 'ok' : 'fail');
+  }
+
+  async function handlePushToRepo() {
+    repo.setSyncStatus('pushing', 'Pushing to GitHub...');
+    const result = await exportToRepo(repo.getConfig());
+    repo.setSyncStatus(result.success ? 'success' : 'error', result.message);
+  }
+
+  async function handlePullFromRepo() {
+    repo.setSyncStatus('pulling', 'Pulling from GitHub...');
+    const result = await importFromRepo(repo.getConfig(), repoPullMode);
+    repo.setSyncStatus(result.success ? 'success' : 'error', result.message);
+    if (result.success) {
+      window.location.reload();
+    }
+  }
+
+  const repoSyncing = repo.syncStatus === 'pushing' || repo.syncStatus === 'pulling';
 
   const usagePercent =
     storageUsage && storageUsage.quota > 0
@@ -445,6 +475,143 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Repository Storage */}
+      <section className="card mb-4">
+        <div className="card-body">
+          <h5 className="card-title">Repository Storage</h5>
+          <p className="text-muted small mb-3">
+            Push and pull experiment data to a GitHub repository for backup and collaboration.
+          </p>
+
+          <div className="row g-3 mb-3">
+            <div className="col-md-4">
+              <label className="form-label">Owner</label>
+              <input
+                className="form-control"
+                placeholder="username or org"
+                value={repo.owner}
+                onChange={(e) => repo.updateField('owner', e.target.value)}
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Repository</label>
+              <input
+                className="form-control"
+                placeholder="my-experiments"
+                value={repo.repo}
+                onChange={(e) => repo.updateField('repo', e.target.value)}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label">Branch</label>
+              <input
+                className="form-control"
+                value={repo.branch}
+                onChange={(e) => repo.updateField('branch', e.target.value)}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label">Path</label>
+              <input
+                className="form-control"
+                value={repo.path}
+                onChange={(e) => repo.updateField('path', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="row g-2 align-items-end mb-3">
+            <div className="col-md-8">
+              <label className="form-label">Personal Access Token</label>
+              <div className="input-group">
+                <input
+                  type={showToken ? 'text' : 'password'}
+                  className="form-control"
+                  placeholder="ghp_..."
+                  value={repo.token}
+                  onChange={(e) => repo.updateField('token', e.target.value)}
+                />
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={() => setShowToken(!showToken)}
+                >
+                  {showToken ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <div className="form-text">
+                Fine-grained PAT with <code>Contents: Read and write</code> on the target repo.
+              </div>
+            </div>
+            <div className="col-auto">
+              <button
+                className="btn btn-outline-secondary"
+                onClick={handleTestRepo}
+                disabled={!repo.isConfigured() || repoTestResult === 'testing'}
+              >
+                {repoTestResult === 'testing' ? 'Testing\u2026' : 'Test Connection'}
+              </button>
+              {repoTestResult === 'ok' && (
+                <span className="ms-2 text-success">Connected</span>
+              )}
+              {repoTestResult === 'fail' && (
+                <span className="ms-2 text-danger">Failed</span>
+              )}
+            </div>
+          </div>
+
+          <div className="d-flex gap-3 align-items-center flex-wrap">
+            <button
+              className="btn btn-outline-primary"
+              onClick={handlePushToRepo}
+              disabled={!repo.isConfigured() || repoSyncing}
+            >
+              {repo.syncStatus === 'pushing' ? 'Pushing\u2026' : 'Push to GitHub'}
+            </button>
+            <button
+              className="btn btn-outline-secondary"
+              onClick={handlePullFromRepo}
+              disabled={!repo.isConfigured() || repoSyncing}
+            >
+              {repo.syncStatus === 'pulling' ? 'Pulling\u2026' : 'Pull from GitHub'}
+            </button>
+            <div className="form-check form-check-inline mb-0">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="repo-pull-merge"
+                checked={repoPullMode === 'merge'}
+                onChange={() => setRepoPullMode('merge')}
+              />
+              <label className="form-check-label" htmlFor="repo-pull-merge">
+                Merge
+              </label>
+            </div>
+            <div className="form-check form-check-inline mb-0">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="repo-pull-replace"
+                checked={repoPullMode === 'replace'}
+                onChange={() => setRepoPullMode('replace')}
+              />
+              <label className="form-check-label" htmlFor="repo-pull-replace">
+                Replace
+              </label>
+            </div>
+            {repo.lastSyncMessage && (
+              <span
+                className={
+                  repo.syncStatus === 'error' ? 'text-danger' : 'text-success'
+                }
+              >
+                {repo.lastSyncMessage}
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
