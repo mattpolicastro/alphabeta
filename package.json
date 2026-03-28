@@ -1,5 +1,5 @@
 {
-  "name": "experiment-tools",
+  "name": "alphabeta",
   "private": true,
   "workspaces": ["apps/web"],
   "scripts": {
