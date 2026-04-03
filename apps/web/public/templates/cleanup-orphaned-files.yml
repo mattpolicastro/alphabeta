@@ -1,0 +1,68 @@
+name: Clean up orphaned alphabeta files
+
+on:
+  push:
+    branches: [main]
+    paths: ['.alphabeta/**']
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find and remove orphaned files
+        run: |
+          MANIFEST=".alphabeta/manifest.json"
+          if [ ! -f "$MANIFEST" ]; then
+            echo "No manifest found, skipping."
+            exit 0
+          fi
+
+          # Collect all referenced file paths from manifest
+          LIVE_FILES=$(mktemp)
+          echo "$MANIFEST" >> "$LIVE_FILES"
+
+          # Extract experiment and metric IDs from manifest
+          EXPERIMENT_IDS=$(jq -r '.experimentIds[]' "$MANIFEST")
+          METRIC_IDS=$(jq -r '.metricIds[]' "$MANIFEST")
+
+          for id in $METRIC_IDS; do
+            echo ".alphabeta/metrics/${id}.json" >> "$LIVE_FILES"
+          done
+
+          for id in $EXPERIMENT_IDS; do
+            echo ".alphabeta/experiments/${id}/experiment.json" >> "$LIVE_FILES"
+            # Include all children (results, annotations, column-mappings)
+            find ".alphabeta/experiments/${id}" -type f -name "*.json" 2>/dev/null >> "$LIVE_FILES"
+          done
+
+          # Find all JSON files under .alphabeta that are NOT in the live set
+          ORPHANS=$(find .alphabeta -type f -name "*.json" | grep -v -F -f "$LIVE_FILES" || true)
+
+          if [ -z "$ORPHANS" ]; then
+            echo "No orphaned files found."
+            exit 0
+          fi
+
+          echo "Removing orphaned files:"
+          echo "$ORPHANS"
+          echo "$ORPHANS" | xargs rm -f
+
+          # Remove empty directories
+          find .alphabeta -type d -empty -delete 2>/dev/null || true
+
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A .alphabeta/
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "alphabeta: remove orphaned files"
+            git push
+          fi

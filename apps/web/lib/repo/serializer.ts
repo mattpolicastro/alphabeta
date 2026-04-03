@@ -113,31 +113,29 @@ export function deserializeFromFileMap(files: FileMap, basePath: string): Export
   };
 
   for (const [path, content] of files) {
-    const rel = path;
-
     let match: RegExpMatchArray | null;
 
-    if ((match = rel.match(METRICS_RE))) {
+    if ((match = path.match(METRICS_RE))) {
       const id = match[1];
       if (liveMetrics.has(id)) {
         data.metrics.push(JSON.parse(content));
       }
-    } else if ((match = rel.match(EXPERIMENT_RE))) {
+    } else if ((match = path.match(EXPERIMENT_RE))) {
       const id = match[1];
       if (liveExperiments.has(id)) {
         data.experiments.push(JSON.parse(content));
       }
-    } else if ((match = rel.match(RESULT_RE))) {
+    } else if ((match = path.match(RESULT_RE))) {
       const expId = match[1];
       if (liveExperiments.has(expId)) {
         data.results.push(JSON.parse(content));
       }
-    } else if ((match = rel.match(ANNOTATION_RE))) {
+    } else if ((match = path.match(ANNOTATION_RE))) {
       const expId = match[1];
       if (liveExperiments.has(expId)) {
         data.annotations.push(JSON.parse(content));
       }
-    } else if ((match = rel.match(COLUMN_MAPPING_RE))) {
+    } else if ((match = path.match(COLUMN_MAPPING_RE))) {
       const expId = match[1];
       if (liveExperiments.has(expId)) {
         data.columnMappings.push(JSON.parse(content));

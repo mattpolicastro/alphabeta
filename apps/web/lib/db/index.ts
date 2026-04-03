@@ -326,9 +326,13 @@ export interface ExportData {
   annotations: Annotation[];
 }
 
-export async function exportAllData(): Promise<ExportData> {
+interface DataOperationOptions {
+  skipLoading?: boolean;
+}
+
+export async function exportAllData(opts?: DataOperationOptions): Promise<ExportData> {
   const { startLoading, stopLoading } = useLoadingStore.getState();
-  startLoading();
+  if (!opts?.skipLoading) startLoading();
   try {
     const [experiments, metrics, results, columnMappings, annotations] =
       await Promise.all([
@@ -351,7 +355,7 @@ export async function exportAllData(): Promise<ExportData> {
       annotations,
     };
   } finally {
-    stopLoading();
+    if (!opts?.skipLoading) stopLoading();
   }
 }
 
@@ -376,13 +380,14 @@ export function previewImport(data: ExportData): ImportSummary {
 export async function importData(
   data: ExportData,
   mode: 'merge' | 'replace',
+  opts?: DataOperationOptions,
 ): Promise<void> {
   if (data.version !== 1) {
     throw new Error(`Unsupported export version: ${data.version}`);
   }
 
   const { startLoading, stopLoading } = useLoadingStore.getState();
-  startLoading();
+  if (!opts?.skipLoading) startLoading();
   try {
     await db.transaction(
       'rw',
@@ -409,15 +414,16 @@ export async function importData(
       },
     );
   } finally {
-    stopLoading();
+    if (!opts?.skipLoading) stopLoading();
   }
 }
 
 export async function exportExperiment(
   experimentId: string,
+  opts?: DataOperationOptions,
 ): Promise<ExportData> {
   const { startLoading, stopLoading } = useLoadingStore.getState();
-  startLoading();
+  if (!opts?.skipLoading) startLoading();
   try {
     const experiment = await db.experiments.get(experimentId);
     if (!experiment) throw new Error(`Experiment ${experimentId} not found`);
@@ -446,7 +452,7 @@ export async function exportExperiment(
       annotations,
     };
   } finally {
-    stopLoading();
+    if (!opts?.skipLoading) stopLoading();
   }
 }
 
