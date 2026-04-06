@@ -10,6 +10,7 @@ import type { ExperimentResult, Experiment, Metric, Annotation } from '@/lib/db/
 import { useSettingsStore } from '@/lib/store/settingsStore';
 import { PValueTip, CTWTip, CredibleIntervalTip, ConfidenceIntervalTip, ExpectedLossTip, CUPEDTip } from '@/components/StatTooltip';
 import { type GuardrailStatus, STATUS_CONFIG } from '@/components/GuardrailSection';
+import { formatValue } from '@/lib/utils/formatValue';
 
 export interface ResultsTableProps {
   result: ExperimentResult;
@@ -340,20 +341,6 @@ function DetailPanel({
 }
 
 // ----- Formatting helpers -----
-
-function formatRate(rate: number): string {
-  return `${(rate * 100).toFixed(2)}%`;
-}
-
-function formatValue(value: number, metricType?: string, currencySymbol: string = '$'): string {
-  if (metricType === 'revenue') {
-    return `${currencySymbol}${value.toFixed(2)}`;
-  }
-  if (isContinuousDisplay(metricType)) {
-    return value.toFixed(2);
-  }
-  return formatRate(value);
-}
 
 function formatEvidence(vr: { chanceToBeatControl?: number; pValue?: number; rawPValue?: number; significant: boolean; skippedSignificance?: boolean }): React.ReactNode {
   if (vr.skippedSignificance) {

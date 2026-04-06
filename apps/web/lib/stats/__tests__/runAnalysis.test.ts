@@ -79,6 +79,7 @@ const successResponse: AnalysisResponse = {
   warnings: [],
 };
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 beforeEach(() => {
   jest.resetModules();
   FakeWorker.instances = [];
@@ -107,6 +108,7 @@ beforeEach(() => {
 afterEach(() => {
   jest.useRealTimers();
 });
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // ---------- Path A: WASM worker ----------
 
