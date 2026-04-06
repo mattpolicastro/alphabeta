@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { MDETip, AlphaTip, PowerTip, CohensHTip } from '@/components/StatTooltip';
+import { computePowerCalc } from '@/lib/stats/powerCalculator';
 
 interface PowerCalculatorProps {
   defaultSplitRatio?: number;
@@ -23,42 +24,18 @@ export function PowerCalculator({ defaultSplitRatio = 1.0 }: PowerCalculatorProp
   const [showDetails, setShowDetails] = useState(false);
 
   const result = useMemo(() => {
-    const pBaseline = baseline / 100;
-    const a = alpha / 100;
-    const pow = power / 100;
-
-    let pTreatment: number;
-    if (mdeMode === 'relative') {
-      pTreatment = pBaseline * (1 + mdeValue / 100);
-    } else {
-      pTreatment = pBaseline + mdeValue / 100;
-    }
-
-    if (pBaseline <= 0 || pBaseline >= 1 || pTreatment <= 0 || pTreatment >= 1) {
-      return null;
-    }
-
-    // Cohen's h
-    const h = 2 * (Math.asin(Math.sqrt(pTreatment)) - Math.asin(Math.sqrt(pBaseline)));
-
-    if (Math.abs(h) < 1e-10) return null;
-
-    // Inverse normal CDF approximation (Abramowitz & Stegun 26.2.23)
-    const zAlpha = probit(1 - a / 2);
-    const zBeta = probit(pow);
-
-    // Sample size per control group
-    const ratio = defaultSplitRatio;
-    const nControl = Math.ceil(
-      ((zAlpha + zBeta) ** 2 * (1 + 1 / ratio)) / (h ** 2),
-    );
-    const nTreatment = Math.ceil(nControl * ratio);
-    const totalN = nControl + nTreatment;
-
+    const calc = computePowerCalc({
+      pBaseline: baseline / 100,
+      mde: mdeValue / 100,
+      mdeMode,
+      alpha: alpha / 100,
+      power: power / 100,
+      ratio: defaultSplitRatio,
+    });
+    if (!calc) return null;
     const estimatedDays =
-      dailyUsers > 0 ? Math.ceil(totalN / dailyUsers) : null;
-
-    return { nControl, nTreatment, totalN, h, estimatedDays, pTreatment };
+      dailyUsers > 0 ? Math.ceil(calc.totalN / dailyUsers) : null;
+    return { ...calc, estimatedDays };
   }, [baseline, mdeValue, mdeMode, alpha, power, dailyUsers, defaultSplitRatio]);
 
   return (
@@ -183,22 +160,3 @@ export function PowerCalculator({ defaultSplitRatio = 1.0 }: PowerCalculatorProp
   );
 }
 
-/**
- * Inverse normal CDF (probit) approximation.
- * Rational approximation from Abramowitz & Stegun (26.2.23).
- * Accurate to ~4.5e-4 absolute error.
- */
-function probit(p: number): number {
-  if (p <= 0 || p >= 1) return NaN;
-  if (p < 0.5) return -probit(1 - p);
-
-  const t = Math.sqrt(-2 * Math.log(1 - p));
-  const c0 = 2.515517;
-  const c1 = 0.802853;
-  const c2 = 0.010328;
-  const d1 = 1.432788;
-  const d2 = 0.189269;
-  const d3 = 0.001308;
-
-  return t - (c0 + c1 * t + c2 * t * t) / (1 + d1 * t + d2 * t * t + d3 * t * t * t);
-}
