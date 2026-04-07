@@ -192,6 +192,8 @@ function parseAndAggregate(csvText) {
   return { headers, previewRows, totalRows, aggregates, sliceAggregates, columnClassification };
 }
 
+// NOTE: Welford implementation below is mirrored in
+// apps/web/lib/csv/welford.ts (the testable reference). Keep them in sync.
 function welfordUpdate(accByMetric, metricName, val) {
   if (!accByMetric[metricName]) {
     accByMetric[metricName] = { n: 0, mean: 0, m2: 0 };
