@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore } from '@/lib/store/settingsStore';
 import { useEngineStatusStore } from '@/lib/store/engineStatusStore';
+import { useRepoStore } from '@/lib/store/repoStore';
 import { exportAllData, importData, type ExportData, previewImport } from '@/lib/db';
 import { testLambdaConnection } from '@/lib/stats/lambda';
 import { terminateStatsWorker } from '@/lib/stats/runAnalysis';
+import { RepoSettings } from '@/components/RepoSettings';
 
 export default function SettingsPage() {
   const settings = useSettingsStore();
@@ -21,9 +23,11 @@ export default function SettingsPage() {
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const [importPreview, setImportPreview] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<ExportData | null>(null);
+  const repo = useRepoStore();
 
   useEffect(() => {
     settings.loadFromDB();
+    repo.loadFromLocalStorage();
     estimateStorage();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -447,6 +451,8 @@ export default function SettingsPage() {
           )}
         </div>
       </section>
+
+      <RepoSettings />
 
       {/* Storage */}
       <section className="card mb-4">
