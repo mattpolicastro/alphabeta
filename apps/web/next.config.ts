@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
 import { execSync } from 'child_process';
 
-const isProd = process.env.NODE_ENV === 'production';
-const basePath = isProd ? '/alphabeta' : '';
+const basePath = '';
 
 // Resolve version from the latest git tag at build time.
 // Falls back to 'dev' if no tags exist or git is unavailable.
@@ -15,8 +14,6 @@ try {
 
 const config: NextConfig = {
   output: 'export',
-  basePath,
-  assetPrefix: isProd ? '/alphabeta/' : undefined,
   trailingSlash: true,
   images: { unoptimized: true }, // required for static export
   env: {
