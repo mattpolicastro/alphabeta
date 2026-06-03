@@ -117,7 +117,9 @@ Result: **shipped verbatim** (no orchestrator tightening). 11k tokens sent / 955
 
 **Verify failed at `npm run build`** — Turbopack rejected the symlinked `node_modules` ("points out of the filesystem root"). The agent's output was fine; the dispatch verify shortcut isn't. tsc + vitest tolerate symlinks, Next.js Turbopack does not.
 
-**New convention:** if a task's verify needs `npm run build` (or any tool that resolves package roots strictly), run a real `npm install --prefer-offline --no-audit` in the worktree instead of symlinking `node_modules`. Symlink remains fine for tsc/vitest-only verify on the cheap path. Worth baking into a `verify-build` template snippet rather than re-inventing per task.
+**Convention (now baked into dispatch):** task specs gain a `setup` field that runs after worktree creation, before aider. For build-verifying tasks, use `setup: "cd apps/web && npm install --prefer-offline --no-audit > /dev/null"` and a verify that runs `tsc --noEmit && npm test && npm run build`. Symlinking `node_modules` remains fine for the cheap-verify path (tsc + vitest only) but breaks Next.js Turbopack.
+
+Dispatch also writes a metadata sidecar `${log}.json` per run on completion (success or failure). Fields: `job_id`, `model`, `host`, `branch`, `base`, `started_at`, `finished_at`, `elapsed_seconds`, `exits.{setup,aider,verify}`, `outcome` (`ok` / `setup-failed` / `aider-failed` / `verify-failed`), `log`, `worktree`, `files_touched`, `tokens.{sent,received}` (parsed from aider log, k/M expanded). Future A/Bs compare from sidecars rather than scraping logs.
 
 ## Original plan (kept for reference)
 
