@@ -1,25 +1,51 @@
 @import "tailwindcss";
+@import "./components.css";
 
 @theme {
+  /* Surface */
   --color-paper: #f5f1e8;
   --color-paper-hover: #efe9da;
-  --color-ink: #2a2a2a;
-  --color-ink-soft: #85837f;
-  --color-ink-faint: #b4b1ab;
-  --color-terra: #a64d3b;
-  --color-green: #3a6b4a;
-  --color-amber: #b8860b;
-  --color-plinth: #5a6b8c;
 
+  /* Ink (semi-transparent — composite over paper) */
+  --color-ink: #2a2a2a;
+  --color-ink-soft: rgba(42, 42, 42, 0.55);
+  --color-ink-faint: rgba(42, 42, 42, 0.32);
+
+  /* Terracotta — primary accent + discipline voice */
+  --color-terra: #a64d3b;
+  --color-terra-soft: color-mix(in srgb, #a64d3b 7%, transparent);
+  --color-terra-line: color-mix(in srgb, #a64d3b 45%, transparent);
+
+  /* Semantic */
+  --color-green: #3a6b4a;
+  --color-green-soft: rgba(58, 107, 74, 0.07);
+  --color-green-line: rgba(58, 107, 74, 0.5);
+  --color-amber: #b8860b;
+  --color-amber-soft: rgba(184, 134, 11, 0.08);
+  --color-amber-line: rgba(184, 134, 11, 0.5);
+  --color-plinth: #5a6b8c;
+  --color-plinth-soft: color-mix(in srgb, #5a6b8c 9%, transparent);
+  --color-plinth-line: color-mix(in srgb, #5a6b8c 50%, transparent);
+
+  /* Rule colors (for dashed dividers) */
+  --color-rule: rgba(42, 42, 42, 0.42);
+  --color-rule-faint: rgba(42, 42, 42, 0.22);
+
+  /* Field/panel translucent fills (rgba white over paper for the wireframe register) */
+  --color-paper-veil: rgba(255, 255, 255, 0.28);
+  --color-paper-veil-strong: rgba(255, 255, 255, 0.4);
+
+  /* Typography */
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-caveat);
 
+  /* Layout */
   --container-content: 1140px;
 }
 
 :root {
   --blueprint-grid-size: 28px;
-  --blueprint-grid-line: color-mix(in srgb, #2a2a2a 8%, transparent);
+  --blueprint-grid-line: rgba(42, 42, 42, 0.035);
 }
 
 html,
@@ -36,4 +62,5 @@ body {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
   line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }

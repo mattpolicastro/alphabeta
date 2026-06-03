@@ -1,0 +1,537 @@
+/* Component anatomy for alphaBeta. Mirrors `design/Design System.html`.
+ * Plain CSS using the `@theme` tokens from `globals.css`.
+ * Components import this once via the root layout; JSX stays clean. */
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+
+.ab-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: var(--container-content);
+  margin: 0 auto;
+  padding: 28px 28px 80px;
+}
+
+.ab-cols {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: 22px;
+}
+
+@media (max-width: 860px) {
+  .ab-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+
+.btn {
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 9px 15px;
+  border: 1.5px dashed var(--color-rule);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  display: inline-block;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.btn:hover {
+  background: var(--color-paper-hover);
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.btn-primary {
+  border-style: solid;
+  border-color: var(--color-terra-line);
+  background: var(--color-terra);
+  color: var(--color-paper);
+}
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--color-terra) 82%, #000);
+}
+
+.btn-green {
+  border-style: solid;
+  border-color: var(--color-green-line);
+  background: var(--color-green);
+  color: var(--color-paper);
+}
+.btn-green:hover {
+  background: #2f5a3d;
+}
+
+/* ── Panel + dashed card ────────────────────────────────────────────── */
+
+.dashed-panel {
+  border: 1.5px dashed var(--color-rule);
+  background: var(--color-paper-veil);
+  padding: 18px;
+}
+.dashed-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.dashed-panel-sub {
+  font-size: 11.5px;
+  color: var(--color-ink-soft);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.scard {
+  border: 1.5px dashed var(--color-rule);
+  background: var(--color-paper-veil);
+  padding: 18px;
+}
+.scard-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.scard-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.scard-sub {
+  font-size: 11.5px;
+  color: var(--color-ink-soft);
+  line-height: 1.5;
+  margin: 4px 0 14px;
+}
+.scard-active {
+  border-color: var(--color-terra-line);
+}
+
+/* ── Stepped flow (Bet Front Door) ──────────────────────────────────── */
+
+.step {
+  position: relative;
+  padding-left: 46px;
+  padding-bottom: 26px;
+}
+.step:last-child {
+  padding-bottom: 0;
+}
+.step::before {
+  content: attr(data-n);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--color-rule);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  background: var(--color-paper);
+  z-index: 1;
+}
+.step::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 30px;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px dashed var(--color-rule-faint);
+}
+.step:last-child::after {
+  display: none;
+}
+.step-active::before {
+  border-color: var(--color-terra);
+  color: var(--color-terra);
+  background: var(--color-terra-soft);
+}
+.step-done::before {
+  content: "\2713";
+  border-color: var(--color-green-line);
+  color: var(--color-green);
+  background: var(--color-green-soft);
+}
+.step-locked {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ── Spine rail (top progress nav) ──────────────────────────────────── */
+
+.spine-rail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 18px 0 2px;
+}
+.srail {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1.5px dashed var(--color-rule);
+  padding: 8px 13px;
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  color: var(--color-ink-soft);
+  text-decoration: none;
+}
+.srail .sn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.srail-done {
+  border-color: var(--color-green-line);
+  color: var(--color-green);
+}
+.srail-done .sn {
+  border-color: var(--color-green-line);
+  color: var(--color-green);
+  background: var(--color-green-soft);
+}
+.srail-active {
+  border-color: var(--color-terra);
+  border-style: solid;
+  color: var(--color-terra);
+  background: var(--color-terra-soft);
+}
+.srail-active .sn {
+  border-color: var(--color-terra);
+  color: var(--color-terra);
+}
+.srail-arrow {
+  color: var(--color-ink-faint);
+  margin: 0 8px 8px;
+}
+a.srail:hover {
+  background: var(--color-paper-hover);
+}
+
+/* ── Heard card (reflection) ────────────────────────────────────────── */
+
+.heard {
+  border: 1.5px dashed var(--color-rule-faint);
+  background: rgba(255, 255, 255, 0.34);
+  padding: 11px 13px;
+  margin-bottom: 9px;
+}
+.heard .heard-k {
+  font-size: 9.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  margin-bottom: 4px;
+}
+.heard .heard-v {
+  font-size: 12.5px;
+  color: var(--color-ink);
+  line-height: 1.5;
+}
+.heard .heard-v b {
+  color: var(--color-terra);
+  font-weight: 500;
+}
+.heard-push {
+  border-color: var(--color-terra-line);
+  background: var(--color-terra-soft);
+}
+.heard-push .heard-k {
+  color: var(--color-terra);
+}
+.heard-gap {
+  border-color: var(--color-terra-line);
+  border-style: solid;
+  background: var(--color-terra-soft);
+}
+.heard-gap .heard-k {
+  color: var(--color-terra);
+}
+.heard-gap .heard-v {
+  color: var(--color-terra);
+  font-style: italic;
+}
+.heard-filled {
+  border-color: var(--color-green-line);
+  background: var(--color-green-soft);
+}
+.heard-filled .heard-k {
+  color: var(--color-green);
+}
+.gap-fill {
+  margin-top: 9px;
+  display: flex;
+  gap: 8px;
+}
+.gap-fill input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-ink);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1.5px dashed var(--color-terra-line);
+  padding: 8px 10px;
+  outline: none;
+}
+
+/* ── Wager sentence + tokens ────────────────────────────────────────── */
+
+.wager {
+  font-size: 19px;
+  line-height: 1.9;
+  color: var(--color-ink);
+}
+.wager .lead-in {
+  color: var(--color-ink-soft);
+}
+.tok {
+  border-bottom: 2px dashed var(--color-terra-line);
+  color: var(--color-terra);
+  font-weight: 500;
+  padding: 0 3px;
+  cursor: text;
+  outline: none;
+  white-space: nowrap;
+}
+.tok:focus {
+  background: var(--color-terra-soft);
+}
+.tok-cycle {
+  cursor: pointer;
+  border-bottom-style: solid;
+}
+.tok-cycle::after {
+  content: " \21C5";
+  font-size: 11px;
+  color: var(--color-ink-faint);
+}
+.tok-empty {
+  color: var(--color-ink-faint);
+  font-style: italic;
+  font-weight: 400;
+}
+.tok-fals.tok-empty {
+  border-bottom-color: var(--color-terra);
+  background: var(--color-terra-soft);
+}
+
+.losable {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  padding: 6px 12px;
+  border: 1.5px solid;
+}
+.losable-yes {
+  color: var(--color-green);
+  border-color: var(--color-green-line);
+  background: var(--color-green-soft);
+}
+.losable-no {
+  color: var(--color-terra);
+  border-color: var(--color-terra-line);
+  background: var(--color-terra-soft);
+}
+.losable-neutral {
+  color: var(--color-ink-soft);
+  border-color: var(--color-rule);
+  background: transparent;
+}
+
+.committed-line {
+  margin-top: 14px;
+  border-top: 1px dashed var(--color-rule-faint);
+  padding-top: 12px;
+  font-size: 11px;
+  color: var(--color-ink-soft);
+  line-height: 1.7;
+}
+.committed-line b {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+.committed-line .ck {
+  color: var(--color-ink-faint);
+}
+
+/* ── Annotation sidebar (in-product discipline) ─────────────────────── */
+
+.annot {
+  border: 1.5px solid var(--color-terra-line);
+  background: var(--color-terra-soft);
+  padding: 18px;
+  position: sticky;
+  top: 16px;
+}
+.annot::before {
+  content: "DISCIPLINE LAYER";
+  position: absolute;
+  margin-top: -27px;
+  margin-left: -4px;
+  background: var(--color-paper);
+  padding: 0 8px;
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  color: var(--color-terra);
+}
+.annot .moment {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-terra);
+  margin-bottom: 10px;
+}
+.annot p {
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 0 0 11px;
+}
+.annot p:last-child {
+  margin-bottom: 0;
+}
+.annot p em {
+  color: var(--color-terra);
+  font-style: italic;
+}
+.annot .pathline {
+  border-top: 1px dashed var(--color-terra-line);
+  margin-top: 13px;
+  padding-top: 12px;
+  font-size: 11px;
+  color: var(--color-ink-soft);
+  font-style: italic;
+  line-height: 1.5;
+}
+.annot .pathline b {
+  color: var(--color-terra);
+  font-style: normal;
+}
+
+/* ── Margin note (Caveat, rotated, terracotta) ──────────────────────── */
+
+.margin-note {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--color-terra);
+  line-height: 1.25;
+  display: inline-block;
+  transform: rotate(-1.2deg);
+}
+
+/* ── Header / dump textarea ─────────────────────────────────────────── */
+
+.wordmark {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.wordmark .a,
+.wordmark .b {
+  color: var(--color-terra);
+}
+.stamp {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--color-terra);
+  transform: rotate(-3deg);
+  border: 1.5px dashed var(--color-terra-line);
+  padding: 1px 12px;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+textarea.dump {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--color-ink);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1.5px dashed var(--color-rule-faint);
+  padding: 14px;
+  resize: vertical;
+  min-height: 150px;
+  outline: none;
+}
+textarea.dump:focus {
+  border-color: var(--color-terra-line);
+}
+
+.row-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.express {
+  font-size: 11px;
+  color: var(--color-terra);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--color-terra-line);
+  white-space: nowrap;
+}
+.express:hover {
+  background: var(--color-terra-soft);
+}
+
+/* ── Status badges (for design-system catalog) ──────────────────────── */
+
+.st {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1.5px solid;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.st-draft {
+  color: var(--color-ink-faint);
+  border-color: var(--color-rule-faint);
+  border-style: dashed;
+}
+.st-locked {
+  color: var(--color-terra);
+  border-color: var(--color-terra-line);
+}
+.st-running {
+  color: var(--color-terra);
+  border-color: var(--color-terra);
+  background: var(--color-terra-soft);
+}
+.st-won {
+  color: var(--color-paper);
+  background: var(--color-green);
+  border-color: var(--color-green);
+}
+.st-lost {
+  color: var(--color-paper);
+  background: var(--color-terra);
+  border-color: var(--color-terra);
+}
