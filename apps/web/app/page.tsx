@@ -422,41 +422,10 @@ type WagerEditorProps = {
 };
 
 function WagerEditor({ bet, setField, cycle }: WagerEditorProps) {
-  const Tok = ({
-    k,
-    placeholder,
-    variant,
-  }: {
-    k: WagerKey;
-    placeholder: string;
-    variant?: "fals";
-  }) => {
-    const value = (bet[k] as string | undefined) ?? "";
-    const empty = value.length === 0;
-    const cls = [
-      "tok",
-      empty && "tok-empty",
-      variant === "fals" && "tok-fals",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    return (
-      <input
-        type="text"
-        className={cls}
-        value={value}
-        placeholder={placeholder}
-        size={Math.max(value.length || placeholder.length, 6)}
-        onChange={(e) => setField(k, e.target.value as never)}
-        aria-label={k}
-      />
-    );
-  };
-
   return (
     <div className="wager">
       <span className="lead-in">I&apos;m betting that </span>
-      <Tok k="change" placeholder="—" />
+      <Tok bet={bet} setField={setField} k="change" placeholder="—" />
       <span className="lead-in"> will </span>
       <button
         type="button"
@@ -468,9 +437,9 @@ function WagerEditor({ bet, setField, cycle }: WagerEditorProps) {
         {bet.direction ?? "lift"}
       </button>
       <span className="lead-in"> </span>
-      <Tok k="metric" placeholder="—" />
+      <Tok bet={bet} setField={setField} k="metric" placeholder="—" />
       <span className="lead-in"> by about </span>
-      <Tok k="magnitude" placeholder="—" />
+      <Tok bet={bet} setField={setField} k="magnitude" placeholder="—" />
       <span className="lead-in">. I&apos;m </span>
       <button
         type="button"
@@ -482,11 +451,53 @@ function WagerEditor({ bet, setField, cycle }: WagerEditorProps) {
         {bet.confidence ?? "fairly"}
       </button>
       <span className="lead-in"> sure, because </span>
-      <Tok k="mechanism" placeholder="name why it would work" />
+      <Tok
+        bet={bet}
+        setField={setField}
+        k="mechanism"
+        placeholder="name why it would work"
+      />
       <span className="lead-in">. I&apos;ll fold if </span>
-      <Tok k="foldIf" placeholder="name what would change your mind" variant="fals" />
+      <Tok
+        bet={bet}
+        setField={setField}
+        k="foldIf"
+        placeholder="name what would change your mind"
+        variant="fals"
+      />
       <span className="lead-in">.</span>
     </div>
+  );
+}
+
+type TokProps = {
+  bet: AbBet;
+  setField: <K extends WagerKey>(k: K, v: AbBet[K]) => void;
+  k: WagerKey;
+  placeholder: string;
+  variant?: "fals";
+};
+
+function Tok({ bet, setField, k, placeholder, variant }: TokProps) {
+  const value = (bet[k] as string | undefined) ?? "";
+  const empty = value.length === 0;
+  const cls = [
+    "tok",
+    empty && "tok-empty",
+    variant === "fals" && "tok-fals",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <input
+      type="text"
+      className={cls}
+      value={value}
+      placeholder={placeholder}
+      size={Math.max(value.length || placeholder.length, 6)}
+      onChange={(e) => setField(k, e.target.value as never)}
+      aria-label={k}
+    />
   );
 }
 
