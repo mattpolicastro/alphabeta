@@ -6,7 +6,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { WagerStatic } from "@/components/bet/WagerStatic";
-import { buildLockedSnapshot } from "@/lib/bet/factory";
+import { buildLockedSnapshotFromBet } from "@/lib/bet/factory";
 import { getBet, lockBet } from "@/lib/bet/queries";
 import type { AbBet } from "@/lib/bet/storage";
 import { fingerprint } from "@/lib/integrity/fingerprint";
@@ -33,6 +33,7 @@ function CommitAndLockInner() {
   const id = searchParams.get("id");
 
   const [bet, setBet] = useState<AbBet>({});
+  const [betRow, setBetRow] = useState<Bet | null>(null);
   const [state, setState] = useState<LockState>("loading");
   const [committed, setCommitted] = useState<CommittedView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,7 @@ function CommitAndLockInner() {
           return;
         }
         setBet(asAbBet(row));
+        setBetRow(row);
         if (row.status === "locked" || row.status === "running" || row.status === "resolved") {
           setCommitted({
             betId: row.id,
@@ -75,11 +77,11 @@ function CommitAndLockInner() {
   }, [id]);
 
   const onLock = async () => {
-    if (!id) return;
+    if (!id || !betRow) return;
     setError(null);
     try {
       const lockedAt = new Date().toISOString();
-      const snapshot = buildLockedSnapshot(bet, lockedAt);
+      const snapshot = buildLockedSnapshotFromBet(betRow, lockedAt);
       const fp = await fingerprint(snapshot);
       await lockBet(id, snapshot, fp);
       setCommitted({ betId: id, lockedAt, fingerprint: fp });
@@ -172,25 +174,15 @@ function CommitAndLockInner() {
               <WagerStatic bet={bet} />
             </Section>
 
-            <Section
-              label="instrument"
-              src="chosen at feasibility (deferred — MVP)"
-            >
-              <div className="text-[12px] text-ink-soft italic">
-                Feasibility &amp; Instrument lands in Sprint 2. This MVP locks
-                straight from the wager; the locked record stubs instrument as
-                an A/B test by default.
-              </div>
+            <Section label="instrument" src="chosen at feasibility">
+              <InstrumentReadout betRow={betRow} />
             </Section>
 
             <Section
               label="decision criteria"
-              src="pre-registered actions (deferred — MVP)"
+              src="pre-registered actions"
             >
-              <div className="text-[12px] text-ink-soft italic">
-                Decision Criteria lands in Sprint 2. The fold-if doubles as
-                the minimum mind-changer below.
-              </div>
+              <CriteriaReadout betRow={betRow} />
             </Section>
 
             <Section label="minimum mind-changer" src="= the fold-if">
@@ -365,6 +357,56 @@ function asAbBet(b: Bet): AbBet {
     confidence: b.articulation.confidence,
     foldIf: b.articulation.foldIf || undefined,
   };
+}
+
+const INSTRUMENT_NAMES: Record<string, string> = {
+  ab: "A/B test",
+  quasi: "Quasi-experiment",
+  observational: "Observational",
+  holdback: "Holdback",
+  interviews: "Moderated interviews",
+};
+
+function InstrumentReadout({ betRow }: { betRow: Bet | null }) {
+  if (!betRow) {
+    return <div className="text-[12px] text-ink-soft italic">—</div>;
+  }
+  const name = INSTRUMENT_NAMES[betRow.instrument.type] ?? betRow.instrument.type;
+  return (
+    <div className="text-[12.5px]">
+      <span className="text-terra font-bold">{name}</span>
+      {betRow.instrument.overrideReason && (
+        <div className="text-[11.5px] text-ink-soft italic mt-[4px]">
+          override: {betRow.instrument.overrideReason}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CriteriaReadout({ betRow }: { betRow: Bet | null }) {
+  if (!betRow) {
+    return <div className="text-[12px] text-ink-soft italic">—</div>;
+  }
+  const rows: { tag: string; text: string }[] = [
+    { tag: "win", text: betRow.criteria.win },
+    { tag: "incon.", text: betRow.criteria.inconclusive },
+    { tag: "loss", text: betRow.criteria.loss },
+  ];
+  return (
+    <div className="flex flex-col gap-[6px] text-[12.5px]">
+      {rows.map((r) => (
+        <div key={r.tag} className="flex gap-[10px]">
+          <span className="text-[10px] uppercase tracking-[1px] text-ink-soft w-[50px] flex-shrink-0">
+            {r.tag}
+          </span>
+          <span className={r.text ? "" : "text-ink-faint italic"}>
+            {r.text || "—"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function Section({

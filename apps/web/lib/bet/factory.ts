@@ -37,6 +37,22 @@ export function buildLockedSnapshot(
   };
 }
 
+// Snapshot from a fully-hydrated Bet row — uses the real persisted
+// instrument and criteria instead of stubbing them. Sprint 2 onward this
+// is the canonical path for both locking and re-verifying fingerprints
+// (Revisit rebuilds the snapshot to re-hash and compare).
+export function buildLockedSnapshotFromBet(
+  bet: Bet,
+  lockedAt: string,
+): LockedSnapshot {
+  return {
+    articulation: bet.articulation,
+    instrument: bet.instrument,
+    criteria: bet.criteria,
+    lockedAt,
+  };
+}
+
 export function buildBetRecord(
   b: AbBet,
   lockedAt: string,

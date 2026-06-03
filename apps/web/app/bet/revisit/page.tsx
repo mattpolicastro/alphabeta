@@ -5,7 +5,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { WagerStatic } from "@/components/bet/WagerStatic";
-import { buildLockedSnapshot } from "@/lib/bet/factory";
+import { buildLockedSnapshotFromBet } from "@/lib/bet/factory";
 import { useSearchParams } from "next/navigation";
 import { getBet, recordResolution } from "@/lib/bet/queries";
 import type { Bet, Call, Outcome } from "@/lib/db/types";
@@ -90,22 +90,11 @@ function RevisitInner() {
           if (!cancelled) setLoad({ kind: "missing" });
           return;
         }
-        // Re-verify integrity: hash the locked snapshot embedded in the row
-        // and compare to the stored fingerprint. A mismatch means the row
-        // was edited out-of-band (which the app layer doesn't allow, but
-        // direct IndexedDB tampering would). Surface it.
-        const snapshot = buildLockedSnapshot(
-          {
-            change: bet.articulation.change,
-            direction: bet.articulation.direction,
-            metric: bet.articulation.metric,
-            magnitude: bet.articulation.magnitude,
-            mechanism: bet.articulation.mechanism ?? "",
-            confidence: bet.articulation.confidence,
-            foldIf: bet.articulation.foldIf,
-          },
-          bet.lockedAt ?? "",
-        );
+        // Re-verify integrity: rebuild the locked snapshot from the row's
+        // full articulation/instrument/criteria and rehash. A mismatch
+        // means the row was edited out-of-band (the app layer doesn't
+        // allow this, but direct IndexedDB tampering would). Surface it.
+        const snapshot = buildLockedSnapshotFromBet(bet, bet.lockedAt ?? "");
         const fp = await fingerprint(snapshot);
         if (!cancelled) {
           setLoad({

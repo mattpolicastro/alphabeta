@@ -1,5 +1,32 @@
 # WORKLOG
 
+## 2026-06-03 — Sprint 2: Feasibility & Instrument + Decision Criteria
+
+The pre-lock lifecycle is now five-stage end-to-end: wager → instrument → criteria → lock → revisit.
+
+**Foundation (orchestrator, TDD):**
+- `lib/instrument/feasibility.ts` + tests (21 cases). Pure `fit(state)` returning per-instrument verdict + reason + metric; `suggest(map, state)` weighted by claim×strength + urgency×speed; `abWeeks(foldIfPercent, traffic)` rough two-proportion sample-size estimator (baseline p=4.2%, traffic→daily-per-arm). Four quantitative instruments: A/B, Quasi, Observational, Holdback. Rules mirror `design/Feasibility and Instrument.html`.
+- `lib/instrument/evidence.ts` + tests (6 cases). Pure `evidenceFor(instrument, foldIfPct, metric)` returning structured `EvidencePart[]` (text or emph). Per-instrument templates: no-peeking (A/B), placebo test (Quasi), sensitivity analysis (Observational), novelty-window persistence (Holdback).
+- `components/bet/CarriedWager.tsx` + tests. Read-only wager card with configurable eyebrow, surfaced on every post-wager screen.
+- `components/ui/SegmentedButtons.tsx` + tests. Accessible radiogroup-as-buttons primitive.
+- `components/ui/ConstraintSlider.tsx` + tests. Labeled range slider with word-based readout.
+
+**Pages (mixed dispatch + manual):**
+- `/bet/instrument` — dispatched (qwen3-coder:30b, job dp-2728, 79s, 18k/3.9k tokens). Sidecar reported `script-failed` (the new EXIT-trap fix earned its keep — first real test of that improvement). Verify caught 8 TS errors; orchestrator corrected: type guards on hydrating the `Record<string, unknown>` feasibility blob, layout fix (annotation back inside `ab-cols`), removed `rounded-full` violations.
+- `/bet/criteria` — dispatched first, hit aider syntax errors and Suspense-wrap misuse; pivoted to manual. Hydrates bet, renders three editable criteria rows, evidence-bar panel via `evidenceFor`, min-mind-changer (= fold-if), commit & lock CTA.
+- `lib/bet/factory.ts` gained `buildLockedSnapshotFromBet(bet, lockedAt)` — locks the real persisted instrument + criteria instead of the Sprint-1 stubs. `/bet/lock` and `/bet/revisit` both switched to the new helper.
+- `/bet/lock` Section bodies replaced their "Deferred — MVP" placeholders with real `InstrumentReadout` and `CriteriaReadout` components.
+
+**Stats:** 86/86 tests pass (now: 4 stage + 8 fingerprint + 19 analyze + 15 queries + 21 feasibility + 6 evidence + 4 WagerStatic + 3 CarriedWager + 3 SegmentedButtons + 3 ConstraintSlider). tsc + build clean. All 8 routes static-export prerendered.
+
+**Dispatch scorecard for Sprint 2 (qwen3-coder:30b baseline):**
+| Task | Outcome | Tokens (s/r) | Notes |
+|---|---|---|---|
+| `/bet/instrument` | dispatched + orchestrator fix-ups | 18k/3.9k | TS hydration types, layout breakage, design violations |
+| `/bet/criteria` | dispatch failed (syntax + Suspense misuse) → manual | — | Aider exhausted reflections on a multi-section page |
+
+Sprint 2 takeaway: qwen3 is solid on additive single-file work with clear patterns (B3/B4 in Sprint 1), but the Sprint-2 lifecycle pages have enough interdependencies (state shape ↔ schema ↔ persistence ↔ JSX) that the orchestrator pays for it in fix-ups. For Sprint 3 (Layer 2 / Journal index), dispatching the simpler additive parts (BetCard component) is probably still the win; the page-shell-with-state work stays manual.
+
 ## 2026-06-03 — Routing refactor (?id= + Dexie drafts)
 
 The Tier-1 MVP loop now uses per-bet URLs and Dexie-backed drafts. Phase A laid the foundation; Phase B moved/created all six pages (mostly via dispatch); Phase C cleaned up.
