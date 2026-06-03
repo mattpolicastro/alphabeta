@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f5f1e8;
+  --color-paper-hover: #efe9da;
+  --color-ink: #2a2a2a;
+  --color-ink-soft: #85837f;
+  --color-ink-faint: #b4b1ab;
+  --color-terra: #a64d3b;
+  --color-green: #3a6b4a;
+  --color-amber: #b8860b;
+  --color-plinth: #5a6b8c;
+
+  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-caveat);
+
+  --container-content: 1140px;
+}
+
+:root {
+  --blueprint-grid-size: 28px;
+  --blueprint-grid-line: color-mix(in srgb, #2a2a2a 8%, transparent);
+}
+
+html,
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  background-image:
+    linear-gradient(var(--blueprint-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--blueprint-grid-line) 1px, transparent 1px);
+  background-size: var(--blueprint-grid-size) var(--blueprint-grid-size);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+}
