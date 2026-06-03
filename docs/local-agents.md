@@ -11,7 +11,7 @@
 | Orchestrator runs on | The Mac (interactive Claude Code / Opus). |
 | Executor runs on | mlpc-ubuntu (Aider in git worktrees, Ollama as local inference). |
 | Network | SSH over Tailscale, Mac → mlpc-ubuntu. |
-| Model baseline | **A/B mid-Sprint-1**: same task dispatched twice — once to `qwen2.5-coder:32b`, once to `devstral`. Compare on pass/fail, retry count, code quality. Pick baseline for Sprint 2. |
+| Model baseline | **A/B mid-Sprint-1**: same task dispatched twice — once to `qwen3-coder:30b` (already loaded on mlpc-ubuntu), once to `devstral`. Compare on pass/fail, retry count, code quality. Pick baseline for Sprint 2. |
 | Notifications | ntfy via `cc-run`-style wrapper; include hostname in title so multi-machine jobs are distinguishable. |
 | Task shape | Single-component / single-file leaf tasks (predecessor's protocol — same rules carry over). |
 | Sprint 1 split | API Claude does Sprint 1 (pattern-setting). Local agents come in at the Sprint-1 → Sprint-2 boundary, except the one A/B test task. |
@@ -74,21 +74,24 @@ Logs to `~/.cc-logs/` on mlpc-ubuntu, same convention as the Mac side.
 
 ## Prep checklist (before Sprint 2 / before the Sprint-1 A/B test)
 
-- [ ] SSH from MacBook Pro → mlpc-ubuntu working with key auth (currently fails with publickey).
-- [ ] Ollama installed and running on mlpc-ubuntu (global CLAUDE.md says native; `setup-ubuntu` does not install it — verify).
-- [ ] Models pulled on mlpc-ubuntu: `qwen2.5-coder:32b`, `devstral` (or the chosen Devstral tag — verify VRAM headroom at chosen quantization).
-- [ ] Aider installed on mlpc-ubuntu (recent version, confirm `--edit-format diff` supported).
-- [ ] `dispatch.sh` adapted from the predecessor's spec (legacy `CLAUDE.md` § "Local agent dispatch") and committed to `dotfiles/scripts/`. Parameterize: `OLLAMA_HOST` (default `localhost:11434` on mlpc), `MODEL` (no default — must be specified), `FILES` (allowlist), `PROMPT_FILE`.
-- [ ] tmux on mlpc-ubuntu for session persistence.
-- [ ] ntfy `cc-run`-style wrapper running on mlpc-ubuntu (likely already present via dotfiles sync; verify hostname-in-title behavior).
+- [x] SSH from MacBook Pro → mlpc-ubuntu working with key auth.
+- [x] Ollama 0.24.0 running natively on mlpc-ubuntu.
+- [x] `qwen3-coder:30b` already pulled on mlpc-ubuntu.
+- [x] `dispatch` script written and committed (`mattpolicastro/dotfiles@327d9bf`, `scripts/dispatch`). Reads a JSON task spec; uses Aider with `--edit-format diff` and `--no-auto-commits`; reads `OLLAMA_HOST` (default `localhost:11434`).
+- [x] `setup-ubuntu` updated with idempotent install steps for `ollama` (no-op when present), `aider-chat` (via `uv tool install`), and `jq`; adds `dispatch` to the symlink loop.
+- [ ] **You run on mlpc-ubuntu:** `cd ~/Projects/dotfiles && git pull && scripts/setup-ubuntu` — installs aider, uv, jq; symlinks dispatch.
+- [ ] **You run on mlpc-ubuntu:** `ollama pull devstral` — A/B contender against the already-warm qwen3-coder:30b.
+- [ ] tmux already present on mlpc-ubuntu (installed by `setup-ubuntu`).
+- [ ] ntfy `cc-run`-style wrapper available on mlpc-ubuntu via the dotfiles symlink (verify `NTFY_TOPIC` is set in `~/.cc-config`).
+- [ ] End-to-end dry-run: `dispatch --dry-run sample-task.json` on mlpc-ubuntu — surfaces any missing pieces before a real task.
 
 ## A/B test plan (mid-Sprint-1)
 
 When Sprint 1 reaches the fingerprint utility:
 
-1. API Claude writes the spec: signature, hash inputs, deterministic ordering, test cases. Lands in `docs/sprint-1/fingerprint-spec.md` (or inline in the dispatch prompt).
-2. Dispatch to `qwen2.5-coder:32b` on mlpc-ubuntu in worktree `wt-fp-qwen`.
-3. Dispatch to `devstral` on mlpc-ubuntu in worktree `wt-fp-devstral`.
-4. Compare: did each pass `npm test`? Lines of code? Style match? Required follow-up edits? Time to converge?
-5. Pick the winner as Sprint-2 baseline; document the result here.
-6. Discard the loser's worktree. Land the winner's branch via standard review.
+1. API Claude writes the spec: signature, hash inputs, deterministic ordering, test cases. Lands inline in the dispatch task JSON.
+2. Dispatch to `qwen3-coder:30b` on mlpc-ubuntu; worktree branch `feat/fingerprint-qwen3`.
+3. Dispatch to `devstral` on mlpc-ubuntu; worktree branch `feat/fingerprint-devstral`.
+4. Compare: did each pass the verify step (`npm test -- fingerprint`)? Lines of code? Style match? Required follow-up edits? Time to converge?
+5. Pick the winner as Sprint-2 baseline; document the result in a `## Results` section below.
+6. Discard the loser's branch. Land the winner's via standard review.
