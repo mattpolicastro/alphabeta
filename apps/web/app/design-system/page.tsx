@@ -5,6 +5,8 @@ import { MarginNote } from "@/components/ui/MarginNote";
 import { SpineRail } from "@/components/bet/SpineRail";
 import { HeardCard } from "@/components/bet/HeardCard";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
+import { WagerStatic } from "@/components/bet/WagerStatic";
+import { StepCard } from "@/components/bet/StepCard";
 
 export const metadata: Metadata = {
   title: "Design System — alphaBeta",
@@ -258,6 +260,44 @@ export default function DesignSystem() {
             <span className="st st-won">won</span>
             <span className="st st-lost">lost</span>
           </div>
+        </Specimen>
+      </Section>
+
+      <Section label="Components · WagerStatic" id="wager-static">
+        <Specimen note="Fully populated bet">
+          <WagerStatic bet={{
+            change: "moving the plan-picker above the fold",
+            direction: "lift",
+            metric: "checkout-start",
+            magnitude: "8%",
+            mechanism: "replays show scroll drop-off at the testimonials",
+            confidence: "fairly",
+            foldIf: "under +4%"
+          }} />
+        </Specimen>
+        <Specimen note="Partially empty bet — em-dash fallback">
+          <WagerStatic bet={{
+            change: "moving the plan-picker above the fold",
+            direction: "lift"
+          }} />
+        </Specimen>
+      </Section>
+
+      <Section label="Components · StepCard" id="step-card">
+        <Specimen note="status=active — current step">
+          <StepCard n={1} title="Say it" sub="Brain-dump." status="active">
+            <div className="text-[10px] text-ink-soft">Current step in the flow.</div>
+          </StepCard>
+        </Specimen>
+        <Specimen note="status=done — completed step">
+          <StepCard n={1} title="Say it" sub="Brain-dump." status="done">
+            <div className="text-[10px] text-ink-soft">Completed step in the flow.</div>
+          </StepCard>
+        </Specimen>
+        <Specimen note="status=locked — not yet reached">
+          <StepCard n={3} title="Make it a wager" sub="Sharpen." status="locked">
+            <div className="text-[10px] text-ink-soft">Not yet reached in the flow.</div>
+          </StepCard>
         </Specimen>
       </Section>
     </div>
