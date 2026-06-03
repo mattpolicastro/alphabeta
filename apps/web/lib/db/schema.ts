@@ -14,5 +14,22 @@ export class AlphabetaDB extends Dexie {
       bets: "id, objectiveId, status, lockedAt, previousVersionId, updatedAt",
       objectives: "id, framework, tag, updatedAt",
     });
+
+    // v2: add ownerId for forthcoming auth scoping (handoff §5 tier-3).
+    // Backfill null on existing rows so tier-1 individual-first users keep
+    // working unchanged.
+    this.version(2)
+      .stores({
+        bets: "id, objectiveId, ownerId, status, lockedAt, previousVersionId, updatedAt",
+        objectives: "id, ownerId, framework, tag, updatedAt",
+      })
+      .upgrade(async (tx) => {
+        await tx.table("bets").toCollection().modify((b) => {
+          if (b.ownerId === undefined) b.ownerId = null;
+        });
+        await tx.table("objectives").toCollection().modify((o) => {
+          if (o.ownerId === undefined) o.ownerId = null;
+        });
+      });
   }
 }

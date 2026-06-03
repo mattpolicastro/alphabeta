@@ -49,6 +49,7 @@ export function buildBetRecord(
         ? crypto.randomUUID()
         : `bet-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     objectiveId: null,
+    ownerId: null,
     type: "single",
     articulation: snapshot.articulation,
     instrument: snapshot.instrument,

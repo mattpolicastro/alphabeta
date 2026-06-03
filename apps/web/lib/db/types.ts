@@ -74,6 +74,7 @@ export interface Learning {
 export interface Bet {
   id: string;
   objectiveId: string | null;
+  ownerId: string | null;
   type: "single" | "sequence";
 
   articulation: Articulation;
@@ -97,6 +98,7 @@ export interface Bet {
 
 export interface Objective {
   id: string;
+  ownerId: string | null;
   title: string;
   metric: string;
   target: { start: number; goal: number };
