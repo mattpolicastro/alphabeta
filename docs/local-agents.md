@@ -85,13 +85,34 @@ Logs to `~/.cc-logs/` on mlpc-ubuntu, same convention as the Mac side.
 - [ ] ntfy `cc-run`-style wrapper available on mlpc-ubuntu via the dotfiles symlink (verify `NTFY_TOPIC` is set in `~/.cc-config`).
 - [ ] End-to-end dry-run: `dispatch --dry-run sample-task.json` on mlpc-ubuntu — surfaces any missing pieces before a real task.
 
-## A/B test plan (mid-Sprint-1)
+## A/B results — fingerprint utility (2026-06-03)
 
-When Sprint 1 reaches the fingerprint utility:
+Task: implement `apps/web/lib/integrity/fingerprint.ts` against a pre-written Vitest suite (8 tests covering determinism, lexicographic key sort at all nesting levels, sensitivity to any committed-field change, and `verifyFingerprint` pair behavior). Same prompt + same `--read` context (test file + types) dispatched to both models on mlpc-ubuntu.
 
-1. API Claude writes the spec: signature, hash inputs, deterministic ordering, test cases. Lands inline in the dispatch task JSON.
-2. Dispatch to `qwen3-coder:30b` on mlpc-ubuntu; worktree branch `feat/fingerprint-qwen3`.
-3. Dispatch to `devstral` on mlpc-ubuntu; worktree branch `feat/fingerprint-devstral`.
-4. Compare: did each pass the verify step (`npm test -- fingerprint`)? Lines of code? Style match? Required follow-up edits? Time to converge?
-5. Pick the winner as Sprint-2 baseline; document the result in a `## Results` section below.
-6. Discard the loser's branch. Land the winner's via standard review.
+| | qwen3-coder:30b | devstral |
+|---|---|---|
+| Vitest (8/8) | **PASS** | **PASS** |
+| `tsc --noEmit` (strict) | **PASS** | **FAIL** — TS7053 at line 9 (implicit `any` in `reduce` accumulator) |
+| End-to-end dispatch | 45s | 20s |
+| Tokens sent / received | 7.5k / 411 | 7.8k / 268 |
+| LOC | 51 | 30 |
+| Style | Recursive helper + main fn; uses `any` defensively | One `JSON.stringify` with sorting replacer; tighter but uses `JSON.stringify(obj, replacer, 2)` (indented output — wasteful for fingerprint input) |
+| Aider turns | 1 | 1 |
+
+**Pick: qwen3-coder:30b** as the Sprint-2 baseline. Tighter code is a draw to nice-to-have; producing code that compiles under the *explicit* "TypeScript strict mode must pass" constraint is non-negotiable. Devstral's tests-pass-but-tsc-fails outcome is the failure mode we most want to avoid — silent integration debt that surfaces only when the orchestrator runs typecheck. Speed advantage is partly confounded (devstral ran second, model weights may have been warmer in OS cache).
+
+**Caveats:** one data point, one small pure-function task. Devstral might fare better on tasks where its tighter output style helps and where strict typing is less load-bearing. Worth re-running on something less ideal for qwen3 (e.g. React component, larger refactor) before generalizing.
+
+**Land:** qwen3's output, with a tightening pass by the orchestrator (replace `any` with `unknown` + narrow casts, drop verbose comments). Both dispatch worktrees discarded after the comparison.
+
+**Process notes for next A/B:**
+- Add `tsc --noEmit` to dispatch verify by default — it's the cheap end of "strict mode must pass" and would have caught devstral's failure inside the dispatch loop.
+- Capture metadata (model, start/end, exit codes, token counts, files touched) as a structured sidecar JSON next to the dispatch log so comparisons don't require log scraping. Tracked separately; not in this commit.
+
+## Original plan (kept for reference)
+
+1. API Claude writes the spec inline in the dispatch task JSON.
+2. Dispatch to `qwen3-coder:30b` and `devstral` on mlpc-ubuntu in parallel worktree branches.
+3. Compare on tests pass, typecheck, duration, tokens, LOC, style.
+4. Pick the winner as Sprint-2 baseline; document above.
+5. Land the winner via orchestrator review; discard the loser's branch.
