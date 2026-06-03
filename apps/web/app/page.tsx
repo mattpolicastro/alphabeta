@@ -69,6 +69,9 @@ export default function BetFrontDoor() {
   const onSharpen = () => {
     // Seed the wager from analysis. The user can edit any token after.
     const a = analysis ?? analyzeDump(dump);
+    // If the user typed a gap clause but hadn't clicked "add", carry it anyway.
+    const effectiveGap =
+      gapClause || gapInput.trim() || a.falsifier.clause || "";
     const seed: AbBet = {
       change: bet.change ?? "moving the plan-picker above the fold",
       direction: bet.direction ?? "lift",
@@ -76,7 +79,7 @@ export default function BetFrontDoor() {
       magnitude: bet.magnitude ?? a.magnitude ?? "8%",
       mechanism: bet.mechanism ?? (a.mechanism.text ?? ""),
       confidence: bet.confidence ?? a.confidence.level,
-      foldIf: bet.foldIf ?? resolvedFalsifier,
+      foldIf: bet.foldIf || effectiveGap,
     };
     setBet(seed);
     setStage(3);
