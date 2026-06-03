@@ -58,3 +58,15 @@ LLM integration uses an `LLMProvider` adapter with capability negotiation at boo
 ## Repo layout policy
 
 Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` monorepo proposal is deferred — revisit when the Chrome extension is ready to land alongside the app. Until then, keep the project flat.
+
+## Routing & domain policy (settled 2026-06-03)
+
+- **App at root `/`**, no `/app` prefix. The app's URLs stay stable from tier-1 through tier-3 without migration.
+- **Marketing lives on a different domain/subdomain** when it materializes — `alphabeta.tools` (marketing) + `app.alphabeta.tools` (app) is the conventional pattern. Cookie scoping, independent deploys, cleaner Worker routes all follow.
+- **Bets are addressed by `?id=<uuid>` query string**, not path segments. `output: 'export'` requires `generateStaticParams` for `[id]` segments; user-generated UUIDs can't be enumerated at build time. Query-string addressing is static-export native and produces a single pre-rendered page per stage.
+- **Reserved route prefixes — do not claim for feature routes:**
+  - `/api/*` — Cloudflare Workers backend (LLM provider proxy, sync, rate-limit checks).
+  - `/auth/*` — login / callback / logout. Both consumer auth (tier-3) and SSO/OIDC (tier-2 self-hosted).
+  - `/share/*` — public read-only share tokens for locked bets (handoff §10).
+- **Multi-tenancy: flat URLs.** No `/org/<slug>/...` prefix. Ownership resolves via auth context + Dexie query scoping. Org switching is an in-app affordance, not a URL rewrite. URLs are portable across the tier-1 → tier-3 upgrade — local-only bookmarks resolve identically once the user signs in.
+- Chrome extension `externally_connectable` will pin the app domain once chosen; routing is otherwise extension-agnostic.
