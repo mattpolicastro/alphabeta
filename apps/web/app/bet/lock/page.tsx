@@ -248,11 +248,11 @@ function CommitAndLockInner() {
                   </div>
                 )}
                 <ButtonLink
-                  href={`/bet/front-door?id=${id ?? ""}`}
+                  href={`/bet/wager?id=${id ?? ""}`}
                   variant="default"
                   style={{ width: "100%", marginBottom: 8, textAlign: "center" }}
                 >
-                  ← back to the front door
+                  ← back to the wager
                 </ButtonLink>
                 <Button
                   variant="primary"
@@ -344,7 +344,7 @@ function NoBet() {
       <div className="dashed-panel">
         <div className="dashed-panel-title">No bet specified</div>
         <div className="dashed-panel-sub">
-          /bet/commit-and-lock needs an <code>?id=</code> query. If you got
+          /bet/lock needs an <code>?id=</code> query. If you got
           here by mistake, head back to the journal.
         </div>
         <ButtonLink href="/" variant="primary">
@@ -425,22 +425,22 @@ function Crumb({ children }: { children: React.ReactNode }) {
 function lifecycleSteps(id: string | null, commitDone: boolean): SpineStep[] {
   const q = id ? `?id=${id}` : "";
   return [
-    { n: 1, label: "bet", status: "done", href: `/bet/front-door${q}` },
+    { n: 1, label: "wager", status: "done", href: `/bet/wager${q}` },
     {
       n: 2,
-      label: "feasibility & instrument",
+      label: "instrument",
       status: "reachable",
-      href: `/bet/feasibility${q}`,
+      href: `/bet/instrument${q}`,
     },
     {
       n: 3,
-      label: "decision criteria",
+      label: "criteria",
       status: "reachable",
       href: `/bet/criteria${q}`,
     },
     {
       n: 4,
-      label: "commit & lock",
+      label: "lock",
       status: commitDone ? "done" : "active",
     },
   ];

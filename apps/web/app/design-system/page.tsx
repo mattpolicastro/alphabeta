@@ -225,7 +225,7 @@ export default function DesignSystem() {
           <SpineRail
             steps={[
               { n: 1, label: "bet", status: "active" },
-              { n: 2, label: "feasibility", status: "reachable", href: "#" },
+              { n: 2, label: "instrument", status: "reachable", href: "#" },
               { n: 3, label: "criteria", status: "reachable", href: "#" },
               { n: 4, label: "commit", status: "reachable", href: "#" },
             ]}

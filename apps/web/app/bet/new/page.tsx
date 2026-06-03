@@ -14,7 +14,7 @@ export default function NewBetPage() {
       try {
         const bet = await mintDraft();
         if (!cancelled) {
-          router.replace(`/bet/front-door?id=${bet.id}`);
+          router.replace(`/bet/wager?id=${bet.id}`);
         }
       } catch (error) {
         console.error("Failed to create new bet:", error);

@@ -43,7 +43,7 @@ function BetFrontDoorInner() {
   const [hydrated, setHydrated] = useState(false);
 
   // Hydrate the draft from Dexie on mount. If there's no id (someone hit
-  // /bet/front-door directly), stay in the empty draft state — the user can
+  // /bet/wager directly), stay in the empty draft state — the user can
   // dump a wager and click Reflect, but persistence won't engage until they
   // come in via /bet/new and get a real id.
   useEffect(() => {
@@ -162,7 +162,7 @@ function BetFrontDoorInner() {
               <span className="b">β</span>eta
             </div>
             <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
-              <Crumb>the front door</Crumb>
+              <Crumb>the wager</Crumb>
               <Crumb>·</Crumb>
               <Crumb>dump → reflect → wager</Crumb>
               <Crumb>·</Crumb>
@@ -266,7 +266,7 @@ function BetFrontDoorInner() {
               <CommittedLine bet={bet} />
               <div className="row-actions">
                 <ButtonLink
-                  href={id ? `/bet/commit-and-lock?id=${id}` : "/bet/new"}
+                  href={id ? `/bet/lock?id=${id}` : "/bet/new"}
                 >
                   Carry this bet into commit &amp; lock ▸
                 </ButtonLink>
@@ -315,24 +315,24 @@ function Crumb({ children }: { children: React.ReactNode }) {
 function lifecycleSteps(id: string | null): SpineStep[] {
   const q = id ? `?id=${id}` : "";
   return [
-    { n: 1, label: "bet", status: "active" },
+    { n: 1, label: "wager", status: "active" },
     {
       n: 2,
-      label: "feasibility & instrument",
+      label: "instrument",
       status: "reachable",
-      href: `/bet/feasibility${q}`,
+      href: `/bet/instrument${q}`,
     },
     {
       n: 3,
-      label: "decision criteria",
+      label: "criteria",
       status: "reachable",
       href: `/bet/criteria${q}`,
     },
     {
       n: 4,
-      label: "commit & lock",
+      label: "lock",
       status: "reachable",
-      href: id ? `/bet/commit-and-lock?id=${id}` : "/bet/new",
+      href: id ? `/bet/lock?id=${id}` : "/bet/new",
     },
   ];
 }

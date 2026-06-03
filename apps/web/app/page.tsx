@@ -84,7 +84,7 @@ export default function Home() {
     }
 
     const href = isDraft 
-      ? `/bet/front-door?id=${bet.id}`
+      ? `/bet/wager?id=${bet.id}`
       : `/bet/revisit?id=${bet.id}`;
     
     const metadata = isDraft

@@ -44,8 +44,8 @@ function bet(status: BetStatus): Bet {
 }
 
 describe("currentStage", () => {
-  it("draft → front-door", () => {
-    expect(currentStage(bet("draft"))).toBe<LifecycleStage>("front-door");
+  it("draft → wager", () => {
+    expect(currentStage(bet("draft"))).toBe<LifecycleStage>("wager");
   });
 
   it("locked → revisit (no result yet — the seam to running)", () => {
