@@ -109,6 +109,16 @@ Task: implement `apps/web/lib/integrity/fingerprint.ts` against a pre-written Vi
 - Add `tsc --noEmit` to dispatch verify by default — it's the cheap end of "strict mode must pass" and would have caught devstral's failure inside the dispatch loop.
 - Capture metadata (model, start/end, exit codes, token counts, files touched) as a structured sidecar JSON next to the dispatch log so comparisons don't require log scraping. Tracked separately; not in this commit.
 
+## Run 2 — `/design-system` extension (2026-06-03, qwen3-coder:30b)
+
+Task: add WagerStatic + StepCard specimen sections to the existing `app/design-system/page.tsx`. Single-file edit, two `--read` context files (the components being catalogued). Verify pipeline: `tsc --noEmit && npm test && npm run build`.
+
+Result: **shipped verbatim** (no orchestrator tightening). 11k tokens sent / 955 received, single Aider turn, ~30s wall time. Imports placed correctly, new sections inserted in the right spot following the existing `Section` + `Specimen` pattern, no `any` types, no other files touched.
+
+**Verify failed at `npm run build`** — Turbopack rejected the symlinked `node_modules` ("points out of the filesystem root"). The agent's output was fine; the dispatch verify shortcut isn't. tsc + vitest tolerate symlinks, Next.js Turbopack does not.
+
+**New convention:** if a task's verify needs `npm run build` (or any tool that resolves package roots strictly), run a real `npm install --prefer-offline --no-audit` in the worktree instead of symlinking `node_modules`. Symlink remains fine for tsc/vitest-only verify on the cheap path. Worth baking into a `verify-build` template snippet rather than re-inventing per task.
+
 ## Original plan (kept for reference)
 
 1. API Claude writes the spec inline in the dispatch task JSON.
