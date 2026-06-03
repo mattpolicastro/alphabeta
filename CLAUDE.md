@@ -55,6 +55,16 @@ LLM integration uses an `LLMProvider` adapter with capability negotiation at boo
 - Immutability of locked bets is a load-bearing product principle. Application layer must refuse edits to locked records; only new versions are permitted.
 - The fold-if is a single thread — one number, declared once, the load-bearing mechanism that defeats goalpost-moving. Do not duplicate it across layers.
 
+## Testing
+
+Test runner: **vitest** (`npm test`). Default environment is **jsdom** so React Testing Library works without per-file overrides.
+
+- **`lib/**/*.test.ts`** — pure-logic tests. Dexie-touching modules get `fake-indexeddb/auto` (wired in `vitest.setup.ts`); each test gets a fresh DB via `__resetDb()` in `beforeEach` / `afterEach`. Pattern: see `lib/bet/__tests__/queries.test.ts`.
+- **`components/**/*.test.tsx`** — component-level tests with RTL. Assert against rendered DOM via `screen.getByText`, `getByRole`, etc. `expect` is extended with `jest-dom` matchers (`toBeInTheDocument`, `toHaveTextContent`). Auto-cleanup between tests is wired in `vitest.setup.ts`. Pattern: see `components/bet/__tests__/WagerStatic.test.tsx`.
+- **Page-level / E2E** — deferred until there's a clear shape to test (Playwright is the likely fit).
+
+TDD posture for new work: write the tests first, then the implementation. Dispatch contract: "make these tests pass" is the verification target.
+
 ## Repo layout policy
 
 Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` monorepo proposal is deferred — revisit when the Chrome extension is ready to land alongside the app. Until then, keep the project flat.
