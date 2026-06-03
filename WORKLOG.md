@@ -1,5 +1,40 @@
 # WORKLOG
 
+## 2026-06-03 — Routing refactor (?id= + Dexie drafts)
+
+The Tier-1 MVP loop now uses per-bet URLs and Dexie-backed drafts. Phase A laid the foundation; Phase B moved/created all six pages (mostly via dispatch); Phase C cleaned up.
+
+**Phase A — Foundation (orchestrator, TDD):**
+- `Bet.ownerId` / `Objective.ownerId` added to types and schema (Dexie v2, additive upgrade). Forward-looking scoping for tier-3 auth; defaults to null.
+- `lib/lifecycle/stage.ts` + tests — pure resolver `currentStage(bet)`. Feeds `/bet?id=…` redirect.
+- `lib/bet/queries.ts` + tests — Dexie-backed `mintDraft`, `getBet`, `listBets`, `updateDraft`, `lockBet`, `recordResolution`. Immutability enforced at the query layer (updateDraft refuses post-lock; lockBet refuses already-locked; recordResolution requires locked).
+- `fake-indexeddb` wired via `vitest.setup.ts`. `lib/db/index.ts` gains `__resetDb()` for per-test isolation.
+- Back-fill: `lib/bet/__tests__/analyze.test.ts` — regression net for the regex engine.
+- Total: 46/46 tests pass (8 fingerprint + 4 stage + 15 queries + 19 analyze).
+
+**Phase B — Pages (mixed dispatch + manual):**
+- B3 (Revisit move) — dispatched cleanly, landed verbatim (qwen3-coder:30b, 50s, 13k/2.1k tokens).
+- B4 (new journal/home at `/`) — dispatched cleanly, landed verbatim (37s, 17k/1.3k tokens, whole format).
+- B5 (`/bet/new`) — dispatched; landed manually because aider's `diff` format silently no-ops on empty new files. Dispatch script gained `edit_format` field (defaults to `diff`); new-file tasks now set `whole`.
+- B6 (`/bet` stage redirect) — dispatched with `whole`, landed with two corrections (missing `/bet/` prefix in redirect target, unused import).
+- B1 (Front Door move) + B2 (Commit & Lock move) — handled by orchestrator. B2 hit aider's 3-reflection limit on a multi-step diff; pivoted to manual for the two most stateful pages.
+
+**Phase C — Cleanup:**
+- Deleted `app/commit-and-lock/` and `app/revisit/` (old route shells).
+- Trimmed `lib/bet/storage.ts` to just the `AbBet` type — localStorage helpers retired.
+
+**Routing now matches the policy in CLAUDE.md:**
+- `/` = journal/home (lists drafts + locked + resolved bets).
+- `/bet/new` mints a UUID and redirects to `/bet/front-door?id=…`.
+- `/bet?id=…` is the stage redirect — looks up status, routes to the right stage.
+- `/bet/front-door?id=…`, `/bet/commit-and-lock?id=…`, `/bet/revisit?id=…` are the three lifecycle stages.
+- `/design-system` unchanged.
+
+**Dispatch infrastructure improvements landed this session:**
+- `setup` hook in JSON spec (npm install per worktree; Turbopack rejects symlinked node_modules).
+- Metadata sidecar JSON written next to every dispatch log (model, timing, exit codes, files touched, parsed token counts).
+- `edit_format` field for new-file tasks (workaround for Aider's empty-SEARCH-block no-op).
+
 ## 2026-06-03 — Local-agents dispatch infra wired up
 
 Brought up Aider+Ollama dispatch from MacBook Pro orchestrator to mlpc-ubuntu executor:
