@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Interviews: In-flight → Results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --amber:#b8860b;--amber-soft:rgba(184,134,11,.08);--amber-line:rgba(184,134,11,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:24px 28px 80px;}
+
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .inst-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);border:1.5px solid var(--plinth-line);padding:3px 10px;}
+
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12.5px;line-height:1.6;margin-bottom:18px;display:flex;gap:12px;align-items:baseline;}
+  .narrator::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;white-space:nowrap;line-height:1.6;}
+  .narrator em{color:#eeb9a4;}
+
+  .rail{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .rchip{display:flex;align-items:center;gap:7px;border:1.5px dashed var(--rule);padding:6px 11px;margin:0 0 6px;font-size:10.5px;color:var(--ink-faint);text-decoration:none;}
+  a.rchip:hover{background:var(--paper-2);}
+  .rchip.done{border-color:var(--green-line);color:var(--green);}
+  .rchip.active{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .rchip .rn{width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;}
+  .rarr{color:var(--ink-faint);margin:0 6px 6px;font-size:10px;}
+
+  .phase-seg{display:flex;border:1.5px solid var(--plinth-line);width:fit-content;margin-bottom:16px;}
+  .phase-seg button{font-family:inherit;font-size:12px;padding:8px 18px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--plinth-line);cursor:pointer;}
+  .phase-seg button:last-child{border-right:none;}
+  .phase-seg button.on{background:var(--plinth);color:var(--paper);font-weight:700;}
+  .phase-seg button:not(.on):hover{background:var(--plinth-soft);}
+
+  .cols{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:start;}
+  .col{min-width:0;}
+  .panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:16px;margin-bottom:16px;}
+  .panel:last-child{margin-bottom:0;}
+  .ptitle{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .psub{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:14px;}
+
+  .locked-mini{border:1.5px solid var(--terra);background:rgba(255,255,255,.35);padding:11px 14px;margin-bottom:16px;position:relative;}
+  .locked-mini::before{content:"🔒 LOCKED BET";position:absolute;top:-9px;left:12px;background:var(--paper);padding:0 7px;font-size:9px;letter-spacing:1.5px;color:var(--terra);}
+  .locked-mini .lm-text{font-size:12px;line-height:1.6;}
+  .locked-mini .lm-text .t{color:var(--terra);font-weight:500;}
+
+  /* recruitment tracker */
+  .recruit{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--rule-faint);border:1.5px dashed var(--rule-faint);margin-bottom:14px;}
+  .recruit .cell{background:var(--paper);padding:10px 11px;}
+  .recruit .cell .k{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);}
+  .recruit .cell .v{font-size:18px;font-weight:700;margin-top:2px;}
+  .recruit .cell .v small{font-size:10px;font-weight:400;color:var(--ink-soft);}
+  .recruit .cell.ok .v{color:var(--green);} .recruit .cell.warn .v{color:var(--amber);}
+
+  /* session log */
+  .sessions{border:1.5px dashed var(--rule-faint);}
+  .sess{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px dashed var(--rule-faint);}
+  .sess:last-child{border-bottom:none;}
+  .sess .sn{font-size:10px;font-weight:700;color:var(--ink-faint);}
+  .sess .sp{font-size:11.5px;}
+  .sess .sp b{color:var(--ink);}
+  .sess .sst{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px solid;}
+  .sess .sst.done{color:var(--green);border-color:var(--green-line);}
+  .sess .sst.sched{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .sess .sst.noshow{color:var(--terra);border-color:var(--terra-line);}
+
+  /* guide drift */
+  .drift{border:1.5px dashed var(--terra-line);background:var(--terra-soft);padding:12px 14px;margin-top:14px;}
+  .drift .dh{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:6px;}
+  .drift .dd{font-size:11.5px;line-height:1.55;}
+  .drift .dd b{color:var(--terra);}
+
+  /* themes */
+  .theme{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:12px 14px;margin-bottom:10px;}
+  .theme .th-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .theme .th-name{font-size:13px;font-weight:700;}
+  .theme .th-count{font-size:10px;color:var(--ink-soft);}
+  .theme .th-direction{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1.5px solid;margin-top:6px;display:inline-block;}
+  .theme .th-direction.supports{color:var(--green);border-color:var(--green-line);}
+  .theme .th-direction.contradicts{color:var(--terra);border-color:var(--terra-line);}
+  .theme .th-direction.neutral{color:var(--ink-faint);border-color:var(--rule-faint);}
+  .theme .th-quotes{margin-top:8px;font-size:11px;color:var(--ink-soft);line-height:1.5;font-style:italic;border-left:3px solid var(--rule-faint);padding-left:10px;}
+
+  /* evidence bar */
+  .evbar{border:1.5px solid var(--rule);padding:14px;margin-bottom:14px;}
+  .evbar .eb-h{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;}
+  .evbar .eb-scale{display:flex;gap:3px;align-items:stretch;height:10px;margin-bottom:8px;}
+  .evbar .eb-seg{flex:1;border:1px solid var(--rule-faint);}
+  .evbar .eb-seg.lit.contra{background:var(--terra);border-color:var(--terra);}
+  .evbar .eb-seg.lit.neutral{background:var(--amber);border-color:var(--amber);}
+  .evbar .eb-seg.lit.support{background:var(--green);border-color:var(--green);}
+  .evbar .eb-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--ink-faint);}
+
+  .bucket{border:1.5px solid;padding:14px;margin-bottom:14px;}
+  .bucket.win{border-color:var(--green-line);background:var(--green-soft);}
+  .bucket.incon{border-color:var(--amber-line);background:var(--amber-soft);}
+  .bucket.loss{border-color:var(--terra-line);background:var(--terra-soft);}
+  .bucket .bk-title{font-size:18px;font-weight:700;}
+  .bucket.win .bk-title{color:var(--green);} .bucket.incon .bk-title{color:var(--amber);} .bucket.loss .bk-title{color:var(--terra);}
+  .bucket .bk-why{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+  .bucket .bk-action{margin-top:10px;border-top:1px dashed var(--rule-faint);padding-top:10px;}
+  .bucket .bk-action .bk-lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px;}
+  .bucket .bk-action .bk-val{font-size:12.5px;font-weight:500;}
+
+  .cta{margin-top:14px;}
+  .btn{font-family:inherit;font-size:12px;padding:10px 16px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block;}
+  .btn.go{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .btn.go:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:16px;position:sticky;top:52px;}
+  .annot::before{content:"DISCIPLINE · LAYER 4";position:absolute;top:-9px;left:12px;background:var(--paper);padding:0 7px;font-size:9px;letter-spacing:1.5px;color:var(--terra);}
+  .annot .moment{font-size:12px;font-weight:700;color:var(--terra);margin-bottom:8px;}
+  .annot p{font-style:italic;font-size:11.5px;line-height:1.55;margin:0 0 10px;} .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);}
+
+  .phase{display:none;} .phase.on{display:block;}
+  footer.foot{margin-top:24px;border-top:1.5px dashed var(--rule);padding-top:14px;font-size:11px;color:var(--ink-soft);line-height:1.7;} footer.foot a{color:var(--terra);}
+  @media(max-width:820px){.cols{grid-template-columns:1fr;}.annot{position:static;}}
+</style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><a href="substrate/Full Flow.html">full flow</a><a href="substrate/Journal Index.html">journal</a><a href="Bet Front Door.html">new bet</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <span class="inst-badge">instrument: moderated interviews</span>
+  </header>
+
+  <div class="narrator">
+    <span style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);background:#e3a487;font-weight:700;padding:3px 8px;white-space:nowrap">layer 4 · interviews</span>
+    <span>A completely different shape. There's barely a "run" — the discipline is <em>recruitment fidelity, guide adherence, and spec-locked synthesis.</em> The evidence bar isn't a number; it's a qualitative judgment mapped against pre-registered expectations. Same layer, same bucket at the end — <em>different everything in between.</em></span>
+  </div>
+
+  <nav class="rail">
+    <a class="rchip done" href="Bet Front Door.html"><span class="rn">✓</span> bet</a>
+    <span class="rarr">→</span>
+    <a class="rchip done" href="Feasibility and Instrument.html"><span class="rn">✓</span> feasibility</a>
+    <span class="rarr">→</span>
+    <a class="rchip done" href="Decision Criteria.html"><span class="rn">✓</span> criteria</a>
+    <span class="rarr">→</span>
+    <a class="rchip done" href="Commit and Lock.html"><span class="rn">✓</span> locked</a>
+    <span class="rarr">→</span>
+    <div class="rchip active"><span class="rn">◴</span> in-flight → results</div>
+    <span class="rarr">→</span>
+    <a class="rchip" href="Revisit.html"><span class="rn">5</span> revisit</a>
+  </nav>
+
+  <div class="phase-seg" id="phaseSeg">
+    <button data-p="flight" class="on">4a · In-flight</button>
+    <button data-p="results">4b · Synthesis</button>
+  </div>
+
+  <!-- 4a IN-FLIGHT -->
+  <div class="phase on" data-phase="flight">
+    <div class="locked-mini">
+      <div class="lm-text">
+        <span class="t">Do loan customers understand our investment offering?</span> · instrument: <span class="t">5 moderated interviews</span> · committed sample: <span class="t">5 loan-only, inactive 90d</span> · locked 12 days ago
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="col">
+        <div class="panel">
+          <div class="ptitle">Recruitment</div>
+          <div class="psub">Tracking against the committed sample spec. You said 5 participants, loan-only, inactive 90 days.</div>
+          <div class="recruit">
+            <div class="cell ok"><div class="k">recruited</div><div class="v">4<small> / 5</small></div></div>
+            <div class="cell ok"><div class="k">completed</div><div class="v">3<small> / 5</small></div></div>
+            <div class="cell warn"><div class="k">no-shows</div><div class="v">1</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ptitle">Session log</div>
+          <div class="psub">Each session logged against the pre-registered discussion guide.</div>
+          <div class="sessions">
+            <div class="sess"><span class="sn">01</span><span class="sp"><b>P1</b> · loan-only, 120d inactive · 42 min</span><span class="sst done">done</span></div>
+            <div class="sess"><span class="sn">02</span><span class="sp"><b>P2</b> · loan-only, 95d inactive · 38 min</span><span class="sst done">done</span></div>
+            <div class="sess"><span class="sn">03</span><span class="sp"><b>P3</b> · loan-only, 180d inactive · 45 min</span><span class="sst done">done</span></div>
+            <div class="sess"><span class="sn">04</span><span class="sp"><b>P4</b> · scheduled Nov 30</span><span class="sst sched">scheduled</span></div>
+            <div class="sess"><span class="sn">05</span><span class="sp"><b>P5</b> · did not attend</span><span class="sst noshow">no-show</span></div>
+          </div>
+        </div>
+
+        <div class="drift">
+          <div class="dh">⌑ guide adherence (in-product prompt)</div>
+          <div class="dd">Your locked discussion guide had <b>4 committed exploration areas</b>. Session notes show you introduced a question about pricing in P3 that <b>wasn't in the guide.</b> That's exploratory — fine — but it can't count toward the pre-registered hypothesis. <b>Mark it as emergent, not confirmatory.</b></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="annot">
+          <div class="moment">In-flight: sessions underway</div>
+          <p>The discipline here is <em>recruitment fidelity and guide adherence</em> — not SRM and peek. Completely different failure modes for a completely different method.</p>
+          <p>Recruitment drift (interviewing the wrong people) is the qualitative equivalent of a broken randomization. Guide drift (asking unplanned questions) is the equivalent of peeking — it inflates the "evidence" by letting you fish for what you want to hear.</p>
+          <p>The in-product prompt catches the drift and asks you to <em>mark it</em>, not suppress it. Emergent findings are valuable — they just can't count as pre-registered confirmation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4b SYNTHESIS -->
+  <div class="phase" data-phase="results">
+    <div class="locked-mini">
+      <div class="lm-text">
+        <span class="t">Do loan customers understand our investment offering?</span> · <span class="t">4 of 5 sessions complete</span> · synthesis against pre-registered expectations
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="col">
+        <div class="panel">
+          <div class="ptitle">Themes mapped to the pre-registered hypothesis</div>
+          <div class="psub">You committed to exploring 4 areas. Each theme is tagged: does the evidence support, contradict, or not speak to the hypothesis?</div>
+
+          <div class="theme">
+            <div class="th-head"><span class="th-name">Awareness of investment products</span><span class="th-count">4 / 4 participants</span></div>
+            <span class="th-direction contradicts">contradicts</span>
+            <div class="th-quotes">"I didn't even know you had investments." (P1) · "I thought this was just a loan app." (P3)</div>
+          </div>
+
+          <div class="theme">
+            <div class="th-head"><span class="th-name">Understanding of loan–investment relationship</span><span class="th-count">3 / 4 participants</span></div>
+            <span class="th-direction contradicts">contradicts</span>
+            <div class="th-quotes">"Why would my loan company want me to invest?" (P2)</div>
+          </div>
+
+          <div class="theme">
+            <div class="th-head"><span class="th-name">Willingness to explore if shown</span><span class="th-count">3 / 4 participants</span></div>
+            <span class="th-direction supports">supports</span>
+            <div class="th-quotes">"If you showed me this on the homepage I'd probably click it." (P1)</div>
+          </div>
+
+          <div class="theme">
+            <div class="th-head"><span class="th-name">Trust in the platform for financial products</span><span class="th-count">2 / 4 participants</span></div>
+            <span class="th-direction neutral">neutral / mixed</span>
+            <div class="th-quotes">"I trust you with the loan, but investments feel different." (P3)</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ptitle">Emergent findings (not pre-registered)</div>
+          <div class="psub">Flagged separately per the guide-adherence discipline. Valuable, but can't confirm the hypothesis.</div>
+          <div class="theme">
+            <div class="th-head"><span class="th-name">Pricing sensitivity</span><span class="th-count">1 / 4 (P3 only)</span></div>
+            <span class="th-direction neutral">emergent · exploratory</span>
+            <div class="th-quotes">Surfaced from an off-guide question. Mark as a candidate for a follow-up bet, not confirmation.</div>
+          </div>
+        </div>
+
+        <div class="evbar">
+          <div class="eb-h">evidence bar — qualitative judgment against the hypothesis</div>
+          <div class="eb-scale">
+            <div class="eb-seg lit contra"></div>
+            <div class="eb-seg lit contra"></div>
+            <div class="eb-seg lit neutral"></div>
+            <div class="eb-seg"></div>
+            <div class="eb-seg"></div>
+          </div>
+          <div class="eb-labels"><span>strongly contradicts</span><span>neutral</span><span>strongly supports</span></div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5;">2 of 4 themes contradict · 1 supports · 1 neutral. The weight of evidence <b>leans against</b> the hypothesis: loan customers don't understand the investment offering — but they might engage if shown.</div>
+        </div>
+
+        <div class="bucket loss">
+          <div class="bk-title">LOSS</div>
+          <div class="bk-why">The pre-registered hypothesis — that loan customers understand the investment offering — is contradicted by the majority of themes. The bet's fold-if ("if participants can't articulate the relationship") has triggered.</div>
+          <div class="bk-action">
+            <div class="bk-lbl">your pre-registered action for this outcome</div>
+            <div class="bk-val">Redesign the info panels before investing in cross-sell campaigns.</div>
+          </div>
+        </div>
+
+        <div class="cta">
+          <a class="btn go" href="Revisit.html">proceed to revisit — make the call ▸</a>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="annot">
+          <div class="moment">Synthesis: the evidence mapped</div>
+          <p>No stats, no p-values — but the same discipline structure. Themes are tagged against the <em>pre-registered</em> exploration areas, not invented post-hoc. Emergent findings (the pricing question from P3) are <em>separated</em> so they can't smuggle in as confirmation.</p>
+          <p>The evidence bar is a qualitative judgment — "leans against" — not a number. But it feeds the same bucket (win / inconclusive / loss) against the same pre-registered fold-if. That's the whole point of layer 4 containerizing the method: <em>completely different evidence, same decision structure.</em></p>
+          <p>Compare with the <a href="In-flight AB.html" style="color:var(--terra)">A/B version</a> — same layer, same bucket at the end, different everything in between.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>Layer 4 · Moderated interviews.</b> Recruitment fidelity, guide adherence, guide-drift flagging (4a) → theme mapping, evidence bar, qualitative bucket (4b) → feeds into <a href="Revisit.html">Revisit</a>. &nbsp;—&nbsp; compare: <a href="In-flight AB.html">A/B test version</a></div>
+  </footer>
+
+</div>
+<script>
+document.getElementById('phaseSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.phase').forEach(p=>p.classList.toggle('on',p.dataset.phase===b.dataset.p));
+});
+</script>
+</body>
+</html>

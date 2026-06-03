@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Cross-Goal Scoping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:24px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12.5px;line-height:1.6;margin-bottom:20px;display:flex;gap:12px;align-items:baseline;}
+  .narrator::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;white-space:nowrap;align-self:flex-start;line-height:1.6;}
+  .narrator em{color:#eeb9a4;font-style:italic;}
+
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+  .controls .lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);}
+  .seg{display:flex;border:1.5px solid var(--plinth-line);}
+  .seg button{font-family:inherit;font-size:11.5px;padding:7px 14px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--plinth-line);cursor:pointer;}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--plinth);color:var(--paper);font-weight:700;}
+  .seg button:not(.on):hover{background:var(--plinth-soft);}
+
+  .principle{font-size:11px;color:var(--ink-soft);font-style:italic;margin-bottom:18px;line-height:1.55;border-left:3px solid var(--plinth);padding-left:12px;}
+  .principle b{color:var(--plinth);font-style:normal;}
+
+  /* objective blocks */
+  .obj{margin-bottom:18px;}
+  .obj-head{border:1.5px solid var(--plinth-line);background:var(--plinth-soft);padding:11px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .obj-head .ot{font-size:13.5px;font-weight:700;}
+  .obj-head .otag{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);border:1px solid var(--plinth-line);padding:2px 7px;white-space:nowrap;}
+  .bet-rows{border:1.5px solid var(--rule-faint);border-top:none;}
+  .bet-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px dashed var(--rule-faint);}
+  .bet-row:last-child{border-bottom:none;}
+  .bet-q{font-size:12.5px;font-weight:500;line-height:1.4;}
+  .bet-meta{display:flex;gap:9px;flex-wrap:wrap;margin-top:5px;font-size:10.5px;color:var(--ink-soft);}
+  .bet-meta .dep{color:var(--plinth);} .bet-meta .gates{color:var(--terra);}
+  .st{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;white-space:nowrap;}
+  .st.won{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .st.running{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .st.draft{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .st.locked{color:var(--terra);border-color:var(--terra-line);}
+
+  /* cross-goal muted reference */
+  .xref{border:1.5px dashed var(--plinth-line);background:var(--plinth-soft);opacity:.72;padding:11px 14px;margin-top:-1px;}
+  .xref .xr-tag{display:inline-flex;align-items:center;gap:5px;font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);border:1px solid var(--plinth-line);padding:2px 7px;margin-bottom:7px;}
+  .xref .bet-q{font-style:italic;color:var(--ink-soft);}
+  .xref .xr-why{font-size:10.5px;color:var(--ink-faint);font-style:italic;margin-top:6px;line-height:1.45;}
+  .xref .xr-link{font-size:10.5px;color:var(--plinth);cursor:pointer;border-bottom:1px dashed var(--plinth-line);margin-top:4px;display:inline-block;}
+  .xref .xr-link:hover{color:var(--terra);}
+
+  .empty{font-size:12px;color:var(--ink-faint);font-style:italic;padding:16px;border:1.5px dashed var(--rule-faint);text-align:center;}
+
+  .annot{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:14px 16px;margin-top:22px;font-size:12px;line-height:1.6;}
+  .annot .ah{font-family:"Caveat",cursive;font-size:15px;color:#e3a487;margin-bottom:8px;}
+  .annot em{color:#eeb9a4;} .annot b{color:#b8d4b0;}
+
+  footer.foot{margin-top:24px;border-top:1.5px dashed var(--rule);padding-top:14px;font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot a{color:var(--terra);}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="../alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="Full Flow.html">full flow</a><a href="Journal Index.html">journal</a><a href="../Bet Front Door.html">new bet</a><a href="Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">cross-goal scoping · soft filter + muted references</div>
+  </header>
+
+  <div class="narrator">
+    <span style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);background:#e3a487;font-weight:700;white-space:nowrap;padding:3px 8px;align-self:flex-start">scoping</span>
+    <span>Dependencies can cross objectives — a bet under one goal can gate a bet under another. The question: how does the ledger filter/scope this without <em>hiding</em> a dependency? Answer: <em>soft filter + muted cross-references.</em> Toggle the objective filter and watch: bets that belong to the filtered objective show full-strength; cross-goal dependencies appear <em>muted but never absent.</em></span>
+  </div>
+
+  <div class="controls">
+    <span class="lbl">filter by objective</span>
+    <div class="seg" id="filter">
+      <button data-f="all" class="on">All objectives</button>
+      <button data-f="email">Email campaign</button>
+      <button data-f="churn">Reduce churn</button>
+    </div>
+  </div>
+
+  <div class="principle"><b>The principle:</b> never hide a dependency just because it crosses a goal boundary. An invisible coupling lets a team run a bet whose premise was invalidated in another team's work. Show it muted, never absent.</div>
+
+  <div id="ledger"></div>
+
+  <div class="annot">
+    <div class="ah">▶ what you're seeing</div>
+    <div id="annotText"></div>
+  </div>
+
+  <footer class="foot">
+    <div>Soft-filter + muted cross-references. The modelling supports multi-parent items (as Plinth does at all levels). A future "dependencies" lens would show chains across objectives as a graph, ignoring goal grouping entirely. &nbsp;—&nbsp; related: <a href="Journal Index.html">journal index</a> · <a href="Fan-in Bets.html">fan-in</a> · <a href="Join Behavior.md">join behavior (settled)</a></div>
+  </footer>
+
+</div>
+
+<script>
+const OBJS={
+  email:{title:'Send an email campaign to loan-only customers',tag:'Marketing',metric:'7-day login · 30→80%'},
+  churn:{title:'Reduce churn of paying customers',tag:'Growth',metric:'monthly churn · 8→3%'}
+};
+const BETS=[
+  {id:'e1',obj:'email',q:'Does a subject-line variant lift open rate?',status:'won',gates:'c1'},
+  {id:'e2',obj:'email',q:'Which of 3 email bodies lifts 7-day login?',status:'running'},
+  {id:'c1',obj:'churn',q:'Reuse the winning subject line for retention emails?',status:'draft',dep:'e1'},
+  {id:'c2',obj:'churn',q:'Systematic way to identify re-engagement vs sunset accounts?',status:'locked'}
+];
+const betById=id=>BETS.find(b=>b.id===id);
+
+let filter='all';
+
+function depLine(b,isXref){
+  let bits=[];
+  if(b.dep){const d=betById(b.dep);if(d)bits.push(`<span class="dep">⟂ depends on: ${d.q.slice(0,40)}${d.q.length>40?'…':''}${isXref?'':` (${OBJS[d.obj].tag})`}</span>`);}
+  if(b.gates){const g=betById(b.gates);if(g)bits.push(`<span class="gates">→ gates: ${g.q.slice(0,40)}${g.q.length>40?'…':''}${filter!=='all'&&g.obj!==filter?' ('+OBJS[g.obj].tag+')':''}</span>`);}
+  return bits.join('');
+}
+
+function betRow(b){
+  return `<div class="bet-row"><div><div class="bet-q">${b.q}</div><div class="bet-meta">${depLine(b,false)}</div></div><span class="st ${b.status}">${b.status}</span></div>`;
+}
+
+function xrefCard(b,direction){
+  const other=direction==='down'?betById(b.gates):betById(b.dep);
+  const otherObj=other?OBJS[other.obj]:null;
+  const depBet=direction==='down'?betById(b.gates):b;
+  const srcBet=direction==='down'?b:betById(b.dep);
+  const shown=direction==='down'?betById(b.gates):betById(b.dep);
+  const fromObj=OBJS[shown.obj];
+  const why=direction==='down'
+    ? `Your bet "${srcBet.q.slice(0,35)}…" gates this. Showing it here so you see the reach — it lives under ${fromObj.title.slice(0,30)}….`
+    : `This bet depends on "${srcBet.q.slice(0,35)}…" under ${OBJS[srcBet.obj].title.slice(0,30)}…. Shown here because the dependency crosses goals.`;
+  return `<div class="xref">
+    <div class="xr-tag">↗ cross-goal · from ${fromObj.tag}</div>
+    <div class="bet-q">${shown.q}</div>
+    <div class="bet-meta"><span class="st ${shown.status}">${shown.status}</span></div>
+    <div class="xr-why">${why}</div>
+    <span class="xr-link" onclick="setFilter('${shown.obj}')">view in ${fromObj.title.slice(0,28)}… →</span>
+  </div>`;
+}
+
+function render(){
+  const ledger=document.getElementById('ledger');
+  const annot=document.getElementById('annotText');
+  let h='';
+
+  if(filter==='all'){
+    ['email','churn'].forEach(key=>{
+      const o=OBJS[key];
+      h+=`<div class="obj"><div class="obj-head"><div class="ot">${o.title}</div><span class="otag">${o.tag}</span></div><div class="bet-rows">`;
+      BETS.filter(b=>b.obj===key).forEach(b=>h+=betRow(b));
+      h+=`</div></div>`;
+    });
+    annot.innerHTML=`<b>All objectives</b> — every bet at full strength, cross-goal dependencies shown inline as normal "⟂ depends on" / "→ gates" hints. No muting because nothing is filtered. This is the unscoped view.`;
+  } else {
+    const o=OBJS[filter];
+    const mine=BETS.filter(b=>b.obj===filter);
+    // downstream cross-refs: bets I gate that live under other objectives
+    const downXrefs=mine.filter(b=>b.gates&&betById(b.gates).obj!==filter);
+    // upstream cross-refs: bets in OTHER objectives that my bets depend on
+    const upXrefs=mine.filter(b=>b.dep&&betById(b.dep).obj!==filter);
+
+    h+=`<div class="obj"><div class="obj-head"><div class="ot">${o.title}</div><span class="otag">${o.tag}</span></div><div class="bet-rows">`;
+    mine.forEach(b=>h+=betRow(b));
+    h+=`</div>`;
+
+    // show cross-goal downstream refs (bets from other objectives my bets gate)
+    downXrefs.forEach(b=>{h+=xrefCard(b,'down');});
+    // show cross-goal upstream refs (bets from other objectives my bets depend on)
+    upXrefs.forEach(b=>{h+=xrefCard(b,'up');});
+
+    h+=`</div>`;
+
+    if(filter==='email'){
+      annot.innerHTML=`<b>Filtered to Email campaign.</b> The two email bets show at full strength. Below them, a <em>muted cross-reference</em> — "Reuse the winning subject line for retention emails" lives under <em>Reduce churn</em>, but it depends on your subject-line bet. It's shown here, faintly, because <b>hiding a dependency that crosses a goal boundary is exactly the failure mode the discipline layer exists to prevent.</b> Click "view in…" to jump to its home objective.`;
+    } else {
+      annot.innerHTML=`<b>Filtered to Reduce churn.</b> The two churn bets show at full strength. "Reuse winning subject line" has a cross-goal upstream dependency — it depends on a bet under <em>Email campaign</em> (already won). That upstream reference shows muted, so you see the premise your bet rests on, even though it belongs to another team's objective.`;
+    }
+  }
+  ledger.innerHTML=h;
+}
+
+function setFilter(f){
+  filter=f;
+  [...document.querySelectorAll('#filter button')].forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  render();
+}
+document.getElementById('filter').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setFilter(b.dataset.f);});
+render();
+</script>
+</body>
+</html>

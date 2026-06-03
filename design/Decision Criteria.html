@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Decision Criteria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:18px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:20px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:1px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:820px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+  .lead .g{color:var(--green);font-weight:500;}
+
+  /* spine rail */
+  .spine-rail{display:flex;align-items:center;flex-wrap:wrap;margin:20px 0 4px;}
+  .srail{display:flex;align-items:center;gap:9px;border:1.5px dashed var(--rule);padding:8px 13px;margin:0 0 8px;font-size:11.5px;color:var(--ink-soft);}
+  .srail .sn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--ink-soft);}
+  .srail.done{border-color:var(--green-line);color:var(--green);}
+  .srail.done .sn{border-color:var(--green-line);color:var(--green);background:var(--green-soft);}
+  .srail.active{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .srail.active .sn{border-color:var(--terra);color:var(--terra);}
+  .srail.locked{opacity:.45;}
+  .srail.reachable{color:var(--ink-soft);}
+  .srail-arrow{color:var(--ink-faint);margin:0 8px 8px;}
+  a.srail{text-decoration:none;cursor:pointer;}
+  a.srail:hover{background:var(--paper-2);}
+
+  /* carried */
+  .carried{border:1.5px solid var(--green-line);background:var(--green-soft);padding:16px 18px;position:relative;margin:14px 0 0;}
+  .carried::before{content:"CARRIED FORWARD";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--green);}
+  .carried-h{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:9px;}
+  .wsent{font-size:14.5px;line-height:1.75;color:var(--ink);}
+  .wsent .lead-in{color:var(--ink-soft);}
+  .wsent .t{color:var(--terra);font-weight:500;}
+  .wsent .t.fold{border-bottom:2px solid var(--terra-line);}
+  .carried-instr{margin-top:12px;border-top:1px dashed var(--green-line);padding-top:11px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);}
+  .instr-chip{border:1.5px solid var(--green-line);color:var(--green);padding:3px 10px;font-size:11.5px;font-weight:700;}
+  .instr-chip .k{font-weight:400;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);margin-left:6px;}
+
+  .bridge{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:14px 16px;margin:18px 0;font-size:13px;line-height:1.6;display:flex;gap:11px;align-items:baseline;}
+  .bridge .tag{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);font-weight:700;white-space:nowrap;}
+  .bridge b{color:var(--terra);}
+
+  .cols{display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:start;}
+  .col{min-width:0;}
+  .panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:18px;margin-bottom:18px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .panel-eyebrow .seed{font-size:10px;letter-spacing:0;text-transform:none;color:var(--ink-faint);font-style:italic;}
+  .panel-title{font-size:15px;font-weight:700;margin:5px 0 4px;}
+  .panel-sub{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:16px;}
+
+  /* criteria rows */
+  .crit{display:flex;gap:11px;align-items:stretch;margin-bottom:11px;}
+  .crit .ctag{flex:0 0 86px;border:1.5px dashed var(--rule-faint);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);background:rgba(255,255,255,.3);}
+  .crit.win .ctag{color:var(--green);border-color:var(--green-line);}
+  .crit.loss .ctag{color:var(--terra);border-color:var(--terra-line);}
+  .crit-body{flex:1;min-width:0;}
+  .crit .thresh{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;}
+  .crit .thresh b{color:var(--terra);font-weight:700;}
+  .crit.win .thresh b{color:var(--green);}
+  .field{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);padding:9px 12px;color:var(--ink);font-size:12.5px;line-height:1.5;min-height:38px;outline:none;}
+  .field:focus{border-color:var(--terra-line);background:var(--terra-soft);}
+
+  /* evidence bar */
+  .evidence{border:1.5px dashed var(--terra-line);background:var(--terra-soft);padding:12px 14px;}
+  .evidence .eb-lbl{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+  .evidence .eb-lbl .src{color:var(--ink-faint);text-transform:none;letter-spacing:0;font-style:italic;}
+  .evidence .eb-v{font-size:12.5px;line-height:1.55;color:var(--ink);font-style:italic;}
+
+  .mindchanger{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .mc-val{font-size:26px;font-weight:700;color:var(--terra);line-height:1;}
+  .mc-note{font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.5;flex:1;min-width:200px;}
+  .mc-note b{color:var(--terra);font-style:normal;}
+
+  .lockahead{margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:11.5px;padding:9px 14px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;text-decoration:none;display:inline-block;}
+  .btn.lock{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .btn[aria-disabled="true"]{opacity:.4;cursor:default;border-style:dashed;}
+  .lock-note{font-size:10.5px;color:var(--ink-soft);font-style:italic;}
+
+  /* annotation */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;position:relative;position:sticky;top:16px;}
+  .annot::before{content:"DISCIPLINE LAYER";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot .pathline{border-top:1px dashed var(--terra-line);margin-top:13px;padding-top:12px;font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.5;}
+  .annot .pathline b{color:var(--terra);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:14px 0 0;}
+
+  footer.foot{margin-top:30px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+
+  @media(max-width:880px){.cols{grid-template-columns:1fr;}.annot{position:static;}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="substrate/Full Flow.html">full flow</a><a href="substrate/Journal Index.html">journal</a><a href="Bet Front Door.html">new bet</a><a href="substrate/Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">setup spine</span><span class="crumb">·</span>
+          <span class="crumb">decision criteria</span><span class="crumb">·</span>
+          <span class="crumb">decide before you can see</span>
+        </div>
+      </div>
+      <div class="stamp">commit the action, not the hope</div>
+    </div>
+    <p class="lead"><span class="g">You named what would change your mind, and an instrument that can detect it.</span> Now pre-register what you'll <em>do</em> at each outcome — while you still can't see the result. The actions are yours; the evidence that triggers them is supplied by your instrument; the threshold is already locked. Nothing left to rationalize after the fact.</p>
+  </header>
+
+  <nav class="spine-rail">
+    <a class="srail done" href="Bet Front Door.html"><span class="sn">✓</span> bet</a>
+    <span class="srail-arrow">→</span>
+    <a class="srail done" href="Feasibility and Instrument.html"><span class="sn">✓</span> feasibility &amp; instrument</a>
+    <span class="srail-arrow">→</span>
+    <div class="srail active"><span class="sn">3</span> decision criteria</div>
+    <span class="srail-arrow">→</span>
+    <a class="srail reachable" href="Commit and Lock.html"><span class="sn">4</span> commit &amp; lock</a>
+  </nav>
+
+  <!-- carried -->
+  <div class="carried">
+    <div class="carried-h">the bet &amp; instrument you're deciding against</div>
+    <div class="wsent" id="wsent"></div>
+    <div class="carried-instr">
+      <span>instrument:</span>
+      <span class="instr-chip" id="instrChip">Holdback <span class="k">post-launch</span></span>
+      <span style="font-style:italic;color:var(--ink-faint)" id="instrCarry">chosen at feasibility</span>
+    </div>
+  </div>
+
+  <!-- bridge -->
+  <div class="bridge">
+    <span class="tag">fold-if → loss line</span>
+    <span>Your fold-if (<b>+<span data-fold>4</span>%</b>) is the loss boundary — below it, the bet folds. Pre-register the action at each outcome <b>now</b>, before the data can tempt you to move the line.</span>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <!-- criteria -->
+      <div class="panel">
+        <div class="panel-eyebrow">pre-register the actions <span class="seed">the actions are yours</span></div>
+        <div class="panel-title">What I'll do at each outcome</div>
+        <div class="panel-sub">Click a field to edit. These commit before any result exists — that's the whole point.</div>
+        <div class="crit win">
+          <div class="ctag">win</div>
+          <div class="crit-body">
+            <div class="thresh">≥ <b>+<span data-fold>4</span>%</b> on <span data-metric>checkout-start</span></div>
+            <div class="field" contenteditable="true" data-crit="win">Keep the redesign — roll to 100% this week.</div>
+          </div>
+        </div>
+        <div class="crit">
+          <div class="ctag">incon.</div>
+          <div class="crit-body">
+            <div class="thresh">between <b>0</b> and <b>+<span data-fold>4</span>%</b> — real, but under your mind-changer</div>
+            <div class="field" contenteditable="true" data-crit="incon">Hold — sharpen the variant and re-test next quarter.</div>
+          </div>
+        </div>
+        <div class="crit loss">
+          <div class="ctag">loss</div>
+          <div class="crit-body">
+            <div class="thresh">≤ <b>0</b>, or any guardrail drop</div>
+            <div class="field" contenteditable="true" data-crit="loss">Revert — log why in the decision journal.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- evidence bar -->
+      <div class="panel">
+        <div class="panel-eyebrow">how I'll know <span class="seed">supplied by your instrument</span></div>
+        <div class="panel-title">The evidence that triggers the call</div>
+        <div class="panel-sub">You don't author this — your chosen instrument does. Change the instrument back at feasibility and this changes with it.</div>
+        <div class="evidence">
+          <div class="eb-lbl">evidence bar <span class="src" id="ebSrc">from: Holdback</span></div>
+          <div class="eb-v" id="ebText"></div>
+        </div>
+      </div>
+
+      <!-- min mind-changer -->
+      <div class="panel">
+        <div class="panel-eyebrow">minimum mind-changer <span class="seed">read-only · = your fold-if</span></div>
+        <div class="panel-title">The smallest effect that flips the call</div>
+        <div class="mindchanger">
+          <div class="mc-val">+<span data-fold>4</span>%</div>
+          <div class="mc-note">This isn't a new field — it's the <b>same fold-if</b> you committed in the bet, now doing its job as the win/loss boundary. One number, declared once, used everywhere.</div>
+        </div>
+      </div>
+
+      <div class="lockahead">
+        <span class="btn lock" aria-disabled="true">Commit &amp; lock ▸</span>
+        <span class="lock-note">next in the spine — timestamps this pre-registration and freezes every field above.</span>
+      </div>
+    </div>
+
+    <!-- annotation -->
+    <div class="col">
+      <div class="annot">
+        <div class="moment">Insertion moment: decision criteria — decide before you can see</div>
+        <p>Three things meet here, and only here: the <em>action</em> (yours, method-agnostic), the <em>evidence</em> (supplied by the instrument), and the <em>threshold</em> (locked back at the bet). Together they leave nothing to argue about once results land.</p>
+        <p>This is the spine of evidentiary integrity — and the surface your mandate leans on. A bad-faith PM can't move the goalposts if the goalposts were timestamped before kickoff.</p>
+        <div class="pathline">↳ <b>next:</b> commit &amp; lock — freeze this pre-registration. Measured against later, never edited to match.</div>
+        <p class="margin-note">↖ decide now, while you're honest.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>the carry, three deep:</b> the bet's fold-if is your loss line and your minimum mind-changer; the instrument from feasibility supplies the evidence bar; only the actions are new here. Move through the spine with the steps up top.</div>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- tweak state ---------- */
+let TW={tone:'balanced',accent:'#a64d3b'};
+
+/* ---------- carried bet + instrument ---------- */
+const DEFAULT_BET={change:'moving the plan-picker above the fold',dir:'lift',metric:'checkout-start',mag:'8%',conf:'hunch-level',why:'replays show scroll drop-off at the testimonials',fals:'it comes in under +4% or dents a guardrail'};
+let BET=DEFAULT_BET, INSTR='hold';
+try{const s=localStorage.getItem('ab_bet');if(s){BET=Object.assign({},DEFAULT_BET,JSON.parse(s));}}catch(e){}
+try{const s=localStorage.getItem('ab_instrument');if(s){const p=JSON.parse(s);if(p&&p.declared)INSTR=p.declared;}}catch(e){}
+
+const CONF_LABEL={'hunch-level':'on a hunch','fairly':'fairly confident','highly':'highly confident'};
+const NAMES={ab:'A/B test',quasi:'Quasi-experiment',obs:'Observational',hold:'Holdback'};
+const KINDS={ab:'randomized',quasi:'natural exp.',obs:'no intervention',hold:'post-launch'};
+
+function foldFromBet(){const m=(BET.fals||'').match(/(\d+(?:\.\d+)?)/);return m?Math.max(1,Math.min(10,Math.round(parseFloat(m[1])))):4;}
+const FOLD=foldFromBet();
+
+const EVIDENCE={
+  ab:(f,m)=>`A <b>+${f}% lift</b> on ${m}, two-sided at the locked threshold — measured at runtime end, <b>no peeking</b> before then.`,
+  quasi:(f,m)=>`A <b>+${f}% gap</b> in ${m} at the change date that <b>survives a placebo test</b> and holds under an alternative comparison group.`,
+  obs:(f,m)=>`A <b>+${f}% association</b> in ${m} net of your pre-specified controls that <b>survives the committed sensitivity analysis</b> — not the prettiest of many specs.`,
+  hold:(f,m)=>`A <b>+${f}% lift</b> in the held-back cohort's ${m} that <b>persists past the novelty window</b> — not a launch-day spike that decays.`
+};
+
+function renderWsent(){
+  document.getElementById('wsent').innerHTML=
+    `<span class="lead-in">I'm betting that</span> <span class="t">${BET.change}</span> <span class="lead-in">will</span> <span class="t">${BET.dir}</span> <span class="t">${BET.metric}</span> <span class="lead-in">by about</span> <span class="t">${BET.mag}</span><span class="lead-in">. I'm</span> ${CONF_LABEL[BET.conf]||BET.conf}<span class="lead-in">, because</span> <span class="t">${BET.why}</span><span class="lead-in">. I'll fold if</span> <span class="t fold">${BET.fals}</span><span class="lead-in">.</span>`;
+}
+
+function renderAll(){
+  renderWsent();
+  // fold + metric labels
+  document.querySelectorAll('[data-fold]').forEach(e=>e.textContent=FOLD);
+  document.querySelectorAll('[data-metric]').forEach(e=>e.textContent=BET.metric);
+  // instrument
+  document.getElementById('instrChip').innerHTML=`${NAMES[INSTR]} <span class="k">${KINDS[INSTR]}</span>`;
+  document.getElementById('ebSrc').textContent='from: '+NAMES[INSTR];
+  document.getElementById('ebText').innerHTML=(EVIDENCE[INSTR]||EVIDENCE.hold)(FOLD,BET.metric);
+}
+
+/* tweaks */
+function applyTweaks(t){TW=Object.assign({},TW,t||{});if(TW.accent)document.documentElement.style.setProperty('--terra',TW.accent);}
+window.addEventListener('critweaks',e=>applyTweaks(e.detail));
+
+renderAll();
+
+/* persist the pre-registered actions so commit can assemble the full record */
+const critFields={win:document.querySelector('[data-crit="win"]'),incon:document.querySelector('[data-crit="incon"]'),loss:document.querySelector('[data-crit="loss"]')};
+try{const s=localStorage.getItem('ab_criteria');if(s){const c=JSON.parse(s);Object.keys(critFields).forEach(k=>{if(c[k])critFields[k].textContent=c[k];});}}catch(e){}
+function persistCrit(){const c={};Object.keys(critFields).forEach(k=>c[k]=critFields[k].textContent.trim());try{localStorage.setItem('ab_criteria',JSON.stringify(c));}catch(e){}}
+Object.values(critFields).forEach(f=>f.addEventListener('input',persistCrit));
+persistCrit();
+</script>
+
+<div id="tweaks-root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const {useTweaks,TweaksPanel,TweakSection,TweakRadio,TweakColor}=window;
+const TW_DEFAULTS={tone:'balanced',accent:'#a64d3b'};
+function TweaksApp(){
+  const [t,setTweak]=useTweaks(TW_DEFAULTS);
+  React.useEffect(()=>{window.dispatchEvent(new CustomEvent('critweaks',{detail:t}));},[t]);
+  return (
+    <TweaksPanel>
+      <TweakSection label="Theme"/>
+      <TweakColor label="Accent" value={t.accent} options={['#a64d3b','#3f7d5a','#4f6f9e','#8d5384']} onChange={v=>setTweak('accent',v)}/>
+    </TweaksPanel>
+  );
+}
+ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<TweaksApp/>);
+</script>
+</body>
+</html>

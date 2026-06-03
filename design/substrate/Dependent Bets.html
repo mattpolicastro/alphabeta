@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Dependent Bets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:16px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:19px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:2px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:840px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+
+  .control{border:1.5px dashed var(--rule);background:rgba(255,255,255,.3);padding:12px 16px;margin:18px 0 6px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+  .control .lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  .control .hint{font-size:11px;color:var(--ink-soft);font-style:italic;}
+  .btn{font-family:inherit;font-size:11px;padding:7px 13px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;}
+  .btn:hover{background:var(--paper-2);}
+
+  .objline{font-size:11px;color:var(--plinth);margin:14px 0 12px;letter-spacing:.5px;}
+  .objline b{color:var(--plinth);}
+
+  /* chain */
+  .chain{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+  .node{flex:1 1 220px;min-width:210px;border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:13px;display:flex;flex-direction:column;transition:opacity .2s,border-color .2s,background .2s;}
+  .arrow{flex:0 0 auto;align-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 6px;color:var(--ink-faint);font-size:11px;min-width:54px;text-align:center;}
+  .arrow .ar{font-size:18px;line-height:1;}
+  .arrow .al{font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;margin-top:3px;}
+  .arrow.win{color:var(--green);} .arrow.sev{color:var(--terra);}
+
+  .node .neye{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px;display:flex;justify-content:space-between;gap:8px;}
+  .node .nq{font-size:12.5px;font-weight:600;line-height:1.4;flex:1;}
+  .node .nexp{font-size:10.5px;color:var(--ink-soft);margin-top:7px;}
+  .nstatus{margin-top:10px;}
+  .stbadge{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;display:inline-flex;align-items:center;gap:5px;}
+  .stbadge.blocked{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .stbadge.active{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .stbadge.win{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .stbadge.loss{color:var(--paper);background:var(--terra);border-color:var(--terra);}
+  .stbadge.pruned{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+
+  .node.active{border-color:var(--terra);background:var(--terra-soft);}
+  .node.win{border-color:var(--green-line);}
+  .node.loss{border-color:var(--terra);}
+  .node.blocked{opacity:.62;}
+  .node.pruned{opacity:.5;}
+  .node.pruned .nq{text-decoration:line-through;text-decoration-color:var(--terra-line);}
+
+  .resolve{display:flex;gap:8px;margin-top:11px;}
+  .resolve button{flex:1;font-family:inherit;font-size:10.5px;padding:7px 8px;border:1.5px solid;cursor:pointer;background:transparent;letter-spacing:.3px;}
+  .resolve .rwin{border-color:var(--green-line);color:var(--green);}
+  .resolve .rwin:hover{background:var(--green);color:var(--paper);}
+  .resolve .rloss{border-color:var(--terra-line);color:var(--terra);}
+  .resolve .rloss:hover{background:var(--terra);color:var(--paper);}
+
+  .prunenote{margin-top:10px;font-size:10px;color:var(--terra);font-style:italic;line-height:1.5;}
+  .override{margin-top:8px;}
+  .override .olink{font-size:10px;color:var(--ink-soft);border-bottom:1px dashed var(--rule-faint);cursor:pointer;}
+  .override .olink:hover{color:var(--terra);border-color:var(--terra-line);}
+  .override .oflag{display:none;margin-top:7px;font-size:9.5px;color:var(--terra);background:var(--terra-soft);border:1.5px dashed var(--terra-line);padding:7px 9px;line-height:1.5;font-style:italic;}
+  .override.flagged .oflag{display:block;}
+  .override.flagged .olink{display:none;}
+
+  /* rollout */
+  .node.rollout{border-style:dashed;background:rgba(90,107,140,.04);}
+  .node.rollout.ready{border-color:var(--green-line);border-style:solid;background:var(--green-soft);}
+  .node.rollout.withheld{border-color:var(--terra-line);background:var(--terra-soft);}
+  .rollout-state{margin-top:10px;font-size:11px;font-weight:600;}
+  .rollout-state.ready{color:var(--green);} .rollout-state.withheld{color:var(--terra);} .rollout-state.blocked{color:var(--ink-faint);font-weight:400;font-style:italic;}
+
+  /* value readout */
+  .value{margin-top:16px;border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:13px 16px;font-size:12.5px;line-height:1.6;display:none;align-items:baseline;gap:10px;}
+  .value.show{display:flex;}
+  .value.win-all{border-color:var(--green-line);background:var(--green-soft);}
+  .value .vt{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--terra);white-space:nowrap;}
+  .value.win-all .vt{color:var(--green);}
+  .value b{color:var(--terra);} .value.win-all b{color:var(--green);}
+
+  /* annotation */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;margin-top:22px;position:relative;}
+  .annot::before{content:"DISCIPLINE LAYER · SEQUENCES OF BETS";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot p b{color:var(--green);font-style:normal;}
+  .openq{border:1.5px dashed var(--plinth-line);background:var(--plinth-soft);padding:11px 13px;font-size:11.5px;line-height:1.55;font-style:italic;color:var(--ink);margin-top:4px;}
+  .openq b{color:var(--plinth);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:12px 0 0;}
+
+  footer.foot{margin-top:26px;border-top:1.5px dashed var(--rule);padding-top:16px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);} footer.foot a{color:var(--terra);}
+
+  @media(max-width:820px){.chain{flex-direction:column;}.arrow{flex-direction:row;min-width:0;padding:6px 0;}.arrow .ar{transform:rotate(90deg);}.annot-grid{grid-template-columns:1fr;}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="../alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="Full Flow.html">full flow</a><a href="Journal Index.html">journal</a><a href="../Bet Front Door.html">new bet</a><a href="Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">decision substrate</span><span class="crumb">·</span>
+          <span class="crumb">dependent bets</span><span class="crumb">·</span>
+          <span class="crumb">conditional progression</span>
+        </div>
+      </div>
+      <div class="stamp">a lost prior prunes the branch</div>
+    </div>
+    <p class="lead">Bets aren't islands — they form sequences where each one's premise rests on the last. Resolve them in order and the verdict <em>propagates</em>: a win unlocks the next; a <em>loss prunes everything downstream before you run it.</em> That pruning is the value — you don't spend on experiments built on a result that didn't hold.</p>
+  </header>
+
+  <div class="control">
+    <span class="lbl">resolve the chain</span>
+    <span class="hint" id="hint">Start with the active bet — give it a win or a loss and watch the verdict propagate.</span>
+    <button class="btn" id="reset" style="margin-left:auto">⟲ reset chain</button>
+  </div>
+
+  <div class="objline">objective: <b>Reactivate dormant loan-only customers</b> · metric: 7-day app login · a sequence of dependent bets ↓</div>
+
+  <div class="chain" id="chain"></div>
+
+  <div class="value" id="value"><span class="vt" id="valueT">conditional progression</span><span id="valueText"></span></div>
+
+  <div class="annot">
+    <div class="moment">Sequences of bets — the verdict propagates</div>
+    <div class="annot-grid">
+      <div>
+        <p>Each bet rests on the prior's result. A win <em>unlocks</em> the next; a loss <em>prunes</em> everything premised on it — <b>before</b> you spend the traffic and the weeks. The dangerous corner isn't the mid-chain loss; it's <em>ignoring</em> it.</p>
+        <p>So a pruned bet can be overridden — <em>"run anyway"</em> — but it's flagged as running on an unproven premise, and logged beside the chain. Nudge, not gate, all the way down.</p>
+      </div>
+      <div>
+        <p style="font-style:normal;color:var(--ink)">This is the <em>"avoided a bad release"</em> value again, structural rather than scored: the saved bets show up as branches that simply never ran — no win-rate scoreboard required.</p>
+        <div class="openq">⚑ <b>Open question (deferred):</b> dependencies can cross objectives — a bet under one goal may gate a bet under another. That's exactly where bets "commingle across goals" and the ledger's filtering/scoping gets tricky. The propagation mechanic holds regardless; <b>how the index scopes cross-goal chains is left open</b> for now.</div>
+        <p class="margin-note">↖ pruning a branch is the point, not a bug.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>exploration — conditional progression.</b> Makes the journal index's “after / unlocks / gates” hints real. &nbsp;—&nbsp; related: <a href="Journal Index.html">journal index</a> · <a href="Plinth Seam.html">the seam</a></div>
+  </footer>
+
+</div>
+
+<script>
+const NODES=[
+  {id:'a',q:'Will a reminder email get opened?',instr:'A/B · subject lines'},
+  {id:'b',q:'Of those who open, which CTA drives app login?',instr:'A/B · email body',dep:'a'},
+  {id:'c',q:'Does the reactivation persist past 7 days?',instr:'holdback',dep:'b'}
+];
+const ROLLOUT={q:'Roll the winning sequence to all dormant loan customers',dep:'c'};
+
+const state={out:{a:'pending',b:'pending',c:'pending'},override:{}};
+
+function computeStatuses(){
+  const st={};let cut=false,activeAssigned=false;
+  for(const n of NODES){
+    if(cut){
+      if(!state.override[n.id]){st[n.id]='pruned';continue;}
+      cut=false; // override re-opens the chain from this node
+    }
+    const o=state.out[n.id];
+    if(o==='win'){st[n.id]='win';}
+    else if(o==='loss'){st[n.id]='loss';cut=true;}
+    else{ // pending
+      if(!activeAssigned){st[n.id]='active';activeAssigned=true;}
+      else st[n.id]='blocked';
+    }
+  }
+  return st;
+}
+
+const STLABEL={blocked:'blocked',active:'active',win:'won',loss:'lost',pruned:'pruned'};
+
+function render(){
+  const st=computeStatuses();
+  const chain=document.getElementById('chain');
+  let h='';
+  NODES.forEach((n,i)=>{
+    if(i>0){
+      const up=NODES[i-1], ups=st[up.id];
+      let cls='',ar='→',al='if win';
+      if(ups==='win'){cls='win';ar='→';al='unlocked';}
+      else if(ups==='loss'||ups==='pruned'){cls='sev';ar='⇥';al='severed';}
+      h+=`<div class="arrow ${cls}"><span class="ar">${ar}</span><span class="al">${al}</span></div>`;
+    }
+    const s=st[n.id];
+    h+=`<div class="node ${s}">
+      <div class="neye"><span>${n.instr}</span><span>${n.dep?'depends on '+n.dep.toUpperCase():'root'}</span></div>
+      <div class="nq">${n.q}</div>
+      <div class="nexp">bet ${n.id.toUpperCase()}</div>
+      <div class="nstatus"><span class="stbadge ${s}">${s==='active'?'◴ ':''}${STLABEL[s]}</span></div>
+      ${s==='active'?`<div class="resolve"><button class="rwin" data-win="${n.id}">✓ it won</button><button class="rloss" data-loss="${n.id}">✕ it lost</button></div>`:''}
+      ${s==='loss'?`<div class="prunenote">↓ everything premised on this is pruned</div>`:''}
+      ${(s==='pruned'||state.override[n.id])?`<div class="override ${state.override[n.id]?'flagged':''}" data-ov="${n.id}"><span class="olink">run anyway →</span><div class="oflag">⚠ premise override logged — running bet ${n.id.toUpperCase()} on an unproven prior. Recorded beside the chain.</div></div>`:''}
+    </div>`;
+  });
+  // rollout
+  const cLost=Object.values(state.out).includes('loss');
+  let rstate='blocked',rlabel='blocked — awaiting the chain';
+  if(st['c']==='win'){rstate='ready';rlabel='✓ ready — roll the winning sequence';}
+  else if(cLost){rstate='withheld';rlabel='✕ withheld — a prerequisite lost';}
+  const ups=st['c'];
+  let acls=(ups==='win')?'win':((ups==='loss'||ups==='pruned')?'sev':'');
+  h+=`<div class="arrow ${acls}"><span class="ar">${acls==='sev'?'⇥':'→'}</span><span class="al">${acls==='win'?'unlocked':acls==='sev'?'severed':'if win'}</span></div>`;
+  h+=`<div class="node rollout ${rstate}">
+    <div class="neye"><span>rollout · task</span><span>depends on C</span></div>
+    <div class="nq">${ROLLOUT.q}</div>
+    <div class="rollout-state ${rstate}">${rlabel}</div>
+  </div>`;
+  chain.innerHTML=h;
+
+  // value readout
+  const pruned=NODES.filter(n=>st[n.id]==='pruned'&&!state.override[n.id]).length;
+  const allWin=NODES.every(n=>state.out[n.id]==='win');
+  const v=document.getElementById('value'),vt=document.getElementById('valueT'),vtext=document.getElementById('valueText');
+  if(pruned>0){
+    v.className='value show';vt.textContent='conditional progression';
+    vtext.innerHTML=`A prerequisite lost — <b>${pruned} downstream bet${pruned>1?'s':''} pruned</b> before running. That's traffic and weeks not spent testing on a premise that didn't hold, and a rollout withheld. The avoided cost is a branch that never ran.`;
+  }else if(allWin){
+    v.className='value show win-all';vt.textContent='chain cleared';
+    vtext.innerHTML=`Every bet in the sequence cleared its fold-if. The rollout is unlocked — and <b>each step earned its place</b> by resolving before the next began. No step ran on an unproven prior.`;
+  }else{v.className='value';}
+
+  // hint
+  const active=NODES.find(n=>st[n.id]==='active');
+  document.getElementById('hint').textContent=active
+    ? `Bet ${active.id.toUpperCase()} is the frontier — resolve it to unlock or prune what follows.`
+    : (allWin?'Chain complete — rollout unlocked.':'Chain resolved. Reset to explore another path.');
+}
+
+document.getElementById('chain').addEventListener('click',e=>{
+  const w=e.target.closest('[data-win]'), l=e.target.closest('[data-loss]'), ov=e.target.closest('[data-ov]');
+  if(w){state.out[w.dataset.win]='win';render();}
+  else if(l){state.out[l.dataset.loss]='loss';render();}
+  else if(ov&&e.target.closest('.olink')){state.override[ov.dataset.ov]=true;render();}
+});
+document.getElementById('reset').addEventListener('click',()=>{state.out={a:'pending',b:'pending',c:'pending'};state.override={};render();});
+render();
+</script>
+</body>
+</html>

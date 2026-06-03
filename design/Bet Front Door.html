@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — The Front Door</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:20px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:20px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:1px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:810px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+  .lead .g{color:var(--green);font-weight:500;}
+
+  /* spine rail (global nav) */
+  .spine-rail{display:flex;align-items:center;flex-wrap:wrap;margin:18px 0 2px;}
+  .srail{display:flex;align-items:center;gap:9px;border:1.5px dashed var(--rule);padding:8px 13px;margin:0 0 8px;font-size:11.5px;color:var(--ink-soft);}
+  .srail .sn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--ink-soft);}
+  .srail.done{border-color:var(--green-line);color:var(--green);}
+  .srail.done .sn{border-color:var(--green-line);color:var(--green);background:var(--green-soft);}
+  .srail.active{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .srail.active .sn{border-color:var(--terra);color:var(--terra);}
+  .srail.locked{opacity:.45;}
+  .srail.reachable{color:var(--ink-soft);}
+  .srail-arrow{color:var(--ink-faint);margin:0 8px 8px;}
+  a.srail{text-decoration:none;cursor:pointer;}
+  a.srail:hover{background:var(--paper-2);}
+
+  .cols{display:grid;grid-template-columns:1.5fr 1fr;gap:24px;align-items:start;margin-top:22px;}
+  .col{min-width:0;}
+
+  /* stepped flow */
+  .flow{display:flex;flex-direction:column;gap:0;}
+  .step{position:relative;padding-left:46px;padding-bottom:26px;}
+  .step:last-child{padding-bottom:0;}
+  .step::before{content:attr(data-n);position:absolute;left:0;top:0;width:30px;height:30px;border:1.5px solid var(--rule);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink-soft);background:var(--paper);z-index:1;}
+  .step::after{content:"";position:absolute;left:15px;top:30px;bottom:0;width:1.5px;border-left:1.5px dashed var(--rule-faint);}
+  .step:last-child::after{display:none;}
+  .step.active::before{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .step.done::before{content:"\2713";border-color:var(--green-line);color:var(--green);background:var(--green-soft);}
+  .step.locked{opacity:.4;pointer-events:none;}
+
+  .scard{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:18px;}
+  .step.active .scard{border-color:var(--terra-line);}
+  .scard-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .scard-title{font-size:15px;font-weight:700;}
+  .scard-sub{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin:4px 0 14px;}
+  .express{font-size:11px;color:var(--terra);cursor:pointer;border-bottom:1px dashed var(--terra-line);white-space:nowrap;}
+  .express:hover{background:var(--terra-soft);}
+
+  /* dump */
+  textarea.dump{width:100%;font-family:inherit;font-size:13.5px;line-height:1.65;color:var(--ink);background:rgba(255,255,255,.5);border:1.5px dashed var(--rule-faint);padding:14px;resize:vertical;min-height:150px;outline:none;}
+  textarea.dump:focus{border-color:var(--terra-line);}
+  .btn{font-family:inherit;font-size:11.5px;padding:9px 15px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.go{border-style:solid;border-color:var(--terra-line);background:var(--terra);color:var(--paper);}
+  .btn.go:hover{background:color-mix(in srgb, var(--terra) 82%, #000);}
+  .btn.green{border-style:solid;border-color:var(--green-line);background:var(--green);color:var(--paper);}
+  .btn.green:hover{background:#2f5a3d;}
+  .row-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+
+  /* reflection */
+  .heard{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.34);padding:11px 13px;margin-bottom:9px;}
+  .heard .hk{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px;}
+  .heard .hv{font-size:12.5px;color:var(--ink);line-height:1.5;}
+  .heard .hv b{color:var(--terra);}
+  .heard.push{border-color:var(--terra-line);background:var(--terra-soft);}
+  .heard.push .hk{color:var(--terra);}
+  .heard.gap{border-color:var(--terra-line);border-style:solid;background:var(--terra-soft);}
+  .heard.gap .hk{color:var(--terra);}
+  .heard.gap .hv{color:var(--terra);font-style:italic;}
+  .heard.filled{border-color:var(--green-line);background:var(--green-soft);}
+  .heard.filled .hk{color:var(--green);}
+  .gap-fill{margin-top:9px;display:flex;gap:8px;}
+  .gap-fill input{flex:1;font-family:inherit;font-size:12px;color:var(--ink);background:rgba(255,255,255,.6);border:1.5px dashed var(--terra-line);padding:8px 10px;outline:none;}
+
+  /* wager sentence */
+  .wager{font-size:19px;line-height:1.9;color:var(--ink);}
+  .wager .lead-in{color:var(--ink-soft);}
+  .tok{border-bottom:2px dashed var(--terra-line);color:var(--terra);font-weight:500;padding:0 3px;cursor:text;outline:none;white-space:nowrap;}
+  .tok:focus{background:var(--terra-soft);}
+  .tok.cycle{cursor:pointer;border-bottom-style:solid;}
+  .tok.cycle::after{content:" ⇅";font-size:11px;color:var(--ink-faint);}
+  .tok.empty{color:var(--ink-faint);font-style:italic;font-weight:400;}
+  .tok.fals.empty{border-bottom-color:var(--terra);background:var(--terra-soft);}
+  @keyframes slotin{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
+  .tok.slot{animation:slotin .4s ease both;}
+
+  .losable{margin-top:18px;display:inline-flex;align-items:center;gap:8px;font-size:11px;padding:6px 12px;border:1.5px solid;}
+  .losable.yes{color:var(--green);border-color:var(--green-line);background:var(--green-soft);}
+  .losable.no{color:var(--terra);border-color:var(--terra-line);background:var(--terra-soft);}
+  .committed{margin-top:14px;border-top:1px dashed var(--rule-faint);padding-top:12px;font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  .committed b{color:var(--ink);font-weight:500;}
+  .committed .ck{color:var(--ink-faint);}
+  .losable.neutral{color:var(--ink-soft);border-color:var(--rule);background:transparent;}
+  .heard.gap.optional{border-style:dashed;}
+  .mech-ok{color:var(--green);font-style:italic;}
+  .wager.fals-optional .tok.fals.empty{border-bottom-color:var(--rule-faint);background:transparent;color:var(--ink-faint);}
+
+  /* annotation */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;position:relative;position:sticky;top:16px;}
+  .annot::before{content:"DISCIPLINE LAYER";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot .pathline{border-top:1px dashed var(--terra-line);margin-top:13px;padding-top:12px;font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.5;}
+  .annot .pathline b{color:var(--terra);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:14px 0 0;}
+
+  footer.foot{margin-top:30px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+  footer.foot a{color:var(--terra);}
+  .crosslink{margin-top:8px;}
+
+  @media(max-width:860px){.cols{grid-template-columns:1fr;}.annot{position:static;}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="substrate/Full Flow.html">full flow</a><a href="substrate/Journal Index.html">journal</a><a href="Bet Front Door.html">new bet</a><a href="substrate/Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">the front door</span><span class="crumb">·</span>
+          <span class="crumb">dump → reflect → wager</span><span class="crumb">·</span>
+          <span class="crumb">natural language first</span>
+        </div>
+      </div>
+      <div class="stamp">say it, then sharpen it</div>
+    </div>
+    <p class="lead"><span class="g">Say the idea the way you'd say it to a colleague.</span> ⍺lphaβeta listens, reflects the bet it heard, and — gently — won't let it pass until it can actually <em>lose</em>. Then it helps you sharpen the loose dump into a wager you can be held to. Low-friction first contact; real commitment by the end. <span style="color:var(--ink-soft)">Experienced? There's an express lane straight to the wager.</span></p>
+  </header>
+
+  <nav class="spine-rail">
+    <div class="srail active"><span class="sn">1</span> bet</div>
+    <span class="srail-arrow">→</span>
+    <a class="srail reachable" href="Feasibility and Instrument.html"><span class="sn">2</span> feasibility &amp; instrument</a>
+    <span class="srail-arrow">→</span>
+    <a class="srail reachable" href="Decision Criteria.html"><span class="sn">3</span> decision criteria</a>
+    <span class="srail-arrow">→</span>
+    <a class="srail reachable" href="Commit and Lock.html"><span class="sn">4</span> commit &amp; lock</a>
+  </nav>
+
+  <div class="cols">
+    <div class="col">
+      <div class="flow">
+
+        <!-- STEP 1 -->
+        <div class="step active done" id="step1" data-n="1">
+          <div class="scard">
+            <div class="scard-h">
+              <div class="scard-title">Say it</div>
+              <span class="express" id="express">I know what I'm betting — write it straight →</span>
+            </div>
+            <div class="scard-sub">No fields, no structure. Brain-dump the idea however it comes out.</div>
+            <textarea class="dump" id="dump">The /pricing page buries the plans below a big testimonial band. I'm pretty sure people bounce before they ever see the plans — the session replays show this big scroll drop-off right around the testimonials. If we move the plan-picker above the fold I think checkout-starts go up, maybe 8% or so. Worth a try.</textarea>
+            <div class="row-actions">
+              <button class="btn go" id="reflectBtn">Reflect this back ▸</button>
+              <span style="font-size:11px;color:var(--ink-faint)">the default dump names no fold-if — watch the gap fire. Add "I'd drop it if it's under +4%" and re-reflect to resolve it.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step locked" id="step2" data-n="2">
+          <div class="scard">
+            <div class="scard-title">The bet I'm hearing</div>
+            <div class="scard-sub">Not a flattering summary — a reflection that pushes back. It splits your <b>theory</b> from your <b>confidence</b> (if / then / because), and won't quietly skip the falsifier.</div>
+            <div id="reflectBody"></div>
+            <div class="row-actions">
+              <button class="btn green" id="shapeBtn">Sharpen into a wager ▸</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step locked" id="step3" data-n="3">
+          <div class="scard">
+            <div class="scard-h">
+              <div class="scard-title">Make it a wager</div>
+            </div>
+            <div class="scard-sub">Same idea, now precise. Click any blank to edit; ⇅ tokens cycle. Every blank is a field you're committing to.</div>
+            <div class="wager" id="wager">
+              <span class="lead-in">I'm betting that</span>
+              <span class="tok" contenteditable="true" data-k="change">—</span>
+              <span class="lead-in">will</span>
+              <span class="tok cycle" data-k="dir" data-cycle="lift|cut">lift</span>
+              <span class="tok" contenteditable="true" data-k="metric">—</span>
+              <span class="lead-in">by about</span>
+              <span class="tok" contenteditable="true" data-k="mag">—</span><span class="lead-in">.</span>
+              <span class="lead-in">I'm</span>
+              <span class="tok cycle" data-k="conf" data-cycle="hunch-level|fairly|highly">fairly</span>
+              <span class="lead-in">sure, because</span>
+              <span class="tok why empty" contenteditable="true" data-k="why" data-empty="name why it would work">name why it would work</span><span class="lead-in">.</span>
+              <span class="lead-in">I'll fold if</span>
+              <span class="tok fals empty" contenteditable="true" data-k="fals" data-empty="name what would change your mind">name what would change your mind</span><span class="lead-in">.</span>
+            </div>
+            <div class="losable" id="losable"></div>
+            <div class="committed" id="committed"></div>
+            <div class="row-actions">
+              <a class="btn" href="Feasibility and Instrument.html" id="carryBtn">Carry this bet into feasibility ▸</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ANNOTATION -->
+    <div class="col">
+      <div class="annot" id="annot">
+        <div class="moment" id="anMoment"></div>
+        <div id="anBody"></div>
+        <div class="pathline" id="anPath"></div>
+        <p class="margin-note" id="anNote"></p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>the fused front door:</b> natural-language first contact (dump) → a reflection that pushes back and refuses to skip the falsifier → sharpened into the wager, the committed artifact. Novices walk the path; experts take the express lane straight to the wager. Either way, it isn't a bet until it can lose.</div>
+    <div class="crosslink"><b>react / next:</b> does the reflection's pushback feel helpful or preachy? · is the express lane discoverable enough / too hidden? &nbsp;—&nbsp; <a href="alphaBeta - Index.html">project index</a> · earlier explorations: <a href="explorations/Bet Articulation.html">3 front doors</a></div>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- tweak state (defaults; overridden by the Tweaks panel) ---------- */
+let TW={pushback:'balanced',falsifier:'insist',mechFlag:true,express:'visible',accent:'#a64d3b'};
+function tline(g,b,i){return TW.pushback==='gentle'?g:(TW.pushback==='insistent'?i:b);}
+
+/* ---------- the reflection engine: scans the dump for real ---------- */
+function analyze(text){
+  const t=text.toLowerCase();
+  // magnitude
+  const magM=text.match(/(\d+(?:\.\d+)?\s?%)/);
+  const magnitude=magM?magM[1].replace(/\s/,''):null;
+  // confidence
+  const hedges=['maybe','i think','pretty sure','probably','might','could','i guess','seems','i suspect','worth a try','worth trying'];
+  const strong=['certain','definitely','no doubt','i\'m sure','confident','clearly'];
+  const foundHedges=hedges.filter(h=>t.includes(h));
+  const foundStrong=strong.filter(h=>t.includes(h));
+  let level,label;
+  if(foundStrong.length&&!foundHedges.length){level='highly';label='highly confident';}
+  else if(foundHedges.length){level='hunch-level';label='a hunch';}
+  else{level='fairly';label='fairly confident';}
+  // mechanism / theory — the "because", kept distinct from confidence
+  const mechanism=extractMechanism(text);
+  // falsifier
+  const falsRe=/(fold if|i'?ll fold|we'?ll fold|revert|drop it|kill it|abandon|walk away|change my mind|not worth|isn'?t worth|unless|if it'?s? (?:under|below|less)|under \+?\d|below \+?\d|less than \+?\d|guardrail)/i;
+  const falsFound=falsRe.test(text);
+  const fclause=text.match(/\b(?:fold if|drop it if|revert if|kill it if|change my mind if|abandon it if|if it'?s?)\s+([^.;\n\u2014]+)/i);
+  return {magnitude,confidence:{level,label,hedges:foundHedges,strong:foundStrong},mechanism,falsifier:{found:falsFound,clause:fclause?fclause[1].trim():null}};
+}
+
+function extractMechanism(text){
+  let raw=null;
+  let m=text.match(/\b(?:because|since|the reason(?:\s+is)?|driven by|due to)\b\s+([^.;\u2014]+)/i);
+  if(m){raw=m[1].trim();}
+  else{
+    const sentences=text.split(/(?<=[.!?\u2014])\s+/);
+    const ev=/(replays?|recordings?|data|analytics|logs?|funnel|sessions?|users?|people|customers?|visitors?)\b[^.]*\b(show|shows|showed|bounce|bounces|bouncing|drop|drops|dropping|drop-?off|leave|leaving|abandon|exit)/i;
+    for(const s of sentences){if(ev.test(s)){raw=s.trim();break;}}
+  }
+  if(!raw) return {found:false,text:null};
+  raw=raw.replace(/^[\u2014\-\s]+/,'').replace(/^(i'?m\s+)?(pretty sure|fairly sure|quite sure|certain|confident|i think|i believe|i guess|maybe|probably)[\s,]+/i,'').replace(/[\s\u2014\-.,;:]+$/,'');
+  return {found:true,text:raw};
+}
+
+const dump=document.getElementById('dump');
+const reflectBody=document.getElementById('reflectBody');
+let lastAnalysis=null, gapResolved=false, gapClause='';
+
+function renderReflection(fresh){
+  if(fresh!==false){gapResolved=false;gapClause='';}
+  const a=analyze(dump.value);lastAnalysis=a;
+  const hedgeStr=a.confidence.hedges.slice(0,3).map(h=>'\u201c'+h+'\u201d').join(', ');
+  const strongStr=a.confidence.strong.map(h=>'\u201c'+h+'\u201d').join(', ');
+  let conf;
+  if(a.confidence.level==='hunch-level'){
+    conf=tline(
+      `Sounds like an early <b>hunch</b> (${hedgeStr}). Worth marking as a hunch — no judgment.`,
+      `Reads like <b>a hunch</b> — you said ${hedgeStr}. Marked honestly, not as conviction.`,
+      `This is <b>a hunch</b>, not a conviction — ${hedgeStr}. Don't let it harden into certainty after the fact.`);
+  }else if(a.confidence.level==='highly'){
+    conf=tline(
+      `Sounds <b>highly confident</b> (${strongStr}). Great — just make the falsifier real.`,
+      `You sound <b>highly confident</b> (${strongStr}). Confidence is when people skip the falsifier — so we won't.`,
+      `<b>Highly confident</b> (${strongStr}). That's exactly when overconfidence bites — the falsifier matters most here.`);
+  }else{
+    conf=tline(
+      `Reads as <b>fairly confident</b> — balanced wording.`,
+      `Reads as <b>fairly confident</b> — no strong hedging either way.`,
+      `<b>Fairly confident</b>. Fine — now commit to what would change it.`);
+  }
+  const magText=a.magnitude?`Checkout-start up <b>~${a.magnitude}</b> (your number).`:`Some lift in checkout-start — <b>you didn't put a number on it.</b> We'll pin one down next.`;
+
+  const card=(k,v,cls)=>`<div class="heard ${cls||''}"><div class="hk">${k}</div><div class="hv">${v}</div></div>`;
+  let html='';
+  html+=card('if · what you\u2019re changing','Move the plan-picker above the fold on /pricing.');
+  html+=card('then · expected effect',magText);
+  // because / mechanism — its own field, separate from confidence
+  if(a.mechanism.found){
+    html+=card('because · your theory',`${a.mechanism.text} <span class="mech-ok">— good: you said why, not just what.</span>`);
+  }else if(TW.mechFlag){
+    html+=card('because · missing',tline(
+      `You said what you expect, but not <em>why</em>. A quick "because\u2026" turns this into a hypothesis.`,
+      `A <em>then</em> without a <em>because</em> — you predicted the effect, not the mechanism. Name why it would work.`,
+      `No mechanism. "It'll go up" with no "because" is a guess, not a hypothesis — say why.`),'push');
+  }else{
+    html+=card('because · your theory','<span style="color:var(--ink-faint)">Not stated \u2014 mechanism check is off.</span>');
+  }
+  html+=card('confidence · your gut, kept separate',conf+` <span style="color:var(--ink-faint)">A strong theory with low confidence is fine; high confidence with no theory is just vibes.</span>`);
+  // falsifier
+  const resolved=a.falsifier.found||gapResolved;
+  if(resolved){
+    const shown=gapClause||a.falsifier.clause||'You named a fold condition in your own words — good.';
+    html+=card('what would change your mind \u2713',shown,'filled');
+  }else if(TW.falsifier==='insist'){
+    html+=`<div class="heard gap" id="gapCard"><div class="hk">\u26a0 what would change your mind?</div>`+
+      `<div class="hv">${tline(
+        'You haven\u2019t said yet — worth adding; it\u2019s what makes this a bet.',
+        'You never said. This is the one thing a bet needs — without it, any result can be spun as a win.',
+        'No fold condition. Without "what would change my mind," any outcome can be spun as a win — name it now.')}</div>`+
+      `<div class="gap-fill"><input id="gapInput" placeholder="e.g. under +4%, or any guardrail drop"><button class="btn go" id="gapBtn" style="padding:8px 12px">add</button></div></div>`;
+  }else{
+    html+=`<div class="heard gap optional" id="gapCard"><div class="hk">what would change your mind? <span style="opacity:.7">(optional here)</span></div>`+
+      `<div class="hv">A bet without a fold condition can\u2019t really lose. Optional in this mode — but recommended.</div>`+
+      `<div class="gap-fill"><input id="gapInput" placeholder="e.g. under +4%, or any guardrail drop"><button class="btn go" id="gapBtn" style="padding:8px 12px">add</button></div></div>`;
+  }
+  reflectBody.innerHTML=html;
+  const gb=document.getElementById('gapBtn');
+  if(gb){
+    gb.addEventListener('click',()=>{
+      const v=document.getElementById('gapInput').value.trim();
+      const c=document.getElementById('gapCard');
+      if(!v){c.style.outline='1.5px solid var(--terra)';setTimeout(()=>c.style.outline='',400);return;}
+      gapResolved=true;gapClause=v;
+      c.className='heard filled';
+      c.innerHTML='<div class="hk">what would change your mind \u2713</div><div class="hv">'+v+'</div><div class="hk" style="margin-top:8px;color:var(--green)">now it\u2019s a bet — it can lose.</div>';
+    });
+  }
+}
+
+/* ---------- step control ---------- */
+const steps={1:document.getElementById('step1'),2:document.getElementById('step2'),3:document.getElementById('step3')};
+function setActive(n){
+  Object.entries(steps).forEach(([k,el])=>{el.classList.toggle('active',+k===n);});
+  renderAnnot(n);
+}
+function unlock(n){steps[n].classList.remove('locked');}
+
+document.getElementById('reflectBtn').addEventListener('click',()=>{
+  renderReflection(true);
+  unlock(2);steps[1].classList.add('done');
+  setActive(2);
+});
+document.getElementById('shapeBtn').addEventListener('click',()=>{
+  shapeWager();
+  unlock(3);steps[2].classList.add('done');
+  setActive(3);
+});
+
+/* ---------- wager assembly ---------- */
+const wager=document.getElementById('wager');
+const CYCLES={dir:['lift','cut'],conf:['hunch-level','fairly','highly']};
+const CONF_LABEL={'hunch-level':'a hunch','fairly':'fairly confident','highly':'highly confident'};
+function setTok(k,val,slot){
+  const e=wager.querySelector(`[data-k="${k}"]`);if(!e)return;
+  e.textContent=val;e.classList.remove('empty');
+  if(slot){e.classList.add('slot');setTimeout(()=>e.classList.remove('slot'),420);}
+}
+function shapeWager(){
+  const a=lastAnalysis||analyze(dump.value);
+  setTok('change','moving the plan-picker above the fold',true);
+  setTok('metric','checkout-start',true);
+  setTok('mag',a.magnitude||'8%',true);
+  // because: carry the extracted mechanism; never fabricate one
+  const whyTok=wager.querySelector('[data-k="why"]');
+  if(a.mechanism.found){setTok('why',a.mechanism.text,true);}
+  else{whyTok.textContent=whyTok.dataset.empty;whyTok.classList.add('empty');}
+  // confidence cycle token
+  const confTok=wager.querySelector('[data-k="conf"]');confTok.textContent=a.confidence.level;
+  // falsifier: carry a stated clause, else leave it for the user to name
+  const falsTok=wager.querySelector('[data-k="fals"]');
+  const fc=gapClause||a.falsifier.clause;
+  if(fc){setTok('fals',fc,true);}
+  else{falsTok.textContent=falsTok.dataset.empty;falsTok.classList.add('empty');}
+  updWager();
+}
+function isEmptyTok(k){const e=wager.querySelector(`[data-k="${k}"]`);if(!e)return true;const t=e.textContent.trim();return !t||t===e.dataset.empty;}
+function updWager(){
+  const falsEmpty=isEmptyTok('fals');
+  wager.querySelector('[data-k="fals"]').classList.toggle('empty',falsEmpty);
+  const l=document.getElementById('losable');
+  if(falsEmpty){
+    if(TW.falsifier==='optional'){l.className='losable neutral';l.textContent='\u25cb falsifier optional — add one to make it losable';}
+    else{l.className='losable no';l.textContent='\u2715 not yet a bet — it can\u2019t lose';}
+  }else{l.className='losable yes';l.textContent='\u2713 losable — this is a real wager';}
+  const g=(k)=>isEmptyTok(k)?'—':wager.querySelector(`[data-k="${k}"]`).textContent.trim();
+  document.getElementById('committed').innerHTML=
+    `<span class="ck">committed →</span> <b>${g('change')}</b> → ${g('dir')} <b>${g('metric')}</b> ~${g('mag').replace(/^~/,'')}`+
+    ` · because: <b>${g('why')}</b> · conf: <b>${CONF_LABEL[g('conf')]||g('conf')}</b> · fold-if: <b>${g('fals')}</b>`;
+  try{const bet={};['change','dir','metric','mag','conf','why','fals'].forEach(k=>{const v=isEmptyTok(k)?'':wager.querySelector(`[data-k="${k}"]`).textContent.trim();if(v)bet[k]=v;});localStorage.setItem('ab_bet',JSON.stringify(bet));}catch(e){}
+}
+wager.addEventListener('input',updWager);
+wager.addEventListener('click',e=>{
+  const t=e.target.closest('.tok.cycle');if(!t)return;
+  const arr=CYCLES[t.dataset.k];let i=arr.indexOf(t.textContent.trim());
+  t.textContent=arr[(i+1)%arr.length];updWager();
+});
+wager.querySelectorAll('[data-empty]').forEach(el=>{
+  el.addEventListener('focus',()=>{if(el.classList.contains('empty')){el.textContent='';el.classList.remove('empty');}});
+  el.addEventListener('blur',()=>{if(!el.textContent.trim()){el.textContent=el.dataset.empty;el.classList.add('empty');}updWager();});
+});
+
+/* ---------- express lane ---------- */
+document.getElementById('express').addEventListener('click',()=>{
+  steps[1].classList.add('locked');steps[1].classList.remove('active','done');
+  steps[2].classList.add('locked');
+  // prime the wager with editable defaults (the example), falsifier left to fill
+  setTok('change','moving the plan-picker above the fold');
+  setTok('metric','checkout-start');setTok('mag','8%');
+  const whyTok=wager.querySelector('[data-k="why"]');whyTok.textContent=whyTok.dataset.empty;whyTok.classList.add('empty');
+  const falsTok=wager.querySelector('[data-k="fals"]');falsTok.textContent=falsTok.dataset.empty;falsTok.classList.add('empty');
+  unlock(3);setActive(3);updWager();
+});
+
+/* ---------- annotation per step ---------- */
+const ANNOT={
+  1:{m:'Low-friction first contact',
+     b:`<p>The front door asks for <em>nothing structured</em>. A blank box and your own words — the lowest possible bar to start. Friction here is what kills pre-registration before it begins.</p><p>The newcomer and the adjacent expert both start the same way: just say it.</p>`,
+     path:'↳ <b>express lane:</b> someone who already knows their wager skips straight to step 3.',
+     note:'↖ say it like you\u2019d say it out loud.'},
+  2:{m:'The reflection pushes back',
+     b:`<p>This is where trust is won or lost. A flattering summary is worthless — and dangerous, because it\u2019s the easiest thing for a bad-faith PM to rubber-stamp.</p><p>So the reflection <em>argues</em>: it separates your <em>theory</em> (the because) from your <em>confidence</em> (your gut) — two things people constantly fuse — and refuses to let the missing <em>fold-if</em> pass quietly.</p>`,
+     path:'↳ <b>the one insistence:</b> falsifiability. Everything else is optional; "what would change your mind" is not.',
+     note:'↖ the gap, not the summary.'},
+  3:{m:'Sharpened into a wager',
+     b:`<p>Now the loose dump becomes precise — same idea, every part pinned to a field you\u2019re committing to. The form was never shown; it got filled anyway.</p><p>The <em>losable</em> stamp stays red until your bet can actually lose. That\u2019s the line between a journal entry and a wager.</p>`,
+     path:'↳ <b>downstream:</b> this committed bet pre-fills the constraints the Instrument Finder opens with.',
+     note:'↖ you said it loosely. now you\u2019re on the hook.'}
+};
+function renderAnnot(n){
+  const d=ANNOT[n];
+  document.getElementById('anMoment').textContent=d.m;
+  document.getElementById('anBody').innerHTML=d.b;
+  document.getElementById('anPath').innerHTML=d.path;
+  document.getElementById('anNote').textContent=d.note;
+}
+function applyTweaks(t){
+  TW=Object.assign({},TW,t||{});
+  if(TW.accent)document.documentElement.style.setProperty('--terra',TW.accent);
+  const ex=document.getElementById('express');if(ex)ex.style.display=(TW.express==='hidden')?'none':'';
+  wager.classList.toggle('fals-optional',TW.falsifier==='optional');
+  if(steps[2]&&!steps[2].classList.contains('locked'))renderReflection(false);
+  if(steps[3]&&!steps[3].classList.contains('locked'))updWager();
+}
+window.addEventListener('bettweaks',e=>applyTweaks(e.detail));
+/* carry the committed bet forward to the feasibility step */
+document.getElementById('carryBtn').addEventListener('click',()=>{
+  const bet={};
+  ['change','dir','metric','mag','conf','why','fals'].forEach(k=>{
+    const v=isEmptyTok(k)?'':wager.querySelector(`[data-k="${k}"]`).textContent.trim();
+    if(v)bet[k]=v;
+  });
+  try{localStorage.setItem('ab_bet',JSON.stringify(bet));}catch(e){}
+});
+applyTweaks(TW);
+setActive(1);
+</script>
+
+<div id="tweaks-root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const {useTweaks,TweaksPanel,TweakSection,TweakRadio,TweakToggle,TweakColor}=window;
+const TW_DEFAULTS={pushback:'balanced',falsifier:'insist',mechFlag:true,express:'visible',accent:'#a64d3b'};
+function TweaksApp(){
+  const [t,setTweak]=useTweaks(TW_DEFAULTS);
+  React.useEffect(()=>{window.dispatchEvent(new CustomEvent('bettweaks',{detail:t}));},[t]);
+  return (
+    <TweaksPanel>
+      <TweakSection label="Discipline tone"/>
+      <TweakRadio label="Pushback" value={t.pushback} options={['gentle','balanced','insistent']} onChange={v=>setTweak('pushback',v)}/>
+      <TweakRadio label="Falsifier" value={t.falsifier} options={['insist','optional']} onChange={v=>setTweak('falsifier',v)}/>
+      <TweakToggle label="Flag missing mechanism" value={t.mechFlag} onChange={v=>setTweak('mechFlag',v)}/>
+      <TweakSection label="Flow"/>
+      <TweakRadio label="Express lane" value={t.express} options={['visible','hidden']} onChange={v=>setTweak('express',v)}/>
+      <TweakSection label="Theme"/>
+      <TweakColor label="Accent" value={t.accent} options={['#a64d3b','#3f7d5a','#4f6f9e','#8d5384']} onChange={v=>setTweak('accent',v)}/>
+    </TweaksPanel>
+  );
+}
+ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<TweaksApp/>);
+</script>
+</body>
+</html>

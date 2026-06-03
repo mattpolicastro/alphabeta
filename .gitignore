@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+.env
+.env.local
+*.log
+.cache/
+
+# editor / OS
+.idea/
+.vscode/
+*.swp

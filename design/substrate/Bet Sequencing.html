@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Bet Sequencing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:24px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:14px;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  /* dark-narrator walkthrough banner (commentary, never UI) */
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12.5px;line-height:1.6;margin-bottom:20px;display:flex;gap:12px;align-items:baseline;}
+  .narrator::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;white-space:nowrap;align-self:flex-start;line-height:1.6;}
+  .narrator em{color:#eeb9a4;font-style:italic;}
+
+  /* product UI · paper register */
+  .carried{border:1.5px solid var(--green-line);background:var(--green-soft);padding:14px 16px;margin-bottom:18px;position:relative;}
+  .carried::before{content:"CARRIED FROM STRATEGY";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--green);}
+  .carried .ct{font-size:13.5px;font-weight:700;line-height:1.4;}
+  .carried .ctx{margin-top:8px;font-size:11px;color:var(--ink-soft);line-height:1.55;}
+  .carried .ctx b{color:var(--plinth);}
+
+  .panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:18px;margin-bottom:18px;}
+  .ptitle{font-size:15px;font-weight:700;margin-bottom:5px;}
+  .psub{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-bottom:14px;}
+
+  .seg{display:flex;border:1.5px solid var(--terra-line);width:fit-content;}
+  .seg button{font-family:inherit;font-size:12px;padding:8px 16px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--terra-line);cursor:pointer;}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--terra);color:var(--paper);font-weight:700;}
+  .seg button:not(.on):hover{background:var(--terra-soft);}
+
+  /* in-product discipline hint (paper register, on-canvas) */
+  .hint{margin-top:14px;border:1.5px dashed var(--terra-line);background:var(--terra-soft);padding:12px 14px;font-size:11.5px;line-height:1.55;}
+  .hint .ht{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:6px;display:flex;gap:8px;align-items:baseline;}
+  .hint .ht .toggle{font-size:9px;color:var(--ink-faint);letter-spacing:0;text-transform:none;font-style:italic;margin-left:auto;font-weight:400;}
+  .hint ul{margin:0;padding-left:18px;}
+  .hint li{margin-bottom:3px;}
+  .hint b{color:var(--terra);}
+
+  .mode-body{margin-top:18px;}
+
+  /* single bet */
+  .single{border:1.5px solid var(--terra-line);background:rgba(255,255,255,.4);padding:14px;}
+  .field{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.5);padding:10px 12px;font-size:13px;line-height:1.5;outline:none;min-height:42px;}
+  .field:focus{border-color:var(--terra-line);background:rgba(255,255,255,.7);}
+  .flab{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 6px;}
+  .flab:first-child{margin-top:0;}
+  .cta{display:flex;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:12px;padding:10px 16px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;text-decoration:none;display:inline-block;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.go{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .btn.go:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+  .ctanote{font-size:11px;color:var(--ink-soft);font-style:italic;}
+
+  /* sequence */
+  .deptype{margin-bottom:16px;}
+  .deptype .lab{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;}
+  .deptype .seg{border-color:var(--rule);}
+  .deptype .seg button{padding:7px 14px;font-size:11px;border-right-color:var(--rule);}
+  .deptype .seg button.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .deptype .descr{font-size:11px;color:var(--ink-soft);font-style:italic;margin-top:7px;line-height:1.45;}
+
+  .subbets{margin-bottom:16px;}
+  .sb{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:11px 13px;margin-bottom:9px;display:flex;align-items:flex-start;gap:11px;}
+  .sb .num{font-size:11px;color:var(--terra);font-weight:700;width:22px;flex:0 0 auto;padding-top:11px;}
+  .sb-body{flex:1;min-width:0;}
+  .sb-q{font-size:13px;font-weight:500;line-height:1.4;border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.5);padding:9px 11px;outline:none;}
+  .sb-q:focus{border-color:var(--terra-line);background:rgba(255,255,255,.7);}
+  .sb-meta{display:flex;gap:9px;margin-top:7px;font-size:10.5px;color:var(--ink-soft);align-items:center;}
+  .sb-meta .inst{border:1px dashed var(--rule-faint);padding:1px 6px;font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);}
+  .sb .rm{font-family:inherit;font-size:11px;padding:6px 8px;border:1.5px dashed var(--rule-faint);background:transparent;color:var(--ink-faint);cursor:pointer;align-self:flex-start;margin-top:0;}
+  .sb .rm:hover{color:var(--terra);border-color:var(--terra-line);}
+  .addbtn{font-family:inherit;font-size:11px;padding:8px 12px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .addbtn:hover{background:var(--paper-2);color:var(--terra);border-color:var(--terra-line);}
+
+  /* graph preview · paper register */
+  .preview{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.3);padding:14px;margin-top:6px;}
+  .preview .ph{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;}
+  .pgraph{display:flex;align-items:center;gap:0;flex-wrap:wrap;}
+  .pnode{border:1.5px solid var(--terra-line);background:rgba(255,255,255,.5);padding:7px 10px;font-size:11px;font-weight:600;min-width:120px;max-width:200px;line-height:1.3;}
+  .parr{padding:0 7px;color:var(--ink-faint);font-size:14px;align-self:center;}
+  .pcol{display:flex;flex-direction:column;gap:8px;}
+  .pjoin{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 6px;}
+  .pjoin .pj-badge{border:1.5px solid var(--terra);background:var(--terra-soft);color:var(--terra);font-size:10px;font-weight:700;padding:3px 8px;}
+  .pjoin .pj-conv{font-size:8.5px;color:var(--ink-faint);text-align:center;margin:4px 0;line-height:1.3;}
+
+  footer.foot{margin-top:26px;border-top:1.5px dashed var(--rule);padding-top:16px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot a{color:var(--terra);}
+
+  @media(max-width:760px){.pgraph{flex-direction:column;align-items:stretch;}.parr{transform:rotate(90deg);padding:4px 0;align-self:center;}.pjoin{flex-direction:row;}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="../alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="Full Flow.html">full flow</a><a href="Journal Index.html">journal</a><a href="../Bet Front Door.html">new bet</a><a href="Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">decision substrate · bet sequencing · one or many?</div>
+  </header>
+
+  <div class="narrator">
+    <span style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);background:#e3a487;font-weight:700;white-space:nowrap;padding:3px 8px;align-self:flex-start">sequencing</span>
+    <span>You arrive here right after sending a candidate over from the strategy view. The job: decide if this is <em>one bet</em> or <em>a sequence of dependent bets</em>, and — if it's a sequence — lay out the shape (linear chain, fan-in, or independent parallel). Each bet still runs the full lifecycle individually; this is just where you decide <em>how many</em>.</span>
+  </div>
+
+  <div class="carried">
+    <div class="ct">A/B test 3 versions of the email on 100 customers within 2 weeks</div>
+    <div class="ctx">↳ from <b>Send an email campaign to loan-only customers</b> · metric: <b>7-day login</b> · target <b>30% → 80%</b> · the goal seeds each bet's expectation and fold-if.</div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">Is this one bet, or a sequence?</div>
+    <div class="psub">Most candidates are a single claim. Some rest on prior claims that haven't been tested — those are sequences in disguise.</div>
+    <div class="seg" id="modeSeg">
+      <button data-m="single" class="on">Single bet</button>
+      <button data-m="sequence">Sequence of bets</button>
+    </div>
+
+    <div class="hint">
+      <div class="ht">⌑ Tell-tale signs it's a sequence <span class="toggle">(in-product hint · toggleable)</span></div>
+      <ul>
+        <li>This claim <b>rests on a prior</b> that hasn't been tested (e.g. "which body lifts logins" presumes "people open at all").</li>
+        <li>You're bundling <b>multiple distinct mechanisms</b> under one heading.</li>
+        <li>There's a <b>downstream rollout</b> that should fire only on a <em>specific</em> outcome — that's already a dependency.</li>
+      </ul>
+    </div>
+
+    <div class="mode-body" id="modeBody"></div>
+  </div>
+
+  <footer class="foot">
+    <div>The bet-detail surface is the first thing the candidate meets after the seam. Once decomposed (or kept single), each bet articulates through the lifecycle and rolls up into the <a href="Journal Index.html">journal index</a>. &nbsp;—&nbsp; related: <a href="Dependent Bets.html">linear chain</a> · <a href="Fan-in Bets.html">fan-in</a> · <a href="Plinth Seam.html">the seam</a></div>
+  </footer>
+
+</div>
+
+<script>
+let mode='single', depType='chain';
+const SEQ=[
+  {q:'Will a reminder email get opened?',instr:'A/B · subject lines'},
+  {q:'Of opens, which CTA drives app login?',instr:'A/B · email body'},
+  {q:'Does the reactivation persist past 7 days?',instr:'holdback'}
+];
+
+function renderSingle(){
+  return `<div class="single">
+    <div class="flab">the claim</div>
+    <div class="field" contenteditable="true">Which of 3 email bodies lifts 7-day login on dormant loan customers?</div>
+    <div class="flab">expected mechanism</div>
+    <div class="field" contenteditable="true">A clearer CTA in the winning body reduces the click-to-login friction.</div>
+    <div class="cta">
+      <a class="btn go" href="../Bet Front Door.html">articulate in the lifecycle ▸</a>
+      <span class="ctanote">opens the bet front door — dump → reflect → sharpen into a wager.</span>
+    </div>
+  </div>`;
+}
+
+function depDescr(){
+  return depType==='chain' ? 'each bet depends on the prior winning · a loss prunes everything downstream.'
+       : depType==='fanin' ? 'multiple prereqs converge on a single downstream bet · the join (AND/OR) decides what "satisfied" means.'
+       : 'the bets stand alone · resolving one doesn\u2019t gate the others (still grouped under the goal).';
+}
+function renderSequence(){
+  return `<div class="deptype">
+      <div class="lab">dependency shape</div>
+      <div class="seg" id="depSeg">
+        <button data-d="chain" class="${depType==='chain'?'on':''}">linear chain</button>
+        <button data-d="fanin" class="${depType==='fanin'?'on':''}">fan-in</button>
+        <button data-d="parallel" class="${depType==='parallel'?'on':''}">independent parallel</button>
+      </div>
+      <div class="descr">${depDescr()}</div>
+    </div>
+    <div class="flab">the bets in this sequence</div>
+    <div class="subbets" id="subbets">${SEQ.map((b,i)=>subRow(b,i)).join('')}</div>
+    <button class="addbtn" id="addBtn">+ add a bet</button>
+    <div class="preview">
+      <div class="ph">how it lays out</div>
+      <div class="pgraph">${previewGraph()}</div>
+    </div>
+    <div class="cta">
+      <a class="btn go" href="../Bet Front Door.html">articulate the first bet in the lifecycle ▸</a>
+      <span class="ctanote">each bet runs the lifecycle independently; the sequence is recorded so the verdicts can propagate.</span>
+    </div>`;
+}
+function subRow(b,i){
+  return `<div class="sb" data-i="${i}">
+    <div class="num">${String.fromCharCode(65+i)}</div>
+    <div class="sb-body">
+      <div class="sb-q" contenteditable="true">${b.q}</div>
+      <div class="sb-meta"><span class="inst">${b.instr}</span></div>
+    </div>
+    <button class="rm" data-rm="${i}">remove</button>
+  </div>`;
+}
+
+function shortLabel(s){return s.length>34?s.slice(0,32)+'…':s;}
+function previewGraph(){
+  if(!SEQ.length)return '<span style="font-size:11px;color:var(--ink-faint);font-style:italic">no bets yet</span>';
+  if(depType==='chain'){
+    return SEQ.map((b,i)=>{
+      const arr=i<SEQ.length-1?'<span class="parr">→</span>':'';
+      return `<div class="pnode">${String.fromCharCode(65+i)} · ${shortLabel(b.q)}</div>${arr}`;
+    }).join('');
+  }
+  if(depType==='parallel'){
+    return SEQ.map((b,i)=>{
+      const sp=i<SEQ.length-1?'<span style="width:14px"></span>':'';
+      return `<div class="pnode">${String.fromCharCode(65+i)} · ${shortLabel(b.q)}</div>${sp}`;
+    }).join('');
+  }
+  // fan-in: first N-1 → last
+  if(SEQ.length<2) return `<div class="pnode">A · ${shortLabel(SEQ[0].q)}</div>`;
+  const prereqs=SEQ.slice(0,-1), last=SEQ[SEQ.length-1];
+  return `<div class="pcol">${prereqs.map((b,i)=>`<div class="pnode">${String.fromCharCode(65+i)} · ${shortLabel(b.q)}</div>`).join('')}</div>
+    <div class="pjoin"><div class="pj-conv">${prereqs.map((_,i)=>String.fromCharCode(65+i)).join(' ↘ ')}</div><div class="pj-badge">AND</div><div class="pj-conv">→ ${String.fromCharCode(65+prereqs.length)}</div></div>
+    <div class="pnode">${String.fromCharCode(65+prereqs.length)} · ${shortLabel(last.q)}</div>`;
+}
+
+function renderMode(){
+  const body=document.getElementById('modeBody');
+  body.innerHTML = mode==='single' ? renderSingle() : renderSequence();
+  if(mode==='sequence'){
+    document.getElementById('depSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b){depType=b.dataset.d;renderMode();}});
+    document.getElementById('subbets').addEventListener('click',e=>{const r=e.target.closest('[data-rm]');if(r){SEQ.splice(+r.dataset.rm,1);renderMode();}});
+    document.getElementById('subbets').addEventListener('input',e=>{const sb=e.target.closest('.sb');if(sb&&e.target.classList.contains('sb-q')){SEQ[+sb.dataset.i].q=e.target.textContent.trim()||'(untitled)';
+      // update preview without losing focus
+      document.querySelector('.pgraph').innerHTML=previewGraph();}});
+    document.getElementById('addBtn').addEventListener('click',()=>{SEQ.push({q:'(new bet — describe the claim)',instr:'instrument TBD'});renderMode();});
+  }
+}
+document.getElementById('modeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  renderMode();
+});
+renderMode();
+</script>
+</body>
+</html>

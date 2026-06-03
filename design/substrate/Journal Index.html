@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Journal Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:16px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:19px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:2px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:830px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+
+  /* controls */
+  .controls{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:18px 0 6px;}
+  .seg{display:flex;border:1.5px solid var(--terra-line);}
+  .seg button{font-family:inherit;font-size:12px;padding:8px 15px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--terra-line);cursor:pointer;}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--terra);color:var(--paper);font-weight:700;}
+  .seg button:not(.on):hover{background:var(--terra-soft);}
+  .filters{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  .filters .flbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);}
+  .chip{font-family:inherit;font-size:11px;padding:5px 11px;border:1.5px dashed var(--rule-faint);background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .chip.on{border-style:solid;border-color:var(--ink);color:var(--ink);background:var(--paper-2);font-weight:500;}
+  .chip:hover:not(.on){background:var(--paper-2);}
+
+  .custody{font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.5;border:1.5px dashed var(--plinth-line);background:var(--plinth-soft);padding:9px 13px;margin:10px 0 20px;display:flex;gap:9px;align-items:baseline;}
+  .custody b{color:var(--plinth);font-style:normal;}
+  .custody .ico{color:var(--plinth);}
+
+  /* status badges (derived, non-interactive) */
+  .st{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+  .st.draft{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .st.locked{color:var(--terra);border-color:var(--terra-line);}
+  .st.running{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .st.won{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .st.lost{color:var(--paper);background:var(--terra);border-color:var(--terra);}
+  .st .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  /* ledger view */
+  .obj{margin-bottom:22px;}
+  .obj-head{border:1.5px solid var(--plinth-line);background:var(--plinth-soft);padding:12px 15px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;}
+  .obj-head .ot{font-size:14px;font-weight:700;}
+  .obj-head .om{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+  .obj-head .otag{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);border:1px solid var(--plinth-line);padding:2px 7px;white-space:nowrap;}
+  .obj-prog{min-width:160px;flex:0 0 auto;}
+  .prog-bar{height:8px;border:1.5px solid var(--plinth-line);background:rgba(255,255,255,.5);position:relative;margin-top:4px;}
+  .prog-fill{position:absolute;left:0;top:0;bottom:0;background:var(--plinth);}
+  .prog-goal{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--green);}
+  .prog-cap{font-size:9px;color:var(--ink-faint);margin-top:3px;display:flex;justify-content:space-between;}
+  .prog-cap b{color:var(--plinth);}
+
+  .bet-rows{border:1.5px solid var(--rule-faint);border-top:none;}
+  .bet-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px dashed var(--rule-faint);text-decoration:none;color:var(--ink);cursor:pointer;transition:background .12s;}
+  .bet-row:last-child{border-bottom:none;}
+  .bet-row:hover{background:var(--paper-2);}
+  .bet-q{font-size:13px;font-weight:500;line-height:1.4;}
+  .bet-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px;font-size:10.5px;color:var(--ink-soft);}
+  .bet-meta .dep{color:var(--plinth);}
+  .bet-meta .gates{color:var(--terra);}
+  .bet-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .bet-date{font-size:10px;color:var(--ink-faint);}
+  .open-hint{font-size:9.5px;color:var(--ink-faint);}
+  .bet-row:hover .open-hint{color:var(--terra);}
+
+  /* board view */
+  .board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .bcol{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.2);min-height:120px;}
+  .bcol-h{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);padding:9px 11px;border-bottom:1.5px dashed var(--rule-faint);display:flex;justify-content:space-between;}
+  .bcol-h .ct{color:var(--ink-faint);}
+  .bcol-body{padding:9px;display:flex;flex-direction:column;gap:8px;}
+  .bcard{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.45);padding:10px;text-decoration:none;color:var(--ink);cursor:pointer;transition:background .12s,border-color .12s;}
+  .bcard:hover{background:var(--paper-2);border-color:var(--terra-line);}
+  .bcard.won{border-color:var(--green-line);} .bcard.lost{border-color:var(--terra-line);}
+  .bcard .bq{font-size:11.5px;font-weight:500;line-height:1.4;}
+  .bcard .bo{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--plinth);margin-top:6px;}
+  .bcard .bd{font-size:9.5px;color:var(--ink-faint);margin-top:5px;}
+
+  /* log view */
+  .log{border:1.5px solid var(--rule-faint);}
+  .log-row{display:grid;grid-template-columns:90px 1fr auto;gap:14px;align-items:center;padding:11px 15px;border-bottom:1px dashed var(--rule-faint);text-decoration:none;color:var(--ink);cursor:pointer;}
+  .log-row:last-child{border-bottom:none;}
+  .log-row:hover{background:var(--paper-2);}
+  .log-date{font-size:10.5px;color:var(--ink-faint);}
+  .log-q{font-size:12.5px;font-weight:500;}
+  .log-o{font-size:10px;color:var(--plinth);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+
+  .empty{font-size:12px;color:var(--ink-faint);font-style:italic;padding:24px;text-align:center;border:1.5px dashed var(--rule-faint);}
+
+  /* annotation */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;margin-top:24px;position:relative;}
+  .annot::before{content:"DISCIPLINE LAYER · THE LEDGER";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot p b{color:var(--plinth);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:12px 0 0;}
+
+  footer.foot{margin-top:26px;border-top:1.5px dashed var(--rule);padding-top:16px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);} footer.foot a{color:var(--terra);}
+
+  @media(max-width:820px){.board{grid-template-columns:1fr 1fr;}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="../alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="Full Flow.html">full flow</a><a href="Journal Index.html">journal</a><a href="../Bet Front Door.html">new bet</a><a href="Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">decision substrate</span><span class="crumb">·</span>
+          <span class="crumb">journal index</span><span class="crumb">·</span>
+          <span class="crumb">the ledger of bets</span>
+        </div>
+      </div>
+      <div class="stamp">the decision journal, pluralized</div>
+    </div>
+    <p class="lead">Every bet you've made, organized by the objective it serves. The <em>ledger</em> is the spine — objectives → bets → outcomes — with <em>board</em> and <em>log</em> as lenses over the same record. Status isn't something you set here; it's read from where each bet sits in its lifecycle. Click any bet to open it <em>where it actually lives</em>.</p>
+  </header>
+
+  <div class="controls">
+    <div class="seg" id="viewSeg">
+      <button data-v="ledger" class="on">▤ Ledger</button>
+      <button data-v="board">▦ Board</button>
+      <button data-v="log">≣ Log</button>
+    </div>
+    <div class="filters" id="filters">
+      <span class="flbl">filter</span>
+      <button class="chip on" data-f="all">all</button>
+      <button class="chip" data-f="draft">draft</button>
+      <button class="chip" data-f="locked">locked</button>
+      <button class="chip" data-f="running">running</button>
+      <button class="chip" data-f="resolved">resolved</button>
+    </div>
+  </div>
+
+  <div class="custody">
+    <span class="ico">⛓</span>
+    <span><b>Chain of custody.</b> A status badge is a <em>read-out</em>, not a control — it flows up from the bet's place in the substrate (draft → locked → running → resolved). You change it by moving the bet through its lifecycle, never by editing it here. The only controls on this page are <b>filters</b> and <b>click-through</b>.</span>
+  </div>
+
+  <div id="view"></div>
+
+  <div class="annot">
+    <div class="moment">The ledger is the substrate's memory</div>
+    <p>One record, three lenses. <b>Ledger</b> answers "how is each objective being served by evidence?" — it's the join between the strategy layer and the bets. <b>Board</b> answers "what's in flight?" <b>Log</b> answers "what have we decided, and when?" — the journal, literally.</p>
+    <p>Because status is derived, the ledger can't be gamed by relabeling. A bet is "won" only because its revisit said so against a pre-registered fold-if. <em>Outcome-as-record, not outcome-as-edit.</em></p>
+    <p class="margin-note">↖ status flows up. you move bets, not badges.</p>
+  </div>
+
+  <footer class="foot">
+    <div><b>exploration — the journal index.</b> The hub the seam pours into. Next at this altitude: <b>dependency / conditional progression</b> (a bet's verdict propagating through prerequisite bets — see the "after / unlocks" hints), framework-specific decomposition, and a much-later calibration lens. &nbsp;—&nbsp; related: <a href="Plinth Seam.html">the strategy ⇄ substrate seam</a></div>
+  </footer>
+
+</div>
+
+<script>
+const OBJ={
+  email:{title:'Send an email campaign to loan-only customers',metric:'metric: 7-day login rate',tag:'Marketing',start:30,now:30,goal:80},
+  panels:{title:'Rearrange info panels so the offering is clearer',metric:'milestones: 1 / 4 · metric: menu task-success',tag:'Product'},
+  checkout:{title:'Reduce checkout drop-off on /pricing',metric:'metric: checkout-start rate',tag:'Growth'}
+};
+const ORDER=['email','panels','checkout'];
+const BETS=[
+  {id:'b1',obj:'email',q:'Does a subject-line variant lift open rate?',status:'won',expect:'cleared +2pp open rate',date:'2025-11-15',unlocks:'b2'},
+  {id:'b2',obj:'email',q:'Which of 3 email bodies lifts 7-day login?',status:'running',expect:'fold-if +4%',date:'2025-11-28',dependsOn:'b1',gates:'rollout to all customers'},
+  {id:'b3',obj:'panels',q:'Do the new mock-ups improve menu task-success?',status:'locked',expect:'fold-if +10%',date:'2025-11-28',unlocks:'b4'},
+  {id:'b4',obj:'panels',q:'Does the new tree structure cut time-to-find?',status:'draft',expect:'fold-if not set yet',date:'2025-11-29',dependsOn:'b3'},
+  {id:'b5',obj:'checkout',q:'Keep the redesigned /pricing plan-picker?',status:'lost',expect:'fold-if +4% — came in +2.5%',date:'2025-11-20',note:'rollout withheld'}
+];
+const STATUS={
+  draft:{label:'draft',stage:'Bet Sequencing.html',col:'Draft'},
+  locked:{label:'locked',stage:'../Commit and Lock.html',col:'Locked'},
+  running:{label:'running',stage:'../Commit and Lock.html',col:'Running'},
+  won:{label:'won',stage:'../Revisit.html',col:'Resolved'},
+  lost:{label:'lost',stage:'../Revisit.html',col:'Resolved'}
+};
+const betById=id=>BETS.find(b=>b.id===id);
+const short=q=>q.length>34?q.slice(0,32)+'…':q;
+
+let view='ledger', filter='all';
+function pass(b){return filter==='all'||(filter==='resolved'?(b.status==='won'||b.status==='lost'):b.status===filter);}
+function stBadge(s){const cls=s, hasDot=(s==='running');return `<span class="st ${cls}">${hasDot?'<span class="dot"></span>':''}${STATUS[s].label}</span>`;}
+function depLine(b){
+  let bits=[];
+  if(b.dependsOn){const d=betById(b.dependsOn);bits.push(`<span class="dep">⟂ after: ${short(d.q)} (${STATUS[d.status].label})</span>`);}
+  if(b.gates)bits.push(`<span class="gates">→ gates: ${b.gates}</span>`);
+  if(b.unlocks){const u=betById(b.unlocks);if(u)bits.push(`<span class="gates">→ unlocks: ${short(u.q)}</span>`);}
+  return bits.join('');
+}
+
+function renderLedger(){
+  let h='';
+  ORDER.forEach(key=>{
+    const o=OBJ[key];
+    const bets=BETS.filter(b=>b.obj===key&&pass(b));
+    if(!bets.length)return;
+    let prog='';
+    if(o.goal!=null){
+      const pct=Math.round((o.now/100)*100);
+      prog=`<div class="obj-prog"><div class="prog-bar"><div class="prog-fill" style="width:${o.now}%"></div><div class="prog-goal" style="left:${o.goal}%"></div></div><div class="prog-cap"><span>start <b>${o.start}%</b></span><span>now ${o.now}%</span><span>goal <b>${o.goal}%</b></span></div></div>`;
+    }
+    h+=`<div class="obj"><div class="obj-head"><div><div class="ot">${o.title}</div><div class="om">${o.metric}</div><span class="otag" style="margin-top:8px;display:inline-block">${o.tag}</span></div>${prog}</div><div class="bet-rows">`;
+    bets.forEach(b=>{
+      h+=`<a class="bet-row" href="${STATUS[b.status].stage}"><div><div class="bet-q">${b.q}</div><div class="bet-meta"><span>${b.expect}</span>${depLine(b)}</div></div><div class="bet-right">${stBadge(b.status)}<span class="bet-date">${b.date}</span><span class="open-hint">open ▸</span></div></a>`;
+    });
+    h+=`</div></div>`;
+  });
+  return h||`<div class="empty">No bets match this filter.</div>`;
+}
+
+function renderBoard(){
+  const cols=['Draft','Locked','Running','Resolved'];
+  let h='<div class="board">';
+  cols.forEach(c=>{
+    const bets=BETS.filter(b=>STATUS[b.status].col===c&&pass(b));
+    h+=`<div class="bcol"><div class="bcol-h"><span>${c}</span><span class="ct">${bets.length}</span></div><div class="bcol-body">`;
+    if(!bets.length)h+=`<div style="font-size:10px;color:var(--ink-faint);font-style:italic;padding:6px">—</div>`;
+    bets.forEach(b=>{
+      const extra=(b.status==='won'||b.status==='lost')?b.status:'';
+      h+=`<a class="bcard ${extra}" href="${STATUS[b.status].stage}"><div class="bq">${b.q}</div><div class="bo">${OBJ[b.obj].tag} · ${b.status}</div><div class="bd">${b.expect}</div></a>`;
+    });
+    h+=`</div></div>`;
+  });
+  return h+'</div>';
+}
+
+function renderLog(){
+  const bets=BETS.filter(pass).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if(!bets.length)return `<div class="empty">No bets match this filter.</div>`;
+  let h='<div class="log">';
+  bets.forEach(b=>{
+    h+=`<a class="log-row" href="${STATUS[b.status].stage}"><span class="log-date">${b.date}</span><div><div class="log-q">${b.q}</div><div class="log-o">${OBJ[b.obj].title}</div></div>${stBadge(b.status)}</a>`;
+  });
+  return h+'</div>';
+}
+
+function render(){
+  const el=document.getElementById('view');
+  el.innerHTML=view==='ledger'?renderLedger():view==='board'?renderBoard():renderLog();
+}
+document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;view=b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));render();});
+document.getElementById('filters').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;filter=b.dataset.f;[...document.querySelectorAll('#filters .chip')].forEach(x=>x.classList.toggle('on',x===b));render();});
+render();
+</script>
+  <style id="narrator-overrides">
+  .annot{background:var(--ink)!important;color:#e6dfce!important;border:none!important;box-shadow:4px 4px 0 rgba(42,42,42,.16)!important;}
+  .annot::before{background:var(--ink)!important;color:#e3a487!important;border:1px solid rgba(255,255,255,.2)!important;}
+  .annot .moment{color:#e3a487!important;}
+  .annot p em{color:#eeb9a4!important;}
+  .annot p b{color:#b8d4b0!important;}
+  .annot .pathline{border-top-color:rgba(255,255,255,.12)!important;color:rgba(230,223,206,.65)!important;}
+  .annot .pathline b,.annot .pathline a{color:#e3a487!important;}
+  .margin-note{color:#e3a487!important;}
+  </style>
+</body>
+</html>

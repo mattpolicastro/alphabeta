@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Revisit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:18px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:20px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:1px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:820px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+  .lead .g{color:var(--green);font-weight:500;}
+
+  /* lifecycle rail */
+  .spine-rail{display:flex;align-items:center;flex-wrap:wrap;margin:20px 0 4px;}
+  .srail{display:flex;align-items:center;gap:9px;border:1.5px dashed var(--rule);padding:8px 13px;margin:0 0 8px;font-size:11.5px;color:var(--ink-soft);}
+  .srail .sn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--ink-soft);}
+  .srail.done{border-color:var(--green-line);color:var(--green);}
+  .srail.done .sn{border-color:var(--green-line);color:var(--green);background:var(--green-soft);}
+  .srail.active{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .srail.active .sn{border-color:var(--terra);color:var(--terra);}
+  .srail.locked{opacity:.45;}
+  .srail-arrow{color:var(--ink-faint);margin:0 8px 8px;}
+  a.srail{text-decoration:none;cursor:pointer;}
+  a.srail:hover{background:var(--paper-2);}
+
+  .elapsed{font-size:11.5px;color:var(--ink-soft);font-style:italic;margin:6px 0 0;}
+  .elapsed b{color:var(--terra);font-style:normal;}
+
+  .cols{display:grid;grid-template-columns:1.5fr 1fr;gap:24px;align-items:start;margin-top:14px;}
+  .col{min-width:0;}
+  .panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:18px;margin-bottom:18px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .panel-eyebrow .src{font-size:10px;letter-spacing:0;text-transform:none;color:var(--ink-faint);font-style:italic;}
+  .panel-title{font-size:15px;font-weight:700;margin:5px 0 4px;}
+  .panel-sub{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:15px;}
+
+  /* locked commitment (sealed) */
+  .locked-card{border:1.5px solid var(--terra);background:rgba(255,255,255,.34);position:relative;}
+  .locked-card .lc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:13px 16px;border-bottom:1.5px dashed var(--terra-line);}
+  .locked-card .lc-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);font-weight:700;}
+  .locked-card .lc-stamp{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);}
+  .locked-card .lc-body{padding:14px 16px;}
+  .wsent{font-size:13.5px;line-height:1.7;}
+  .wsent .lead-in{color:var(--ink-soft);}
+  .wsent .t{color:var(--terra);font-weight:500;}
+  .wsent .t.fold{border-bottom:2px solid var(--terra-line);}
+  .lc-meta{margin-top:11px;border-top:1px dashed var(--terra-line);padding-top:10px;font-size:10.5px;color:var(--ink-soft);line-height:1.7;}
+  .lc-meta b{color:var(--terra);letter-spacing:1px;}
+
+  /* actuals */
+  .actuals .big{font-size:34px;font-weight:700;color:var(--ink);line-height:1;}
+  .actuals .big.win{color:var(--green);} .actuals .big.loss{color:var(--terra);}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--rule);margin:16px 0 5px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  .scale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink-faint);}
+  .seg{display:flex;border:1.5px solid var(--rule);margin-top:14px;}
+  .seg button{flex:1;font-family:inherit;font-size:11px;padding:8px 10px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--rule);cursor:pointer;}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--terra);color:var(--paper);}
+  .seg button:not(.on):hover{background:var(--terra-soft);}
+  .calib{margin-top:14px;border-top:1px dashed var(--rule-faint);padding-top:12px;font-size:11.5px;color:var(--ink-soft);line-height:1.55;font-style:italic;}
+  .calib b{color:var(--terra);font-style:normal;}
+
+  /* verdict */
+  .verdict{border:1.5px solid var(--rule);background:rgba(255,255,255,.34);padding:16px;}
+  .verdict.win{border-color:var(--green-line);background:var(--green-soft);}
+  .verdict.loss{border-color:var(--terra-line);background:var(--terra-soft);}
+  .vd-bucket{font-size:20px;font-weight:700;letter-spacing:.5px;}
+  .vd-bucket.win{color:var(--green);} .vd-bucket.incon{color:var(--ink-soft);} .vd-bucket.loss{color:var(--terra);}
+  .vd-why{font-size:12px;color:var(--ink-soft);margin-top:5px;line-height:1.5;}
+  .vd-action{margin-top:13px;border-top:1px dashed var(--rule-faint);padding-top:12px;}
+  .vd-action .k{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;}
+  .vd-action .v{font-size:13px;color:var(--ink);font-weight:500;}
+  .vd-action .v .pre{color:var(--terra);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;margin-right:7px;}
+
+  /* your call */
+  .call-seg{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+  .call-seg button{font-family:inherit;font-size:12px;padding:10px 16px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;}
+  .call-seg button.on{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .call-seg button:not(.on):hover{background:var(--paper-2);}
+  .judge{margin-top:14px;font-size:12.5px;line-height:1.6;display:none;}
+  .judge.show{display:block;}
+  .judge.honored{color:var(--green);font-weight:500;}
+  .judge.deviation{color:var(--terra);}
+  .judge .jh{font-weight:700;display:block;margin-bottom:4px;}
+  .dev-log{display:none;margin-top:12px;border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:13px;}
+  .dev-log.show{display:block;}
+  .dev-log .dl-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);margin-bottom:7px;}
+  .dev-log textarea{width:100%;font-family:inherit;font-size:12px;color:var(--ink);background:rgba(255,255,255,.5);border:1.5px dashed var(--terra-line);padding:9px 11px;resize:vertical;min-height:46px;line-height:1.5;outline:none;}
+  .dev-log .dl-note{font-size:10.5px;color:var(--ink-soft);font-style:italic;margin-top:8px;line-height:1.5;}
+  .dev-log .dl-note b{color:var(--terra);font-style:normal;}
+
+  /* learning */
+  .learn textarea{width:100%;font-family:inherit;font-size:12.5px;color:var(--ink);background:rgba(255,255,255,.4);border:1.5px dashed var(--rule-faint);padding:11px;resize:vertical;min-height:60px;outline:none;line-height:1.55;}
+  .learn textarea:focus{border-color:var(--terra-line);}
+  .loop{margin-top:13px;display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:11.5px;padding:9px 14px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;text-decoration:none;display:inline-block;}
+  .btn.go{border-style:solid;border-color:var(--terra-line);background:var(--terra);color:var(--paper);}
+  .btn.go:hover{background:color-mix(in srgb, var(--terra) 82%, #000);}
+  .loop-note{font-size:10.5px;color:var(--ink-soft);font-style:italic;}
+
+  /* annotation */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;position:relative;position:sticky;top:16px;}
+  .annot::before{content:"DISCIPLINE LAYER";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot .pathline{border-top:1px dashed var(--terra-line);margin-top:13px;padding-top:12px;font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.5;}
+  .annot .pathline b{color:var(--terra);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:14px 0 0;}
+
+  footer.foot{margin-top:30px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+
+  @media(max-width:880px){.cols{grid-template-columns:1fr;}.annot{position:static;}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="substrate/Full Flow.html">full flow</a><a href="substrate/Journal Index.html">journal</a><a href="Bet Front Door.html">new bet</a><a href="substrate/Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">lifecycle</span><span class="crumb">·</span>
+          <span class="crumb">revisit</span><span class="crumb">·</span>
+          <span class="crumb">commitment meets outcome</span>
+        </div>
+      </div>
+      <div class="stamp">the results are in</div>
+    </div>
+    <p class="lead"><span class="g">You locked this bet before you could see anything.</span> Now the result is in — and the criteria judge it, <em>not the other way around</em>. The tool recalls what you committed, computes which outcome you're in against your locked fold-if, and surfaces the action you pre-registered. Choose to deviate and it's logged, in your words, beside the original. <em>That's the whole product.</em></p>
+  </header>
+
+  <nav class="spine-rail">
+    <a class="srail done" href="Commit and Lock.html"><span class="sn">✓</span> setup (locked)</a>
+    <span class="srail-arrow">→</span>
+    <div class="srail done"><span class="sn">✓</span> running</div>
+    <span class="srail-arrow">→</span>
+    <div class="srail active"><span class="sn">↻</span> revisit</div>
+  </nav>
+  <div class="elapsed">Locked <b id="elapsed">18 days</b> ago · the experiment has reported.</div>
+
+  <div class="cols">
+    <div class="col">
+      <!-- locked commitment -->
+      <div class="panel locked-card" style="padding:0;border-style:solid;">
+        <div class="lc-head">
+          <div class="lc-title">🔒 what you committed</div>
+          <div class="lc-stamp" id="lcStamp">locked · immutable</div>
+        </div>
+        <div class="lc-body">
+          <div class="wsent" id="wsent"></div>
+          <div class="lc-meta">
+            <div>pre-registered action if <b>WIN</b> (≥ +<span data-fold>4</span>%): <span id="mWin"></span></div>
+            <div>if <b>INCONCLUSIVE</b> (0 to +<span data-fold>4</span>%): <span id="mIncon"></span></div>
+            <div>if <b>LOSS</b> (≤ 0 / guardrail): <span id="mLoss"></span></div>
+            <div style="margin-top:6px;color:var(--ink-faint)">fingerprint <span id="fp">—</span> · <span id="lockTime">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- actuals -->
+      <div class="panel actuals">
+        <div class="panel-eyebrow">what the experiment returned <span class="src">drag to explore outcomes</span></div>
+        <div class="panel-title" style="margin-bottom:14px">The actual result</div>
+        <div class="big" id="actBig">+2.5%</div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px">observed lift on <span data-metric>checkout-start</span></div>
+        <input type="range" id="actual" min="-3" max="12" step="0.5" value="2.5">
+        <div class="scale"><span>-3%</span><span>0</span><span>+<span data-fold>4</span>% fold-if</span><span>+12%</span></div>
+        <div class="seg" id="guardSeg" style="max-width:280px">
+          <button data-g="ok" class="on">guardrails holding</button>
+          <button data-g="breach">guardrail breached</button>
+        </div>
+        <div class="calib" id="calib"></div>
+      </div>
+
+      <!-- verdict -->
+      <div class="panel">
+        <div class="panel-eyebrow">the verdict <span class="src">computed from your locked criteria</span></div>
+        <div class="panel-title" style="margin-bottom:13px">Where this lands</div>
+        <div class="verdict" id="verdict">
+          <div class="vd-bucket" id="vdBucket"></div>
+          <div class="vd-why" id="vdWhy"></div>
+          <div class="vd-action">
+            <div class="k">your pre-registered action</div>
+            <div class="v" id="vdAction"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- your call -->
+      <div class="panel">
+        <div class="panel-eyebrow">your call <span class="src">what will you actually do?</span></div>
+        <div class="panel-title" style="margin-bottom:13px">The decision</div>
+        <div class="call-seg" id="callSeg">
+          <button data-c="keep">Keep / ship</button>
+          <button data-c="hold">Hold</button>
+          <button data-c="revert">Revert</button>
+        </div>
+        <div class="judge" id="judge"></div>
+        <div class="dev-log" id="devLog">
+          <div class="dl-lbl">Why deviate from what you pre-registered?</div>
+          <textarea placeholder="e.g. the directional read plus a strong qualitative signal is enough for leadership; accepting the risk."></textarea>
+          <div class="dl-note">↳ <b>Logged, not blocked.</b> Recorded beside the timestamped commitment and its fingerprint — the deviation is part of the permanent record, in your words.</div>
+        </div>
+      </div>
+
+      <!-- learning -->
+      <div class="panel learn">
+        <div class="panel-eyebrow">what this updates <span class="src">feeds your next bet</span></div>
+        <div class="panel-title" style="margin-bottom:13px">Learning</div>
+        <textarea id="learnText" placeholder="What would you bet differently next time? What did the gap between expectation and outcome teach you?"></textarea>
+        <div class="loop">
+          <a class="btn go" href="Bet Front Door.html" id="nextBet">↻ Start the next bet ▸</a>
+          <span class="loop-note">this entry becomes memory — the journal closing on itself.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- annotation -->
+    <div class="col">
+      <div class="annot">
+        <div class="moment">Insertion moment: revisit — commitment meets outcome</div>
+        <p>This is the surface the whole product exists for. The record on the left was timestamped <em>before</em> any result. Now the result is in — and the criteria judge it, not the reverse.</p>
+        <p>The bad-faith move is to see the number first, then decide what "win" meant. Here the bucket is <em>computed</em> from the commitment, the pre-registered action is recalled, and any deviation is logged in your own words beside the fingerprint. Visibility, not a gate.</p>
+        <p>It's method-agnostic on purpose: however the number was produced — A/B, holdback, observational — revisit only asks whether you honor what you locked.</p>
+        <div class="pathline">↳ <b>the loop:</b> the learning here feeds the next bet's intent. The decision journal, closing on itself.</div>
+        <p class="margin-note">↖ the criteria judge the result — not the reverse.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>the loop closes:</b> a bet locked before the data, judged by its own pre-registered criteria, with every deviation recorded — then fed forward as calibration for the next one. Running discipline varies by method; this doesn't. It's where evidentiary integrity is either kept or quietly abandoned.</div>
+  </footer>
+
+</div>
+
+<script>
+let TW={tone:'balanced',accent:'#a64d3b'};
+function tline(g,b,i){return TW.tone==='gentle'?g:(TW.tone==='insistent'?i:b);}
+
+/* resolve the committed record */
+const DEFAULT_BET={change:'moving the plan-picker above the fold',dir:'lift',metric:'checkout-start',mag:'8%',conf:'hunch-level',why:'replays show scroll drop-off at the testimonials',fals:'it comes in under +4% or dents a guardrail'};
+const DEFAULT_CRIT={win:'Keep the redesign — roll to 100% this week.',incon:'Hold — sharpen the variant and re-test next quarter.',loss:'Revert — log why in the decision journal.'};
+let BET=DEFAULT_BET, CRIT=DEFAULT_CRIT, INSTR='hold', LOCK=null;
+try{const s=localStorage.getItem('ab_committed');if(s){const c=JSON.parse(s);if(c.BET)BET=Object.assign({},DEFAULT_BET,c.BET);if(c.CRIT)CRIT=Object.assign({},DEFAULT_CRIT,c.CRIT);if(c.INSTR)INSTR=c.INSTR;LOCK=c;}}catch(e){}
+if(!LOCK){
+  try{const s=localStorage.getItem('ab_bet');if(s)BET=Object.assign({},DEFAULT_BET,JSON.parse(s));}catch(e){}
+  try{const s=localStorage.getItem('ab_criteria');if(s)CRIT=Object.assign({},DEFAULT_CRIT,JSON.parse(s));}catch(e){}
+}
+const CONF_LABEL={'hunch-level':'on a hunch','fairly':'fairly confident','highly':'highly confident'};
+function foldFromBet(){const m=(BET.fals||'').match(/(\d+(?:\.\d+)?)/);return m?Math.max(1,Math.min(10,Math.round(parseFloat(m[1])))):4;}
+const FOLD=foldFromBet();
+function expectedMag(){const m=(BET.mag||'').match(/(\d+(?:\.\d+)?)/);return m?parseFloat(m[1]):8;}
+const EXPECT=expectedMag();
+
+/* static render */
+document.getElementById('wsent').innerHTML=
+  `<span class="lead-in">I bet that</span> <span class="t">${BET.change}</span> <span class="lead-in">would</span> <span class="t">${BET.dir}</span> <span class="t">${BET.metric}</span> <span class="lead-in">by about</span> <span class="t">${BET.mag}</span><span class="lead-in">. I was</span> ${CONF_LABEL[BET.conf]||BET.conf}<span class="lead-in">, because</span> <span class="t">${BET.why}</span><span class="lead-in">. I'd fold if</span> <span class="t fold">${BET.fals}</span><span class="lead-in">.</span>`;
+document.querySelectorAll('[data-fold]').forEach(e=>e.textContent=FOLD);
+document.querySelectorAll('[data-metric]').forEach(e=>e.textContent=BET.metric);
+document.getElementById('mWin').textContent=CRIT.win;
+document.getElementById('mIncon').textContent=CRIT.incon;
+document.getElementById('mLoss').textContent=CRIT.loss;
+document.getElementById('fp').textContent=(LOCK&&LOCK.fingerprint)?LOCK.fingerprint:'(draft — not locked)';
+document.getElementById('lockTime').textContent=(LOCK&&LOCK.lockedAt)?('locked '+LOCK.lockedAt):'no lock timestamp';
+if(!(LOCK&&LOCK.locked)){document.getElementById('lcStamp').textContent='⚠ draft — was never locked';}
+
+/* state */
+const state={actual:2.5,guard:'ok',call:null};
+
+function bucketOf(){
+  if(state.guard==='breach') return 'loss';
+  if(state.actual>=FOLD) return 'win';
+  if(state.actual>0) return 'incon';
+  return 'loss';
+}
+const BUCKET_LABEL={win:'WIN',incon:'INCONCLUSIVE',loss:'LOSS'};
+const EXPECTED_CALL={win:'keep',incon:'hold',loss:'revert'};
+const CALL_LABEL={keep:'Keep / ship',hold:'Hold',revert:'Revert'};
+
+function render(){
+  // actuals big
+  const big=document.getElementById('actBig');
+  big.textContent=(state.actual>0?'+':'')+state.actual+'%';
+  big.className='big '+(state.actual>=FOLD?'win':(state.actual<=0?'loss':''));
+  // calibration
+  const delta=(EXPECT-state.actual);
+  let cal;
+  if(state.guard==='breach') cal=`You expected <b>+${EXPECT}%</b> ${CONF_LABEL[BET.conf]||BET.conf}. A guardrail broke — the headline number is moot.`;
+  else if(Math.abs(delta)<1) cal=`You expected <b>+${EXPECT}%</b> ${CONF_LABEL[BET.conf]||BET.conf}; it came in at <b>${state.actual>0?'+':''}${state.actual}%</b>. Well calibrated.`;
+  else if(delta>0) cal=`You expected <b>+${EXPECT}%</b> ${CONF_LABEL[BET.conf]||BET.conf}; it came in at <b>+${state.actual}%</b> — <b>over</b>estimated by ~${delta.toFixed(1)} pts. ${BET.conf==='hunch-level'?'A hunch, and it ran hot.':''}`;
+  else cal=`You expected <b>+${EXPECT}%</b> ${CONF_LABEL[BET.conf]||BET.conf}; it came in at <b>+${state.actual}%</b> — <b>under</b>estimated by ~${(-delta).toFixed(1)} pts.`;
+  document.getElementById('calib').innerHTML=cal;
+
+  // verdict
+  const b=bucketOf();
+  const v=document.getElementById('verdict');
+  v.className='verdict '+(b==='win'?'win':(b==='loss'?'loss':''));
+  document.getElementById('vdBucket').className='vd-bucket '+b;
+  document.getElementById('vdBucket').textContent=BUCKET_LABEL[b];
+  let why;
+  if(state.guard==='breach') why=`A guardrail breach forces a loss outcome — regardless of the headline lift. You pre-registered that.`;
+  else if(b==='win') why=`+${state.actual}% clears your +${FOLD}% fold-if. This is a win by the line you drew before the test.`;
+  else if(b==='incon') why=`+${state.actual}% is positive but under your +${FOLD}% fold-if — below the smallest effect you said would move you.`;
+  else why=`${state.actual<=0?state.actual+'% is at or below zero':'a guardrail broke'} — a loss by your own pre-registered line.`;
+  document.getElementById('vdWhy').textContent=why;
+  document.getElementById('vdAction').innerHTML=`<span class="pre">pre-registered</span>${CRIT[b]}`;
+
+  // judge the call
+  const judge=document.getElementById('judge');
+  const devLog=document.getElementById('devLog');
+  document.querySelectorAll('#callSeg button').forEach(x=>x.classList.toggle('on',x.dataset.c===state.call));
+  if(!state.call){judge.className='judge';judge.innerHTML='';devLog.className='dev-log';return;}
+  const expected=EXPECTED_CALL[b];
+  if(state.call===expected){
+    judge.className='judge show honored';
+    judge.innerHTML=`<span class="jh">✓ Commitment honored.</span>You pre-registered <b>${CALL_LABEL[expected].toLowerCase()}</b> for a ${BUCKET_LABEL[b].toLowerCase()} result, and that's your call. The line held — that's the whole point.`;
+    devLog.className='dev-log';
+  }else{
+    judge.className='judge show deviation';
+    judge.innerHTML=`<span class="jh">⚠ Deviation from your pre-registration.</span>`+tline(
+      `You pre-registered <b>${CALL_LABEL[expected]}</b> for a ${BUCKET_LABEL[b].toLowerCase()} result; you're choosing <b>${CALL_LABEL[state.call]}</b>. That's your call — we'll just note the change and why.`,
+      `You committed to <b>${CALL_LABEL[expected]}</b> for a ${BUCKET_LABEL[b].toLowerCase()} result; you're choosing <b>${CALL_LABEL[state.call]}</b>. Allowed — but it's logged, with your reason, beside the original commitment.`,
+      `This is the move the discipline layer exists to catch. You committed to <b>${CALL_LABEL[expected]}</b> at this outcome; you're choosing <b>${CALL_LABEL[state.call]}</b> anyway. Not blocked — recorded, in your own words, against a timestamp you can't move.`);
+    devLog.className='dev-log show';
+  }
+}
+
+document.getElementById('actual').addEventListener('input',e=>{state.actual=parseFloat(e.target.value);render();});
+document.getElementById('guardSeg').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;state.guard=btn.dataset.g;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===btn));render();});
+document.getElementById('callSeg').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;state.call=btn.dataset.c;render();});
+
+/* tweaks */
+function applyTweaks(t){TW=Object.assign({},TW,t||{});if(TW.accent)document.documentElement.style.setProperty('--terra',TW.accent);render();}
+window.addEventListener('revtweaks',e=>applyTweaks(e.detail));
+
+render();
+</script>
+
+<div id="tweaks-root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const {useTweaks,TweaksPanel,TweakSection,TweakRadio,TweakColor}=window;
+const TW_DEFAULTS={tone:'balanced',accent:'#a64d3b'};
+function TweaksApp(){
+  const [t,setTweak]=useTweaks(TW_DEFAULTS);
+  React.useEffect(()=>{window.dispatchEvent(new CustomEvent('revtweaks',{detail:t}));},[t]);
+  return (
+    <TweaksPanel>
+      <TweakSection label="Discipline tone"/>
+      <TweakRadio label="Deviation copy" value={t.tone} options={['gentle','balanced','insistent']} onChange={v=>setTweak('tone',v)}/>
+      <TweakSection label="Theme"/>
+      <TweakColor label="Accent" value={t.accent} options={['#a64d3b','#3f7d5a','#4f6f9e','#8d5384']} onChange={v=>setTweak('accent',v)}/>
+    </TweaksPanel>
+  );
+}
+ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<TweaksApp/>);
+</script>
+</body>
+</html>

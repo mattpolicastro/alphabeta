@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Full Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:24px 28px 80px;}
+
+  header.top{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  /* storyboard nav */
+  .steps{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:6px;}
+  .stp{display:flex;align-items:center;gap:8px;border:1.5px dashed var(--rule);padding:7px 13px;margin:0 0 8px;font-size:11px;color:var(--ink-soft);cursor:pointer;background:transparent;font-family:inherit;}
+  .stp .sn{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--ink-soft);}
+  .stp.on{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .stp.on .sn{border-color:var(--terra);color:var(--terra);}
+  .stp.done .sn{border-color:var(--green-line);color:var(--green);background:var(--green-soft);}
+  .stp-arrow{color:var(--ink-faint);margin:0 7px 8px;}
+
+  .caption{background:var(--ink);color:#e6dfce;border:none;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12.5px;line-height:1.6;margin-bottom:18px;display:flex;gap:12px;align-items:baseline;}
+  .caption::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;white-space:nowrap;align-self:flex-start;line-height:1.6;}
+  .caption .ct{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);background:#e3a487;font-weight:700;white-space:nowrap;padding:3px 8px;align-self:flex-start;}
+  .caption em{color:#eeb9a4;font-style:italic;}
+
+  .screen{display:none;}
+  .screen.on{display:block;}
+
+  /* NSF lineage strip */
+  .lineage{display:flex;align-items:stretch;flex-wrap:wrap;gap:0;margin-bottom:18px;}
+  .lcard{flex:1 1 150px;min-width:140px;border:1.5px solid var(--plinth-line);background:var(--plinth-soft);padding:9px 11px;}
+  .lcard .lk{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);margin-bottom:4px;}
+  .lcard .lt{font-size:11px;font-weight:600;line-height:1.35;color:var(--ink);}
+  .lcard .lm{font-size:9px;color:var(--ink-soft);margin-top:4px;}
+  .larrow{flex:0 0 auto;align-self:center;color:var(--plinth);font-size:14px;padding:0 5px;}
+
+  /* full NSF board */
+  .board5{display:flex;gap:8px;align-items:flex-start;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;}
+  .bcol{flex:1 1 0;min-width:152px;display:flex;flex-direction:column;gap:7px;}
+  .bch{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);font-weight:700;display:flex;flex-direction:column;gap:2px;padding-bottom:5px;border-bottom:1.5px solid var(--plinth-line);}
+  .bch .bcw{font-size:8.5px;letter-spacing:0;text-transform:none;font-style:italic;color:var(--ink-faint);font-weight:400;}
+  .mc{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:8px 9px;}
+  .mc .mt{font-size:10.5px;font-weight:600;line-height:1.35;}
+  .mc .mm{font-size:8.5px;color:var(--ink-soft);margin-top:3px;}
+  .mc.ns{border-color:var(--plinth-line);background:var(--plinth-soft);}
+  .tag2{font-size:7.5px;letter-spacing:.5px;text-transform:uppercase;padding:1px 5px;border:1px solid var(--rule-faint);color:var(--ink-faint);display:inline-block;margin-top:4px;}
+  .tag2.active{color:var(--green);border-color:var(--green-line);}
+  .bcol.work .mc{cursor:pointer;transition:border-color .12s,background .12s;}
+  .bcol.work .mc:hover{border-color:var(--terra-line);background:var(--paper-2);}
+  .mc.sel{border-color:var(--terra);border-style:solid;background:var(--terra-soft);}
+  .mc.claim .mt::after{content:" ⍺";color:var(--terra);}
+  .mc.isbet{border-color:var(--terra);background:var(--terra-soft);}
+  .mc .mbadge{font-size:7.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--paper);background:var(--terra);padding:1px 6px;display:inline-block;margin-top:5px;}
+  .detail{border:1.5px solid var(--terra-line);background:rgba(255,255,255,.45);padding:14px 16px;display:none;}
+  .detail.show{display:block;}
+  .detail .deh{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
+  .detail .det{font-size:13.5px;font-weight:600;line-height:1.4;}
+  .detail .desticky{font-size:10.5px;color:var(--ink-soft);font-style:italic;background:#f3ecc9;border:1px solid #e2d79b;padding:7px 9px;margin-top:8px;line-height:1.4;}
+  .detail .verdict-d{font-size:12px;line-height:1.55;margin-top:11px;padding:9px 11px;border:1.5px dashed;}
+  .detail .verdict-d.claim{border-color:var(--terra-line);background:var(--terra-soft);color:var(--ink);}
+  .detail .verdict-d.task{border-color:var(--rule-faint);color:var(--ink-soft);}
+  .detail .verdict-d b{color:var(--terra);}
+  .detail .deact{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .sendbtn{font-family:inherit;font-size:11.5px;padding:9px 15px;border:1.5px solid var(--terra);background:var(--terra);color:var(--paper);cursor:pointer;}
+  .sendbtn:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+  .keeptask{font-size:11px;color:var(--ink-faint);font-style:italic;}
+  .sent-confirm{display:none;margin-top:12px;padding:10px 12px;border:1.5px solid var(--green-line);background:var(--green-soft);font-size:11.5px;color:var(--ink);line-height:1.5;}
+  .sent-confirm.show{display:block;}
+  .sent-confirm b{color:var(--green);}
+  .sent-confirm a{color:var(--terra);font-weight:600;}
+
+  .colhead{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--plinth);font-weight:700;margin:4px 0 10px;display:flex;align-items:baseline;gap:10px;}
+  .colhead .cw{font-size:10px;letter-spacing:0;text-transform:none;color:var(--ink-faint);font-style:italic;}
+
+  .work{display:flex;flex-direction:column;gap:9px;}
+  .witem{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);padding:11px 13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+  .witem .wt{font-size:12.5px;line-height:1.45;}
+  .witem .wsticky{font-size:10px;color:var(--ink-soft);font-style:italic;background:#f3ecc9;border:1px solid #e2d79b;padding:6px 8px;margin-top:7px;line-height:1.4;}
+  .witem .wright{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .tasktag{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);border:1px dashed var(--rule-faint);padding:2px 7px;white-space:nowrap;}
+  .witem.iscand{border-color:var(--terra-line);background:var(--terra-soft);}
+  .elev{font-family:inherit;font-size:10px;letter-spacing:.3px;padding:6px 10px;border:1.5px solid var(--terra-line);background:var(--terra);color:var(--paper);cursor:pointer;white-space:nowrap;}
+  .elev:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+  .suggest{font-size:9.5px;color:var(--terra);font-style:italic;margin-top:6px;}
+  .betbadge{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--paper);background:var(--terra);border:1.5px solid var(--terra);padding:2px 8px;display:inline-flex;align-items:center;gap:5px;}
+  .ctxchip{font-size:9.5px;color:var(--plinth);border:1px dashed var(--plinth-line);background:var(--plinth-soft);padding:3px 8px;margin-top:7px;display:inline-block;line-height:1.4;}
+  .elevated-cta{display:none;margin-top:10px;}
+  .witem.done-elev .elevated-cta{display:block;}
+  .gobtn{font-family:inherit;font-size:10.5px;padding:7px 12px;border:1.5px solid var(--green-line);background:var(--green);color:var(--paper);cursor:pointer;text-decoration:none;display:inline-block;}
+
+  /* substrate spine */
+  .spine{display:flex;align-items:stretch;flex-wrap:wrap;gap:0;margin-bottom:14px;}
+  .snode{flex:1 1 150px;min-width:140px;border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:11px;}
+  .snode.locked{border-color:var(--terra-line);}
+  .snode .se{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);}
+  .snode .st{font-size:12px;font-weight:700;margin-top:4px;}
+  .snode .sd{font-size:10px;color:var(--ink-soft);margin-top:4px;line-height:1.4;}
+  .sarrow{flex:0 0 auto;align-self:center;color:var(--ink-faint);padding:0 5px;}
+  .inherit{border:1.5px dashed var(--plinth-line);background:var(--plinth-soft);padding:11px 13px;font-size:11.5px;line-height:1.6;margin-bottom:12px;}
+  .inherit b{color:var(--plinth);}
+  .deeplink{font-size:11px;color:var(--terra);}
+
+  /* revisit mini */
+  .rv{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  .card{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:14px;}
+  .card.locked{border-color:var(--terra);}
+  .card h4{margin:0 0 8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);}
+  .card .wline{font-size:12px;line-height:1.6;}
+  .card .wline .t{color:var(--terra);}
+  .rseg{display:flex;border:1.5px solid var(--rule);margin:8px 0 10px;max-width:220px;}
+  .rseg button{flex:1;font-family:inherit;font-size:11px;padding:6px;background:transparent;border:none;border-right:1.5px dashed var(--rule);cursor:pointer;color:var(--ink-soft);}
+  .rseg button:last-child{border-right:none;}
+  .rseg button.on.win{background:var(--green);color:var(--paper);}
+  .rseg button.on.loss{background:var(--terra);color:var(--paper);}
+  .verdict-mini{font-size:13px;font-weight:700;margin-bottom:8px;}
+  .verdict-mini.win{color:var(--green);} .verdict-mini.loss{color:var(--terra);}
+  .gateline{font-size:11.5px;line-height:1.5;padding:9px 11px;border:1.5px dashed var(--rule-faint);margin-top:8px;}
+  .gateline.unlocked{border-color:var(--green-line);color:var(--green);background:var(--green-soft);}
+  .gateline.withheld{border-color:var(--terra-line);color:var(--terra);background:var(--terra-soft);}
+  .goalmini{margin-top:10px;font-size:11px;color:var(--ink-soft);}
+  .goalmini b{color:var(--plinth);}
+
+  /* ledger mini */
+  .lobj{border:1.5px solid var(--plinth-line);background:var(--plinth-soft);padding:9px 13px;font-size:12px;font-weight:700;}
+  .lrows{border:1.5px solid var(--rule-faint);border-top:none;margin-bottom:12px;}
+  .lrow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 13px;border-bottom:1px dashed var(--rule-faint);}
+  .lrow:last-child{border-bottom:none;}
+  .lrow.spotlight{background:var(--terra-soft);}
+  .lq{font-size:12px;}
+  .st2{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;white-space:nowrap;}
+  .st2.running{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .st2.won{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .st2.lost{color:var(--paper);background:var(--terra);border-color:var(--terra);}
+  .st2.draft{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .st2.locked{color:var(--terra);border-color:var(--terra-line);}
+
+  /* nav buttons */
+  .nav{display:flex;justify-content:space-between;margin-top:22px;border-top:1.5px dashed var(--rule);padding-top:16px;}
+  .btn{font-family:inherit;font-size:12px;padding:10px 18px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.primary{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .btn[disabled]{opacity:.35;cursor:default;}
+
+  .deeplinks{font-size:11px;color:var(--ink-soft);margin-top:10px;}
+  .deeplinks a{color:var(--terra);}
+
+  @media(max-width:760px){.rv{grid-template-columns:1fr;}.lineage{flex-direction:column;}.larrow{transform:rotate(90deg);}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="../alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="Full Flow.html">full flow</a><a href="Journal Index.html">journal</a><a href="../Bet Front Door.html">new bet</a><a href="Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">full flow · strategy → sequencing → lifecycle → verdict → ledger</div>
+  </header>
+
+  <div class="steps" id="steps">
+    <button class="stp on" data-s="0"><span class="sn">1</span> Strategy view</button>
+    <span class="stp-arrow">→</span>
+    <button class="stp" data-s="1"><span class="sn">2</span> Sequencing</button>
+    <span class="stp-arrow">→</span>
+    <button class="stp" data-s="2"><span class="sn">3</span> Lifecycle</button>
+    <span class="stp-arrow">→</span>
+    <button class="stp" data-s="3"><span class="sn">4</span> Revisit</button>
+    <span class="stp-arrow">→</span>
+    <button class="stp" data-s="4"><span class="sn">5</span> Ledger</button>
+  </div>
+
+  <div class="caption" id="caption"><span class="ct" id="capT"></span><span id="capText"></span></div>
+
+  <!-- SCREEN 1 — STRATEGY VIEW (full board) -->
+  <section class="screen on" data-screen="0">
+    <div class="board5" id="board5">
+      <div class="bcol">
+        <div class="bch"><span>North Star</span><span class="bcw">because we want to achieve…</span></div>
+        <div class="mc ns"><div class="mt">A leading player challenging the major banks</div><div class="mm">5,000 → 10,000 customers</div></div>
+      </div>
+      <div class="bcol">
+        <div class="bch"><span>Product Drivers</span><span class="bcw">we need to optimize…</span></div>
+        <div class="mc"><div class="mt">Increase adoption of loan &amp; investment products</div><div class="mm">5% → 15%</div></div>
+        <div class="mc"><div class="mt">Launch features that lower the threshold to paying</div><div class="mm">30% → 80%</div></div>
+        <div class="mc"><div class="mt">Reduce non-paying &amp; unprofitable customers</div><div class="mm">70% → 10%</div></div>
+      </div>
+      <div class="bcol">
+        <div class="bch"><span>Top Problems</span><span class="bcw">but we are held back by…</span></div>
+        <div class="mc"><div class="mt">Loan customers aren't engaging with our investment offering</div><span class="tag2 active">active</span></div>
+        <div class="mc"><div class="mt">Customers don't understand the loan↔investment relationship</div><span class="tag2">pool</span></div>
+        <div class="mc"><div class="mt">Investment onboarding requires too many steps</div><span class="tag2">prospect</span></div>
+      </div>
+      <div class="bcol">
+        <div class="bch"><span>Current Goals</span><span class="bcw">so this cycle we aim to…</span></div>
+        <div class="mc ns"><div class="mt">Send an email campaign to loan-only customers</div><div class="mm">7-day login · 30% → 80%</div><span class="tag2">marketing</span></div>
+        <div class="mc ns"><div class="mt">Rearrange info panels so the offering is clearer</div><div class="mm">milestones 1 / 4</div><span class="tag2">product</span></div>
+      </div>
+      <div class="bcol work">
+        <div class="bch"><span>The Work</span><span class="bcw">by doing the following…</span></div>
+        <div class="mc" data-w="identify"><div class="mt">Identify loan-only customers, inactive 90 days</div></div>
+        <div class="mc claim" data-w="abtest"><div class="mt">A/B test 3 versions of the email on 100 customers</div></div>
+        <div class="mc" data-w="sendall"><div class="mt">Send the best-performing email to all customers</div></div>
+        <div class="mc" data-w="dash"><div class="mt">Update the analytics dashboard</div></div>
+      </div>
+    </div>
+    <div class="detail show" id="detail"><span style="color:var(--ink-faint);font-style:italic">↑ click a work item in “The Work” to inspect it and decide if it’s a candidate for the decision substrate.</span></div>
+  </section>
+
+  <!-- SCREEN 2 — BET SEQUENCING -->
+  <section class="screen" data-screen="1">
+    <div class="inherit">The candidate arrived from the strategy view. First question: <b>is this one bet, or a sequence?</b> This one decomposes into three dependent bets — a chain where each rests on the prior.</div>
+    <div style="border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:16px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700">Bet Sequencing</div>
+        <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);border:1.5px solid var(--terra);padding:3px 10px;font-weight:700">sequence · linear chain</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:10px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:11px;color:var(--terra);font-weight:700">A</span><span style="font-size:12px;font-weight:500">Will a reminder email get opened?</span><span style="font-size:9px;color:var(--ink-faint);margin-left:auto">A/B · subject lines</span></div>
+        <div style="text-align:center;color:var(--ink-faint);font-size:12px">↓ if win</div>
+        <div style="border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:10px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:11px;color:var(--terra);font-weight:700">B</span><span style="font-size:12px;font-weight:500">Of opens, which CTA drives app login?</span><span style="font-size:9px;color:var(--ink-faint);margin-left:auto">A/B · email body</span></div>
+        <div style="text-align:center;color:var(--ink-faint);font-size:12px">↓ if win</div>
+        <div style="border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:10px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:11px;color:var(--terra);font-weight:700">C</span><span style="font-size:12px;font-weight:500">Does the reactivation persist past 7 days?</span><span style="font-size:9px;color:var(--ink-faint);margin-left:auto">holdback</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--ink-soft);font-style:italic">Each bet runs the lifecycle individually; a loss prunes everything downstream. The dependency shape is decided here, before any bet is articulated.</div>
+    </div>
+    <div class="deeplinks">The real surface: <a href="Bet Sequencing.html">bet sequencing →</a> · then each bet enters <a href="../Bet Front Door.html">the lifecycle →</a></div>
+  </section>
+
+  <!-- SCREEN 3 — DECISION SUBSTRATE -->
+  <section class="screen" data-screen="2">
+    <div class="inherit">Crossed into the substrate <b>carrying the goal's context</b> — metric (<b>7-day login</b>) and the 30%→80% target seed the bet's expectation and fold-if. It doesn't start from a blank page.</div>
+    <div class="spine">
+      <div class="snode locked"><div class="se">bet</div><div class="st">Which email body lifts 7-day login?</div><div class="sd">articulated from the work item</div></div>
+      <span class="sarrow">→</span>
+      <div class="snode locked"><div class="se">feasibility</div><div class="st">A/B · 100 users · 2 wks</div><div class="sd">fold-if = detection spec</div></div>
+      <span class="sarrow">→</span>
+      <div class="snode locked"><div class="se">criteria</div><div class="st">win → send · loss → hold</div><div class="sd">pre-registered actions</div></div>
+      <span class="sarrow">→</span>
+      <div class="snode locked"><div class="se">commit &amp; lock</div><div class="st">🔒 timestamped</div><div class="sd">immutable · fingerprinted</div></div>
+    </div>
+    <div class="deeplinks">Walk the real lifecycle: <a href="../Bet Front Door.html">bet front door</a> → <a href="../Feasibility and Instrument.html">feasibility</a> → <a href="../Decision Criteria.html">criteria</a> → <a href="../Commit and Lock.html">commit &amp; lock</a></div>
+  </section>
+
+  <!-- SCREEN 4 — REVISIT -->
+  <section class="screen" data-screen="3">
+    <div class="rv">
+      <div class="card locked">
+        <h4>🔒 the locked bet</h4>
+        <div class="wline"><span class="t">A/B test 3 email bodies</span> · fold-if <span class="t">+4%</span> on 7-day login · pre-registered: <span class="t">win → send to all · loss → hold</span></div>
+        <div style="margin-top:12px;font-size:11px;color:var(--ink-soft)">the result is in — set the outcome:</div>
+        <div class="rseg" id="rseg"><button data-o="win" class="win">won</button><button data-o="loss" class="loss on">lost</button></div>
+      </div>
+      <div class="card">
+        <h4>the verdict ↩ flows back</h4>
+        <div class="verdict-mini loss" id="vmini">LOSS — under the +4% fold-if</div>
+        <div class="gateline withheld" id="gateMini">✕ “send to all” withheld — the rollout doesn't fire on a losing bet</div>
+        <div class="goalmini" id="goalMini">goal: stays at <b>30%</b> — no movement claimed it didn't earn</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 5 — LEDGER -->
+  <section class="screen" data-screen="4">
+    <div class="lobj">Send an email campaign to loan-only customers · 7-day login 30→80 · Marketing</div>
+    <div class="lrows">
+      <div class="lrow"><span class="lq">Does a subject-line variant lift open rate?</span><span class="st2 won">won</span></div>
+      <div class="lrow spotlight"><span class="lq">Which email body lifts 7-day login? <span style="color:var(--terra);font-size:10px">← the bet you just walked</span></span><span class="st2 running" id="ledgerStatus">running</span></div>
+    </div>
+    <div class="lobj">Rearrange info panels so the offering is clearer · Product</div>
+    <div class="lrows">
+      <div class="lrow"><span class="lq">Do the new mock-ups improve menu task-success?</span><span class="st2 locked">locked</span></div>
+      <div class="lrow"><span class="lq">Does the new tree structure cut time-to-find?</span><span class="st2 draft">draft</span></div>
+    </div>
+    <div class="deeplinks">The full hub, three lenses (Ledger / Board / Log): <a href="Journal Index.html">journal index →</a></div>
+  </section>
+
+  <div class="nav">
+    <button class="btn" id="prev">◂ back</button>
+    <button class="btn primary" id="next">next ▸</button>
+  </div>
+
+</div>
+
+<script>
+const CAPS=[
+  {t:'1 · discernment, in context',h:'You\u2019re in the <em>strategy view</em> — the full board, items in context from North Star down to the work. Click a work item to inspect it: most are execution, but the A/B test is a <em>claim</em>, so you <em>send it to the decision substrate</em>. The seam is an action, not a separate screen.'},
+  {t:'2 · bet sequencing',h:'Is this one bet or a sequence? This candidate decomposes into <em>three dependent bets</em> — a linear chain where each rests on the prior. The shape (chain / fan-in / parallel) is decided here, before any bet enters the lifecycle.'},
+  {t:'3 · the lifecycle',h:'Each bet in the sequence runs the discipline lifecycle independently — articulate, feasibility, criteria, commit &amp; lock. Timestamped before any result. The goal\u2019s context carries through.'},
+  {t:'4 · the verdict flows back',h:'When the result lands, the criteria judge it against the locked fold-if — and the verdict <em>gates the work</em>. Toggle the outcome: a loss withholds the rollout; a win unlocks it and moves the goal.'},
+  {t:'5 · it all rolls up',h:'Every bet appears in the <em>ledger</em>, grouped by the objective it serves, status <em>derived</em> from its lifecycle (never set here). The decision journal, across every goal.'}
+];
+let i=0, elevated=false, outcome='loss';
+
+const screens=[...document.querySelectorAll('.screen')];
+const stps=[...document.querySelectorAll('.stp')];
+function show(n){
+  i=Math.max(0,Math.min(4,n));
+  screens.forEach(s=>s.classList.toggle('on',+s.dataset.screen===i));
+  stps.forEach(s=>{const k=+s.dataset.s;s.classList.toggle('on',k===i);s.classList.toggle('done',k<i);});
+  document.getElementById('capT').textContent=CAPS[i].t;
+  document.getElementById('capText').innerHTML=CAPS[i].h;
+  document.getElementById('prev').disabled=(i===0);
+  document.getElementById('next').disabled=(i===4);
+}
+document.getElementById('prev').addEventListener('click',()=>show(i-1));
+document.getElementById('next').addEventListener('click',()=>show(i+1));
+document.getElementById('steps').addEventListener('click',e=>{const b=e.target.closest('.stp');if(b)show(+b.dataset.s);});
+
+/* board: inspect a work item, decide, send to substrate */
+const WORK={
+  identify:{t:'Identify loan-only customers, inactive 90 days',kind:'task'},
+  abtest:{t:'A/B test 3 versions of the email on 100 customers within 2 weeks',kind:'claim',sticky:'So close to done! The emails are ready and sent out to the test group, waiting for results now. · 2025-11-28'},
+  sendall:{t:'Send the best-performing email to all identified customers',kind:'task'},
+  dash:{t:'Update the analytics dashboard for opens + app engagement',kind:'task'}
+};
+const detail=document.getElementById('detail');
+function openDetail(id){
+  const w=WORK[id];
+  document.querySelectorAll('#board5 .work .mc').forEach(c=>c.classList.toggle('sel',c.dataset.w===id));
+  const claim=w.kind==='claim';
+  detail.className='detail show';
+  detail.innerHTML=
+    `<div class="deh">work item · inspect</div>`+
+    `<div class="det">${w.t}</div>`+
+    (w.sticky?`<div class="desticky">${w.sticky}</div>`:'')+
+    `<div class="verdict-d ${claim?'claim':'task'}">${claim
+      ? '\u237a This reads like a <b>claim about the world</b> — a candidate for the decision substrate. Sending it over articulates it as a bet, seeded by this goal\u2019s context.'
+      : 'This looks like <b>execution</b> — it belongs in the strategy layer as a task. No bet to make here.'}</div>`+
+    `<div class="deact">${claim
+      ? (w.sent?'':'<button class="sendbtn" id="sendBtn">\u237a send to decision substrate ▸</button>')
+      : '<span class="keeptask">↳ keep as task</span>'}</div>`+
+    `<div class="sent-confirm ${w.sent?'show':''}" id="sentConfirm"><b>✓ Sent.</b> Now a <b>bet · draft</b> in the decision substrate, owned by its lifecycle from here. <a href="#" id="openSub">open in the decision substrate ▸</a></div>`;
+  const sb=document.getElementById('sendBtn');
+  if(sb)sb.addEventListener('click',()=>{w.sent=true;markBet(id);openDetail(id);});
+  const os=document.getElementById('openSub');
+  if(os)os.addEventListener('click',e=>{e.preventDefault();show(1);});
+}
+function markBet(id){const c=document.querySelector(`#board5 .work .mc[data-w="${id}"]`);if(c&&!c.querySelector('.mbadge')){c.classList.add('isbet');c.insertAdjacentHTML('beforeend','<span class="mbadge">\u237a bet · draft</span>');}}
+document.getElementById('board5').addEventListener('click',e=>{const c=e.target.closest('.work .mc');if(c)openDetail(c.dataset.w);});
+
+/* revisit outcome toggle on screen 3 */
+document.getElementById('rseg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;outcome=b.dataset.o;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  const win=outcome==='win';
+  const vm=document.getElementById('vmini'),gm=document.getElementById('gateMini'),go=document.getElementById('goalMini'),ls=document.getElementById('ledgerStatus');
+  vm.className='verdict-mini '+(win?'win':'loss');
+  vm.textContent=win?'WIN — cleared the +4% fold-if':'LOSS — under the +4% fold-if';
+  gm.className='gateline '+(win?'unlocked':'withheld');
+  gm.textContent=win?'✓ “send to all” unlocked — roll the winning email':'✕ “send to all” withheld — the rollout doesn\u2019t fire on a losing bet';
+  go.innerHTML=win?'goal: moves toward <b>52%</b> ↑ — the evidence earned it':'goal: stays at <b>30%</b> — no movement claimed it didn\u2019t earn';
+  ls.className='st2 '+(win?'won':'lost');ls.textContent=win?'won':'lost';
+});
+
+show(0);
+</script>
+</body>
+</html>

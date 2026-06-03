@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1020px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:20px;}
+  .wordmark{font-size:30px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .tagline{font-size:13px;color:var(--ink-soft);margin-top:8px;line-height:1.65;max-width:740px;}
+  .tagline em{color:var(--terra);font-style:italic;}
+
+  .hero{border:2px solid var(--terra);background:var(--terra-soft);padding:18px 22px;margin-bottom:26px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
+  .hero .hl{flex:1;min-width:240px;}
+  .hero .ht{font-size:17px;font-weight:700;}
+  .hero .hd{font-size:12px;color:var(--ink-soft);margin-top:5px;line-height:1.5;}
+  .hero .hcta a{display:inline-block;font-family:inherit;font-size:13px;padding:11px 20px;border:2px solid var(--terra);background:var(--terra);color:var(--paper);text-decoration:none;font-weight:700;letter-spacing:.5px;}
+  .hero .hcta a:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+
+  /* layer section */
+  .layer{margin-bottom:28px;}
+  .lhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  .lnum{font-size:22px;font-weight:700;color:var(--terra);letter-spacing:-1px;width:28px;}
+  .ltitle{font-size:15px;font-weight:700;letter-spacing:.3px;}
+  .lphase{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;margin-left:auto;}
+  .lphase.pre{color:var(--green);border-color:var(--green-line);}
+  .lphase.live{color:var(--terra);border-color:var(--terra-line);}
+  .lphase.post{color:var(--plinth);border-color:var(--plinth-line);}
+  .lrule{border:none;border-top:1.5px dashed var(--rule-faint);margin:7px 0 14px;}
+  .ldesc{font-size:12px;color:var(--ink-soft);line-height:1.6;margin-bottom:14px;max-width:780px;}
+  .ldesc b{color:var(--ink);}
+
+  /* transition marker */
+  .trans{display:flex;align-items:center;gap:10px;margin:0 0 26px 8px;}
+  .trans .tline{flex:0 0 1.5px;height:24px;background:var(--rule-faint);}
+  .trans .tlbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);font-style:italic;}
+
+  /* surface links */
+  .surfs{display:flex;flex-direction:column;gap:8px;}
+  .sf{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:baseline;border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.22);padding:11px 14px;text-decoration:none;color:var(--ink);transition:background .12s;}
+  .sf:hover{background:var(--paper-2);}
+  .sf .si{font-size:13px;color:var(--ink-faint);}
+  .sf .st{font-size:13px;font-weight:700;}
+  .sf .sd{font-size:11px;color:var(--ink-soft);line-height:1.45;margin-top:2px;}
+  .sf .stag{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px dashed;white-space:nowrap;align-self:center;}
+  .sf .stag.t{color:var(--terra);border-color:var(--terra-line);}
+  .sf .stag.g{color:var(--green);border-color:var(--green-line);}
+  .sf .stag.p{color:var(--plinth);border-color:var(--plinth-line);}
+  .sf .stag.dim{color:var(--ink-faint);border-color:var(--rule-faint);}
+
+  /* spine (for lifecycle within layer 3) */
+  .spine{display:flex;flex-direction:column;}
+  .step{display:flex;gap:12px;text-decoration:none;color:var(--ink);border:1.5px dashed var(--rule-faint);padding:10px 13px;transition:background .12s;align-items:flex-start;}
+  .step:hover{background:var(--paper-2);}
+  .step .n{flex:0 0 24px;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--terra-line);color:var(--terra);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+  .step .body{min-width:0;}
+  .step .t{font-size:13px;font-weight:700;}
+  .step .d{font-size:11px;color:var(--ink-soft);line-height:1.5;margin-top:2px;}
+  .step .d b{color:var(--terra);font-weight:500;}
+  .conn{height:10px;width:1.5px;border-left:1.5px dashed var(--rule-faint);margin-left:20px;}
+
+  /* adoption tiers */
+  .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+  .tier{border:1.5px dashed var(--rule-faint);padding:11px 13px;}
+  .tier .tn{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:5px;}
+  .tier .tw{font-size:11px;color:var(--ink-soft);line-height:1.45;}
+  .tier .tw b{color:var(--ink);}
+  .tier .tl{font-size:9.5px;color:var(--ink-faint);margin-top:6px;}
+
+  /* integrity */
+  .integ{border:1.5px solid var(--rule);background:rgba(255,255,255,.3);padding:14px 16px;margin-top:18px;}
+  .integ .ih{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);font-weight:700;margin-bottom:8px;}
+  .integ .id{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}
+  .integ .id b{color:var(--ink);}
+
+  .sec-h{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-faint);margin:30px 0 4px;display:flex;align-items:baseline;gap:10px;}
+  .sec-h .sub{letter-spacing:0;text-transform:none;font-style:italic;font-size:11px;}
+  .sec-rule{border:none;border-top:1.5px dashed var(--rule-faint);margin:7px 0 14px;}
+  .docrow{font-size:11.5px;color:var(--ink-soft);line-height:1.7;} .docrow a{color:var(--terra);}
+  .deferred{border:1.5px dashed var(--rule-faint);padding:12px 16px;margin-top:18px;font-size:11px;color:var(--ink-soft);line-height:1.6;} .deferred b{color:var(--terra);}
+  footer.foot{margin-top:26px;border-top:1.5px dashed var(--rule);padding-top:14px;font-size:11px;color:var(--ink-faint);line-height:1.6;}
+
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+
+  @media(max-width:700px){.tiers{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="substrate/Full Flow.html">full flow</a><a href="substrate/Journal Index.html">journal</a><a href="Bet Front Door.html">new bet</a><a href="substrate/Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="tagline">Five layers, one discipline. <em>Pre-data</em> (layers 1–3): govern, plan, commit before you can see. <em>The experiment lives and dies</em> (layer 4): method-specific monitoring + verdict. <em>Post-experiment</em> (layer 5): method-agnostic learning, looping back to strategy. Existing tools answer "can I run this?" — alphaBeta surfaces "<em>should</em> I?" and holds you to what you committed.</div>
+  </header>
+
+  <div class="hero">
+    <div class="hl">
+      <div class="ht">Start here: walk the full flow</div>
+      <div class="hd">Strategy view → sequencing → the lifecycle → revisit → journal roll-up. Five screens, end to end.</div>
+    </div>
+    <div class="hcta"><a href="substrate/Full Flow.html">full flow ▸</a></div>
+  </div>
+
+  <!-- LAYER 1 -->
+  <div class="layer">
+    <div class="lhead">
+      <span class="lnum">1</span>
+      <span class="ltitle">Strategy</span>
+      <span class="lphase pre">pre-data</span>
+    </div>
+    <hr class="lrule">
+    <div class="ldesc">Top-level governance on a large-period basis (quarterly, semi-annual). What's in scope this cycle: North Star, product drivers, top problems, current goals, <b>"the work."</b> The strategy layer (formerly Plinth) supports multiple frameworks (NSF, RICE, GPS, OKR, GIST).</div>
+    <div class="surfs">
+      <a class="sf" href="substrate/Full Flow.html">
+        <span class="si">▤</span>
+        <span><span class="st">Strategy Board</span><div class="sd">The NSF board — full flow screen 1. Goals decompose into work; empirical claims get recognized as bets.</div></span>
+        <span class="stag g">full flow · screen 1</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="trans"><div class="tline"></div><span class="tlbl">↓ discernment — which work items are bets?</span></div>
+
+  <!-- LAYER 2 -->
+  <div class="layer">
+    <div class="lhead">
+      <span class="lnum">2</span>
+      <span class="ltitle">Planning</span>
+      <span class="lphase pre">pre-data</span>
+    </div>
+    <hr class="lrule">
+    <div class="ldesc">Define, vet, and sequence bets within a period. <b>Single or sequence?</b> What's the dependency shape? How do bets relate across objectives? Status is <b>derived</b> from each bet's lifecycle (chain of custody) — the journal reads, it never authors.</div>
+    <div class="surfs">
+      <a class="sf" href="substrate/Bet Sequencing.html">
+        <span class="si">⍺</span>
+        <span><span class="st">Bet Sequencing</span><div class="sd">One bet or a sequence? Chain / fan-in / parallel + live graph preview.</div></span>
+        <span class="stag t">interactive</span>
+      </a>
+      <a class="sf" href="substrate/Journal Index.html">
+        <span class="si">▤</span>
+        <span><span class="st">Journal Index</span><div class="sd">The ledger of all bets. Three lenses: Ledger (by objective) · Board (by status) · Log (chronological).</div></span>
+        <span class="stag t">interactive</span>
+      </a>
+      <a class="sf" href="substrate/Dependent Bets.html">
+        <span class="si">→</span>
+        <span><span class="st">Dependent Bets</span><div class="sd">Linear conditional progression: win unlocks next, loss prunes downstream. Override-with-logged-flag.</div></span>
+        <span class="stag t">interactive</span>
+      </a>
+      <a class="sf" href="substrate/Fan-in Bets.html">
+        <span class="si">⇅</span>
+        <span><span class="st">Fan-in Bets</span><div class="sd">Multi-prerequisite AND/OR join. The orphaned-win case — a clean result stranded on a dead branch.</div></span>
+        <span class="stag t">interactive</span>
+      </a>
+      <a class="sf" href="substrate/Cross-Goal Scoping.html">
+        <span class="si">↗</span>
+        <span><span class="st">Cross-Goal Scoping</span><div class="sd">Soft filter + muted cross-references. Dependencies never hidden, just dimmed.</div></span>
+        <span class="stag t">interactive</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- LAYER 3 -->
+  <div class="layer">
+    <div class="lhead">
+      <span class="lnum">3</span>
+      <span class="ltitle">Refinement</span>
+      <span class="lphase pre">pre-data</span>
+    </div>
+    <hr class="lrule">
+    <div class="ldesc">The single-bet lifecycle — from a vague idea to a <b>locked, timestamped commitment</b>. Everything here happens <b>before any data exists</b>. That's the whole discipline: commit before you can see.</div>
+    <div class="spine">
+      <a class="step" href="Bet Front Door.html">
+        <span class="n">1</span>
+        <span class="body"><span class="t">Bet Front Door</span><span class="d"><b>Dump → reflect → sharpen</b> into the wager. Scans for the falsifier; mechanism separate from confidence.</span></span>
+      </a>
+      <div class="conn"></div>
+      <a class="step" href="Feasibility and Instrument.html">
+        <span class="n">2</span>
+        <span class="body"><span class="t">Feasibility &amp; Instrument</span><span class="d"><b>Fold-if = detection spec.</b> Live fit engine nudges you to the instrument — nudge, not gate.</span></span>
+      </a>
+      <div class="conn"></div>
+      <a class="step" href="Decision Criteria.html">
+        <span class="n">3</span>
+        <span class="body"><span class="t">Decision Criteria</span><span class="d">Pre-register <b>win / inconclusive / loss</b> actions. Evidence bar supplied by the instrument.</span></span>
+      </a>
+      <div class="conn"></div>
+      <a class="step" href="Commit and Lock.html">
+        <span class="n">4</span>
+        <span class="body"><span class="t">Commit &amp; Lock</span><span class="d"><b>Draft / lock.</b> Timestamps, freezes, fingerprints. Immutable — edits make a new version.</span></span>
+      </a>
+    </div>
+  </div>
+
+  <!-- LAYER 4 -->
+  <div class="layer">
+    <div class="lhead">
+      <span class="lnum">4</span>
+      <span class="ltitle">In-flight → Resolution</span>
+      <span class="lphase live">method-specific</span>
+    </div>
+    <hr class="lrule">
+    <div class="ldesc"><b>The experiment lives and dies.</b> Method-specific monitoring (where applicable) + the verdict. The bucket is computed from the locked fold-if; the pre-registered action is recalled; deviations are logged. Verdicts propagate back to layer 2 (win unlocks the next step; loss prunes the branch).</div>
+    <div class="surfs">
+      <a class="sf" href="Revisit.html">
+        <span class="si">↻</span>
+        <span><span class="st">Revisit</span><div class="sd">Commitment meets outcome. Bucket computed from fold-if, action recalled, deviation logged beside the timestamp.</div></span>
+        <span class="stag t">interactive</span>
+      </a>
+      <a class="sf" href="substrate/Plinth Seam.html">
+        <span class="si">⇄</span>
+        <span><span class="st">The Seam</span><div class="sd">Strategy ⇄ substrate: discernment + goal context flows down + verdict gates sequence back up.</div></span>
+        <span class="stag dim">concept sketch</span>
+      </a>
+    </div>
+    <div class="ldesc" style="margin-top:14px;font-style:italic;color:var(--ink-faint)">Monitoring surfaces (A/B: SRM + peek discipline · holdback: novelty window · quasi: pre-trend validation · observational: spec-lock) are conceptualized per instrument but not yet built as standalone views. This is the natural home for all method-specific patterns.</div>
+  </div>
+
+  <!-- LAYER 5 -->
+  <div class="layer">
+    <div class="lhead">
+      <span class="lnum">5</span>
+      <span class="ltitle">Knowledge Management</span>
+      <span class="lphase post">post-experiment</span>
+    </div>
+    <hr class="lrule">
+    <div class="ldesc"><b>Method-agnostic</b> — by the time you're here, the method doesn't matter. Per-bet learning (calibration, "what I'd bet differently") feeds the next bet. Aggregate learning (patterns across many bets over time) feeds the next cycle. The loop from layer 5 back to layer 1 is what makes the platform a <b>learning system</b> rather than bureaucracy.</div>
+    <div class="ldesc" style="font-style:italic;color:var(--ink-faint)">Per-bet learning is captured at Revisit. Aggregate learning and the 5→1 loop mechanism are unbuilt. Calibration / track-record is a deferred opt-in — win-rate scoreboards create perverse incentives.</div>
+  </div>
+
+  <div class="trans"><div class="tline"></div><span class="tlbl">↑ loop — aggregate learning feeds the next cycle's strategy</span></div>
+
+  <!-- INTEGRITY -->
+  <div class="integ">
+    <div class="ih">⛓ Integrity / Chain of Custody · cross-cutting</div>
+    <div class="id">Not a layer — a property of the substrate that instruments layers 2–5. <b>Timestamps</b> (when locked, when judged) · <b>content fingerprint</b> (proving what was committed) · <b>immutability</b> (locked fields can't be edited) · <b>deviation logging</b> (overrides in the user's own words) · <b>derived status</b> (flows from lifecycle, never set manually). The spine of evidentiary integrity.</div>
+  </div>
+
+  <!-- ADOPTION -->
+  <div class="sec-h">adoption tiers <span class="sub">a bottom-up ladder, not a menu</span></div>
+  <hr class="sec-rule">
+  <div class="tiers">
+    <div class="tier">
+      <div class="tn">tier 1</div>
+      <div class="tw"><b>Individual discipline</b> — one person, one bet. Layers 3 → 4.</div>
+      <div class="tl">the minimum viable loop</div>
+    </div>
+    <div class="tier">
+      <div class="tn">tier 2</div>
+      <div class="tw"><b>Learning practitioner</b> — over time. Layers 3 → 4 → 5.</div>
+      <div class="tl">+ the decision journal</div>
+    </div>
+    <div class="tier">
+      <div class="tn">tier 3</div>
+      <div class="tw"><b>Team planning</b> — multiple bets. Layers 2 → 3 → 4 → 5.</div>
+      <div class="tl">+ sequencing, portfolio</div>
+    </div>
+    <div class="tier">
+      <div class="tn">tier 4</div>
+      <div class="tw"><b>Org strategy</b> — the full loop. Layers 1 → 2 → 3 → 4 → 5.</div>
+      <div class="tl">+ governance, 5→1 loop</div>
+    </div>
+  </div>
+
+  <!-- DOCS -->
+  <div class="sec-h">decisions &amp; documentation</div>
+  <hr class="sec-rule">
+  <div class="docrow">
+    <a href="substrate/Layer Model.md">Layer model</a> — the 5 layers + transitions + integrity spine + adoption tiers. Working model.<br>
+    <a href="substrate/Join Behavior.md">Join behavior</a> — AND default, OR opt-in, per-node, no weighting. Settled.<br>
+    <a href="explorations/ITERATION-LOG.md">Iteration log</a> — every iteration, reasoning, feedback.<br>
+    <a href="CLAUDE.md">CLAUDE.md</a> — nomenclature, architecture, aesthetic conventions.
+  </div>
+
+  <!-- ARCHIVE -->
+  <div class="sec-h">explorations archive <span class="sub">the trail that got here — superseded</span></div>
+  <hr class="sec-rule">
+  <div class="surfs">
+    <a class="sf" href="explorations/Setup Phase - Decompositions.html"><span class="si">01</span><span><span class="st">Setup Decompositions</span><div class="sd">Three structural cuts (A/B/C) → "these map to expertise levels."</div></span><span class="stag g">concept</span></a>
+    <a class="sf" href="explorations/Setup Register Dial.html"><span class="si">02</span><span><span class="st">The Register Dial</span><div class="sd">Fixed bones, variable narration.</div></span><span class="stag g">concept</span></a>
+    <a class="sf" href="explorations/Decision-Method.html"><span class="si">03</span><span><span class="st">Decision × Method</span><div class="sd">Decision is the spine; method is a pluggable module.</div></span><span class="stag g">concept</span></a>
+    <a class="sf" href="explorations/Instrument Finder.html"><span class="si">04</span><span><span class="st">Instrument Finder</span><div class="sd">Method settles at feasibility; nudge off your default.</div></span><span class="stag dim">→ Feasibility</span></a>
+    <a class="sf" href="explorations/Bet Articulation.html"><span class="si">05</span><span><span class="st">Bet Articulation</span><div class="sd">Three front-door approaches → fused into the Bet Front Door.</div></span><span class="stag dim">→ Front Door</span></a>
+  </div>
+
+  <div class="deferred">
+    <b>Genuinely deferred:</b> method-specific monitoring surfaces (layer 4a) · aggregate KM + the 5→1 loop mechanism (layer 5) · calibration / track-record (opt-in — win-rate scoreboards create perverse incentives) · weighted / per-edge joins · framework-specific decomposition (RICE vs NSF vs GPS).
+  </div>
+
+  <footer class="foot">alph⍺βeta · wireframe journey-map · low-fi by intent — polish at this stage misleads.</footer>
+
+</div>
+</body>
+</html>

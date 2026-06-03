@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Fan-in Bets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --amber:#9a7d3a;--amber-soft:color-mix(in srgb, var(--amber) 11%, transparent);--amber-line:color-mix(in srgb, var(--amber) 55%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:16px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:19px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:2px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:850px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+
+  .control{border:1.5px dashed var(--rule);background:rgba(255,255,255,.3);padding:12px 16px;margin:18px 0 8px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+  .control .lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  .joinseg{display:flex;border:1.5px solid var(--terra-line);}
+  .joinseg button{font-family:inherit;font-size:11.5px;padding:7px 14px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--terra-line);cursor:pointer;}
+  .joinseg button:last-child{border-right:none;}
+  .joinseg button.on{background:var(--terra);color:var(--paper);font-weight:700;}
+  .joinseg button:not(.on):hover{background:var(--terra-soft);}
+  .joindesc{font-size:11px;color:var(--ink-soft);font-style:italic;}
+  .btn{font-family:inherit;font-size:11px;padding:7px 13px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;}
+  .btn:hover{background:var(--paper-2);}
+
+  .objline{font-size:11px;color:var(--plinth);margin:14px 0 14px;letter-spacing:.5px;}
+  .objline b{color:var(--plinth);}
+
+  /* graph */
+  .graph{display:flex;align-items:center;gap:0;flex-wrap:wrap;}
+  .prereqs{display:flex;flex-direction:column;gap:14px;flex:1 1 250px;min-width:230px;}
+  .joincol{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10px;min-width:96px;}
+  .joinbadge{border:1.5px solid var(--terra);background:var(--terra-soft);color:var(--terra);font-weight:700;font-size:13px;letter-spacing:1px;padding:8px 12px;text-align:center;}
+  .joinbadge .jr{font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);font-weight:400;margin-top:3px;}
+  .joinconv{font-size:10px;color:var(--ink-faint);text-align:center;margin:6px 0;line-height:1.5;}
+  .joinout{font-size:18px;color:var(--ink-faint);text-align:center;}
+  .joinout.unlocked{color:var(--green);} .joinout.pruned{color:var(--terra);}
+  .downcol{flex:1 1 250px;min-width:230px;}
+  .arrowx{flex:0 0 auto;align-self:center;color:var(--ink-faint);font-size:18px;padding:0 8px;text-align:center;min-width:46px;}
+  .arrowx.unlocked{color:var(--green);} .arrowx.sev{color:var(--terra);}
+  .rollcol{flex:1 1 220px;min-width:210px;}
+
+  .node{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:13px;transition:opacity .2s,border-color .2s,background .2s;}
+  .node .neye{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px;display:flex;justify-content:space-between;gap:8px;}
+  .node .nq{font-size:12.5px;font-weight:600;line-height:1.4;}
+  .node .nexp{font-size:10.5px;color:var(--ink-soft);margin-top:7px;}
+  .node.active{border-color:var(--terra);background:var(--terra-soft);}
+  .node.win{border-color:var(--green-line);}
+  .node.loss{border-color:var(--terra);}
+  .node.blocked{opacity:.6;}
+  .node.pruned{opacity:.5;}
+  .node.pruned .nq{text-decoration:line-through;text-decoration-color:var(--terra-line);}
+  .node.orphan{border-color:var(--amber-line);background:var(--amber-soft);opacity:1;}
+
+  .stbadge{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;display:inline-flex;align-items:center;gap:5px;margin-top:10px;}
+  .stbadge.blocked{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .stbadge.active{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .stbadge.win{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .stbadge.loss{color:var(--paper);background:var(--terra);border-color:var(--terra);}
+  .stbadge.pruned{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+  .stbadge.orphan{color:var(--paper);background:var(--amber);border-color:var(--amber);}
+
+  .resolve{display:flex;gap:8px;margin-top:11px;}
+  .resolve button{flex:1;font-family:inherit;font-size:10.5px;padding:7px 8px;border:1.5px solid;cursor:pointer;background:transparent;letter-spacing:.3px;}
+  .resolve .rwin{border-color:var(--green-line);color:var(--green);}
+  .resolve .rwin:hover{background:var(--green);color:var(--paper);}
+  .resolve .rloss{border-color:var(--terra-line);color:var(--terra);}
+  .resolve .rloss:hover{background:var(--terra);color:var(--paper);}
+  .orphannote{margin-top:9px;font-size:10px;color:var(--amber);font-style:italic;line-height:1.5;}
+
+  .rollout-state{margin-top:10px;font-size:11px;font-weight:600;}
+  .rollout-state.ready{color:var(--green);} .rollout-state.withheld{color:var(--terra);} .rollout-state.blocked{color:var(--ink-faint);font-weight:400;font-style:italic;}
+  .node.rollout{border-style:dashed;background:rgba(90,107,140,.04);}
+  .node.rollout.ready{border-color:var(--green-line);border-style:solid;background:var(--green-soft);}
+  .node.rollout.withheld{border-color:var(--terra-line);background:var(--terra-soft);}
+
+  .value{margin-top:18px;border:1.5px solid var(--rule);background:rgba(255,255,255,.3);padding:13px 16px;font-size:12.5px;line-height:1.6;display:flex;align-items:baseline;gap:10px;}
+  .value.orphan{border-color:var(--amber-line);background:var(--amber-soft);}
+  .value.win{border-color:var(--green-line);background:var(--green-soft);}
+  .value.prune{border-color:var(--terra-line);background:var(--terra-soft);}
+  .value .vt{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;white-space:nowrap;color:var(--ink-soft);}
+  .value.orphan .vt{color:var(--amber);} .value.win .vt{color:var(--green);} .value.prune .vt{color:var(--terra);}
+  .value b{color:var(--terra);} .value.orphan b{color:var(--amber);} .value.win b{color:var(--green);}
+
+  /* annotation */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;margin-top:22px;position:relative;}
+  .annot::before{content:"DISCIPLINE LAYER · FAN-IN";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot p b{color:var(--amber);font-style:normal;}
+  .openq{border:1.5px dashed var(--plinth-line);background:var(--plinth-soft);padding:11px 13px;font-size:11.5px;line-height:1.55;font-style:italic;color:var(--ink);margin-top:4px;}
+  .openq b{color:var(--plinth);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:12px 0 0;}
+
+  footer.foot{margin-top:26px;border-top:1.5px dashed var(--rule);padding-top:16px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);} footer.foot a{color:var(--terra);}
+
+  @media(max-width:860px){.graph{flex-direction:column;align-items:stretch;}.joincol{flex-direction:row;gap:10px;min-width:0;padding:8px 0;}.arrowx{transform:rotate(90deg);}}
+</style>
+  <style id="gnav-css">
+  .gnav{position:sticky;top:0;z-index:100;background:var(--ink);display:flex;align-items:center;gap:0;padding:0 18px;height:38px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .gnav a{color:#e6dfce;text-decoration:none;font-size:11px;letter-spacing:.5px;padding:0 11px;height:38px;display:flex;align-items:center;}
+  .gnav a:hover{color:#e3a487;}
+  .gnav-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;border-right:1px solid rgba(255,255,255,.12);padding-right:14px;margin-right:4px;}
+  .gnav-logo .a,.gnav-logo .b{color:#e3a487;}
+  .gnav-sep{width:1px;background:rgba(255,255,255,.12);height:16px;margin:0 3px;}
+  </style>
+</head>
+<body>
+<nav class="gnav"><a class="gnav-logo" href="../alphaBeta - Index.html">alph<span class="a">⍺</span><span class="b">β</span>eta</a><div class="gnav-sep"></div><a href="Full Flow.html">full flow</a><a href="Journal Index.html">journal</a><a href="../Bet Front Door.html">new bet</a><a href="Bet Sequencing.html">sequencing</a></nav>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">decision substrate</span><span class="crumb">·</span>
+          <span class="crumb">fan-in bets</span><span class="crumb">·</span>
+          <span class="crumb">multiple prerequisites</span>
+        </div>
+      </div>
+      <div class="stamp">all must hold — unless you say otherwise</div>
+    </div>
+    <p class="lead">Some bets rest on <em>more than one</em> prerequisite. Two prereqs (<b style="color:var(--ink)">X</b> and <b style="color:var(--ink)">Y</b>) both feed a downstream bet <b style="color:var(--ink)">Z</b>. The <em>join type</em> decides what "satisfied" means — and it isn't always obvious. Resolve the prereqs and watch how the join behaves; flip <b style="color:var(--ink)">AND / OR</b> to see the difference, and the case worth naming: a <em>win that gets stranded</em>.</p>
+  </header>
+
+  <div class="control">
+    <span class="lbl">join</span>
+    <div class="joinseg" id="joinseg">
+      <button data-j="and" class="on">AND</button>
+      <button data-j="or">OR</button>
+    </div>
+    <span class="joindesc" id="joindesc">both prerequisites must win for Z to unlock</span>
+    <button class="btn" id="reset" style="margin-left:auto">⟲ reset</button>
+  </div>
+
+  <div class="objline">objective: <b>Ship the new checkout safely</b> · Z needs its prerequisites satisfied before it can run ↓</div>
+
+  <div class="graph" id="graph"></div>
+
+  <div class="value" id="value" style="display:none"><span class="vt" id="valueT"></span><span id="valueText"></span></div>
+
+  <div class="annot">
+    <div class="moment">Fan-in — when a bet needs more than one prerequisite</div>
+    <div class="annot-grid">
+      <div>
+        <p style="font-style:normal;color:var(--ink)"><b style="color:var(--terra)">AND-join (default):</b> <em>all</em> prereqs must win; <em>any</em> loss prunes Z. <b style="color:var(--terra)">OR-join:</b> <em>either</em> path is enough; Z prunes only if all lose. The join is a property of the <em>edge</em>, not a global rule — so it has to be set, not assumed.</p>
+        <p style="font-style:normal;color:var(--ink)">The case to name: the <b>orphaned win</b>. Under AND, you can win X cleanly, but if Y loses, everything they jointly fed is pruned — and X's win is <em>stranded</em>. A real result, real effort, attached to a dead branch.</p>
+      </div>
+      <div>
+        <p style="font-style:normal;color:var(--ink)">That's the argument for treating <em>parallel prerequisites as a deliberate act</em>, not a casual fan-out — the discipline layer makes the stranded win visible instead of letting it quietly absorb the cost. Under OR, a win is never orphaned; it satisfied the join on its own.</p>
+        <div class="openq">⚑ <b>Logged for later:</b> what's the <b>default join</b>, is it set <b>per-edge</b>, how do you handle <b>precedence / weighting</b> when prereqs disagree, and how does fan-in interact with <b>cross-goal scoping</b> in the index? Deferred — the mechanic holds regardless of the answer.</div>
+        <p class="margin-note">↖ a stranded win is a real cost — make it visible.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>exploration — fan-in / multi-prerequisite.</b> Extends the linear chain in <a href="Dependent Bets.html">conditional progression</a> to a DAG join. &nbsp;—&nbsp; related: <a href="Journal Index.html">journal index</a> · <a href="Plinth Seam.html">the seam</a></div>
+  </footer>
+
+</div>
+
+<script>
+const PRE={
+  x:{q:'Does the payment-provider migration hold at full volume?',instr:'holdback · canary'},
+  y:{q:'Does the fraud model survive the new checkout flow?',instr:'A/B · shadow scoring'}
+};
+const Z={q:'Does the new checkout lift completion without raising chargebacks?',instr:'A/B'};
+const ROLL={q:'Ship the new checkout to 100%'};
+
+const state={out:{x:'pending',y:'pending',z:'pending'},join:'and'};
+
+function rootStatus(id){const o=state.out[id];return o==='pending'?'active':o;}
+function joinResult(){
+  const o=[state.out.x,state.out.y];
+  const anyLoss=o.includes('loss'),anyWin=o.includes('win'),allWin=o.every(v=>v==='win'),allLoss=o.every(v=>v==='loss');
+  if(state.join==='and'){if(anyLoss)return 'pruned';if(allWin)return 'unlocked';return 'blocked';}
+  else{if(anyWin)return 'unlocked';if(allLoss)return 'pruned';return 'blocked';}
+}
+function zStatus(){const jr=joinResult();if(jr!=='unlocked')return jr;return state.out.z==='pending'?'active':state.out.z;}
+function orphaned(id){if(state.join!=='and')return false;if(state.out[id]!=='win')return false;return state.out[id==='x'?'y':'x']==='loss';}
+function rolloutState(){const zs=zStatus();if(zs==='win')return 'ready';if(zs==='loss'||zs==='pruned')return 'withheld';return 'blocked';}
+
+const STLABEL={blocked:'blocked',active:'active',win:'won',loss:'lost',pruned:'pruned',orphan:'won · orphaned'};
+
+function nodeCard(id,data,status,opts={}){
+  const orph=opts.orphan;
+  const cls=orph?'orphan':status;
+  const badge=orph?'orphan':status;
+  return `<div class="node ${cls}">
+    <div class="neye"><span>${data.instr||'task'}</span><span>${opts.dep||''}</span></div>
+    <div class="nq">${data.q}</div>
+    ${opts.tag?`<div class="nexp">${opts.tag}</div>`:''}
+    <div><span class="stbadge ${badge}">${orph?'⚑ ':''}${STLABEL[badge]}</span></div>
+    ${status==='active'?`<div class="resolve"><button class="rwin" data-win="${id}">✓ it won</button><button class="rloss" data-loss="${id}">✕ it lost</button></div>`:''}
+    ${orph?`<div class="orphannote">⚑ stranded — its co-prerequisite lost, so the work it fed is pruned.</div>`:''}
+  </div>`;
+}
+
+function render(){
+  // join desc
+  document.getElementById('joindesc').textContent = state.join==='and'
+    ? 'both prerequisites must win for Z to unlock' : 'either prerequisite winning unlocks Z';
+  [...document.getElementById('joinseg').children].forEach(b=>b.classList.toggle('on',b.dataset.j===state.join));
+
+  const jr=joinResult(), zs=zStatus(), rs=rolloutState();
+  const xs=rootStatus('x'), ys=rootStatus('y');
+
+  const g=document.getElementById('graph');
+  g.innerHTML=
+    `<div class="prereqs">
+       ${nodeCard('x',PRE.x,xs,{dep:'prereq · bet X',orphan:orphaned('x')})}
+       ${nodeCard('y',PRE.y,ys,{dep:'prereq · bet Y',orphan:orphaned('y')})}
+     </div>
+     <div class="joincol">
+       <div class="joinconv">X ↘<br>Y ↗</div>
+       <div class="joinbadge">${state.join.toUpperCase()}<div class="jr">${state.join==='and'?'all must win':'either wins'}</div></div>
+       <div class="joinout ${jr}">${jr==='unlocked'?'↳ ✓':jr==='pruned'?'↳ ✕':'↳'}</div>
+     </div>
+     <div class="downcol">
+       ${nodeCard('z',Z,zs,{dep:'downstream · bet Z',tag:'needs X '+state.join.toUpperCase()+' Y'})}
+     </div>
+     <div class="arrowx ${zs==='win'?'unlocked':(zs==='loss'||zs==='pruned')?'sev':''}">${(zs==='loss'||zs==='pruned')?'⇥':'→'}</div>
+     <div class="rollcol">
+       <div class="node rollout ${rs}">
+         <div class="neye"><span>rollout · task</span><span>depends on Z</span></div>
+         <div class="nq">${ROLL.q}</div>
+         <div class="rollout-state ${rs}">${rs==='ready'?'✓ ready — ship it':rs==='withheld'?'✕ withheld — Z not cleared':'blocked — awaiting Z'}</div>
+       </div>
+     </div>`;
+
+  // value band
+  const v=document.getElementById('value'),vt=document.getElementById('valueT'),vx=document.getElementById('valueText');
+  const orphX=orphaned('x'),orphY=orphaned('y');
+  if(orphX||orphY){
+    const won=orphX?'X':'Y', lost=orphX?'Y':'X';
+    v.style.display='flex';v.className='value orphan';vt.textContent='orphaned win';
+    vx.innerHTML=`Bet <b>${won}</b> won — but it's <b>orphaned</b>. Under AND, co-prerequisite <b>${lost}</b> lost, so Z is pruned and ${won}'s clean result is stranded on a dead branch. The effort was real; the join made it moot. <span style="color:var(--ink-soft)">Flip to OR to see when a single win <em>is</em> enough.</span>`;
+  }else if(zs==='win'){
+    v.style.display='flex';v.className='value win';vt.textContent='join satisfied';
+    vx.innerHTML=`Z cleared and the rollout is unlocked. ${state.join==='and'?'Both prerequisites held before Z ran.':'A winning path satisfied the OR-join.'}`;
+  }else if(jr==='pruned'){
+    v.style.display='flex';v.className='value prune';vt.textContent='Z pruned';
+    vx.innerHTML=state.join==='and'
+      ? `A prerequisite lost — under AND, Z is pruned before it runs. The rollout is withheld.`
+      : `All prerequisites lost — even OR can't unlock Z. The rollout is withheld.`;
+  }else if(zs==='active'){
+    v.style.display='flex';v.className='value win';vt.textContent='Z unlocked';
+    vx.innerHTML=`The join is satisfied — Z is now the active frontier. Resolve it to gate the rollout.`;
+  }else{v.style.display='none';}
+}
+
+document.getElementById('graph').addEventListener('click',e=>{
+  const w=e.target.closest('[data-win]'), l=e.target.closest('[data-loss]');
+  if(w){state.out[w.dataset.win]='win';render();}
+  else if(l){state.out[l.dataset.loss]='loss';render();}
+});
+document.getElementById('joinseg').addEventListener('click',e=>{const b=e.target.closest('button');if(b){state.join=b.dataset.j;render();}});
+document.getElementById('reset').addEventListener('click',()=>{state.out={x:'pending',y:'pending',z:'pending'};render();});
+render();
+</script>
+</body>
+</html>
