@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
@@ -66,6 +66,18 @@ export default function CommitAndLock() {
 
   const minimumMindChanger = bet.foldIf?.trim() ?? "";
   const isLocked = state === "locked" && committed !== null;
+
+  // What does the bet need before it can be locked? Per design intent the
+  // fold-if is non-negotiable — without it the bet can't lose, so locking
+  // would commit a non-bet. The other fields are nudges, not gates.
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!bet.foldIf?.trim()) missing.push("fold-if (the loss line)");
+    if (!bet.change?.trim()) missing.push("the change");
+    if (!bet.metric?.trim()) missing.push("the metric");
+    return missing;
+  }, [bet]);
+  const canLock = missingFields.length === 0;
 
   return (
     <div className="ab-wrap">
@@ -191,17 +203,29 @@ export default function CommitAndLock() {
 
             {state === "draft" && (
               <>
-                <Button
+                {!canLock && (
+                  <div className="border-[1.5px] border-dashed border-terra-line bg-terra-soft p-[12px] mb-[12px] text-[11.5px] leading-[1.55]">
+                    <div className="text-[9px] tracking-[1.5px] uppercase text-terra font-bold mb-[4px]">
+                      ⌑ nothing to lock yet
+                    </div>
+                    The draft on this device is missing:{" "}
+                    <b className="text-terra">{missingFields.join(", ")}</b>.{" "}
+                    Step back to the front door and sharpen the wager — the
+                    fold-if is the load-bearing field.
+                  </div>
+                )}
+                <ButtonLink
+                  href="/"
                   variant="default"
-                  style={{ width: "100%", marginBottom: 8 }}
-                  disabled
+                  style={{ width: "100%", marginBottom: 8, textAlign: "center" }}
                 >
-                  Save as draft
-                </Button>
+                  ← back to the front door
+                </ButtonLink>
                 <Button
                   variant="primary"
                   style={{ width: "100%" }}
                   onClick={() => setState("confirming")}
+                  disabled={!canLock}
                 >
                   Commit &amp; lock ▸
                 </Button>

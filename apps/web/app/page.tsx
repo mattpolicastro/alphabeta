@@ -34,10 +34,12 @@ export default function BetFrontDoor() {
     if (Object.keys(prior).length > 0) setBet(prior);
   }, []);
 
-  // Mirror committed bet to localStorage on change.
+  // Mirror the in-flight bet to localStorage on any change once we have
+  // anything to carry. Partial drafts persist between sessions and between
+  // screens; the lock is what makes it canonical.
   useEffect(() => {
-    if (stage >= 3) writeAbBet(bet);
-  }, [bet, stage]);
+    if (Object.keys(bet).length > 0) writeAbBet(bet);
+  }, [bet]);
 
   const setField = <K extends WagerKey>(k: K, v: AbBet[K]) =>
     setBet((prev) => ({ ...prev, [k]: v }));
