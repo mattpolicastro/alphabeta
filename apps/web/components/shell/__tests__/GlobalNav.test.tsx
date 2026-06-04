@@ -17,11 +17,11 @@ describe("GlobalNav", () => {
     expect(logo).toHaveAttribute("href", "/");
   });
 
-  it("renders refinement as a direct top-level link to /bet/new", () => {
+  it("renders 'draft' as a direct top-level link to /bet/new", () => {
     usePathnameMock.mockReturnValue("/");
     render(<GlobalNav />);
     expect(
-      screen.getByRole("link", { name: "refinement" }),
+      screen.getByRole("link", { name: "draft" }),
     ).toHaveAttribute("href", "/bet/new");
   });
 
@@ -36,18 +36,18 @@ describe("GlobalNav", () => {
   it("renders disabled top-level layers without anchors", () => {
     usePathnameMock.mockReturnValue("/");
     render(<GlobalNav />);
-    for (const label of ["strategy", "running", "KM"]) {
+    for (const label of ["aim", "run", "learn"]) {
       const node = screen.getByText(label);
       expect(node.tagName.toLowerCase()).toBe("span");
       expect(node).toHaveAttribute("aria-disabled", "true");
     }
   });
 
-  it("opens the planning dropdown on click and shows its children", async () => {
+  it("opens the plan dropdown on click and shows its children", async () => {
     usePathnameMock.mockReturnValue("/");
     const user = userEvent.setup();
     render(<GlobalNav />);
-    const trigger = screen.getByRole("button", { name: /planning/i });
+    const trigger = screen.getByRole("button", { name: /^plan$/ });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     await user.click(trigger);
@@ -79,11 +79,11 @@ describe("GlobalNav", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
-  it("doesn't mark refinement as current when on a bet stage route", () => {
+  it("doesn't mark 'draft' as current when on a bet stage route", () => {
     usePathnameMock.mockReturnValue("/bet/wager");
     render(<GlobalNav />);
     expect(
-      screen.getByRole("link", { name: "refinement" }),
+      screen.getByRole("link", { name: "draft" }),
     ).not.toHaveAttribute("aria-current");
   });
 });

@@ -24,14 +24,14 @@ type NavChild =
 const ITEMS: NavItem[] = [
   {
     kind: "disabled",
-    label: "strategy",
-    layer: "Layer 1",
+    label: "aim",
+    layer: "Layer 1 — Strategy",
     note: "goals, frameworks, the work",
   },
   {
     kind: "dropdown",
-    label: "planning",
-    layer: "Layer 2",
+    label: "plan",
+    layer: "Layer 2 — Planning",
     children: [
       { kind: "link", href: "/", label: "journal" },
       {
@@ -44,19 +44,19 @@ const ITEMS: NavItem[] = [
   {
     kind: "link",
     href: "/bet/new",
-    label: "refinement",
-    layer: "Layer 3",
+    label: "draft",
+    layer: "Layer 3 — Refinement",
   },
   {
     kind: "disabled",
-    label: "running",
-    layer: "Layer 4",
+    label: "run",
+    layer: "Layer 4 — In-flight",
     note: "needs a locked bet",
   },
   {
     kind: "disabled",
-    label: "KM",
-    layer: "Layer 5",
+    label: "learn",
+    layer: "Layer 5 — KM",
     note: "cross-bet calibration",
   },
 ];
