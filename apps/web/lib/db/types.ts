@@ -73,7 +73,8 @@ export interface Learning {
 
 export interface Bet {
   id: string;
-  objectiveId: string | null;
+  objectiveId: string | null; // deprecated; superseded by cardId. Cleanup in SP-F.
+  cardId: string | null; // strategy-card the bet was elevated from
   ownerId: string | null;
   type: "single" | "sequence";
 

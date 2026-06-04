@@ -42,6 +42,7 @@ function emptyBet(id: string, now: string): Bet {
   return {
     id,
     objectiveId: null,
+    cardId: null,
     ownerId: null,
     type: "single",
     articulation: emptyArticulation(),
@@ -73,15 +74,15 @@ function emptyBet(id: string, now: string): Bet {
 
 export async function mintDraft(
   initial?: Partial<Articulation>,
-  opts?: { objectiveId?: string },
+  opts?: { cardId?: string },
 ): Promise<Bet> {
   const now = new Date().toISOString();
   const bet = emptyBet(newId(), now);
   if (initial) {
     bet.articulation = { ...bet.articulation, ...initial };
   }
-  if (opts?.objectiveId) {
-    bet.objectiveId = opts.objectiveId;
+  if (opts?.cardId) {
+    bet.cardId = opts.cardId;
   }
   await getDb().bets.add(bet);
   return bet;

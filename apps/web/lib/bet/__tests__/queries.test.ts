@@ -44,13 +44,15 @@ describe("mintDraft", () => {
     expect(bet.articulation.magnitude).toBe("5%");
   });
 
-  it("links to an objective when objectiveId is provided", async () => {
-    const bet = await mintDraft(undefined, { objectiveId: "obj-abc" });
-    expect(bet.objectiveId).toBe("obj-abc");
+  it("links to a strategy card when cardId is provided", async () => {
+    const bet = await mintDraft(undefined, { cardId: "card-abc" });
+    expect(bet.cardId).toBe("card-abc");
+    expect(bet.objectiveId).toBeNull();
   });
 
-  it("defaults objectiveId to null when no opts provided", async () => {
+  it("defaults cardId and objectiveId to null when no opts provided", async () => {
     const bet = await mintDraft();
+    expect(bet.cardId).toBeNull();
     expect(bet.objectiveId).toBeNull();
   });
 

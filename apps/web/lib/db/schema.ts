@@ -1,9 +1,11 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { Bet, Objective } from "./types";
+import type { BoardRow } from "@/lib/strategy/types";
 
 export class AlphabetaDB extends Dexie {
   bets!: EntityTable<Bet, "id">;
   objectives!: EntityTable<Objective, "id">;
+  boards!: EntityTable<BoardRow, "id">;
 
   constructor() {
     super("alphabeta");
@@ -29,6 +31,22 @@ export class AlphabetaDB extends Dexie {
         });
         await tx.table("objectives").toCollection().modify((o) => {
           if (o.ownerId === undefined) o.ownerId = null;
+        });
+      });
+
+    // v3: add the strategy `boards` table for the Plinth port. Each row is
+    // a full BoardState (cards + connections live inline as arrays — the
+    // JSON-blob shape per SP plan, single boards table). Also backfills
+    // Bet.cardId to null on existing rows.
+    this.version(3)
+      .stores({
+        bets: "id, objectiveId, cardId, ownerId, status, lockedAt, previousVersionId, updatedAt",
+        objectives: "id, ownerId, framework, tag, updatedAt",
+        boards: "id, ownerId, templateId, updatedAt",
+      })
+      .upgrade(async (tx) => {
+        await tx.table("bets").toCollection().modify((b) => {
+          if (b.cardId === undefined) b.cardId = null;
         });
       });
   }
