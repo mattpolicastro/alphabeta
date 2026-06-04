@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
+import { WagerDumpPanel } from "@/components/bet/WagerDumpPanel";
 import type { AbBet } from "@/lib/bet/storage";
 import { getBet, updateDraft } from "@/lib/bet/queries";
 import type { Bet, Confidence, Direction } from "@/lib/db/types";
@@ -105,6 +106,8 @@ function BetWagerInner() {
 
       <SpineRail steps={lifecycleSteps(id)} />
       <BetSourceBadge cardId={cardId} />
+
+      <WagerDumpPanel onFill={(patch) => setBet((prev) => ({ ...prev, ...patch }))} />
 
       <div className="ab-cols">
         <div className="min-w-0">

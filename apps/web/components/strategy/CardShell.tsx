@@ -13,6 +13,8 @@ import { useLineageOffset } from '@/components/strategy/hooks/LineageAlignmentCo
 import { getColumnDef, getTemplate } from '@/lib/strategy/templates'
 import { ANCHOR_OFFSET_PX } from '@/components/strategy/hooks/useConnections'
 import { mintDraft } from '@/lib/bet/queries'
+import { analyzeDump } from '@/lib/bet/analyze'
+import { cardToDump, isElevatable } from '@/lib/strategy/elevate'
 
 interface CardShellProps {
   /** May be passed either as an initial snapshot or used only as an ID hint. */
@@ -134,9 +136,18 @@ export function CardShell({ card: initialCard }: CardShellProps) {
   }
 
   async function handleElevateToBet() {
-    if (!card.saved) return
+    if (!isElevatable(card, state.templateId)) return
     try {
-      const bet = await mintDraft({}, { cardId: card.id })
+      const board = {
+        templateId: state.templateId,
+        cycleName: state.cycleName,
+        columnMeta: state.columnMeta,
+        cards: state.cards,
+        connections: state.connections,
+      }
+      const dump = cardToDump(card, board, state.templateId)
+      const analysis = analyzeDump(dump, { source: 'strategy-card' })
+      const bet = await mintDraft(analysis.articulation, { cardId: card.id })
       router.push(`/bet/wager?id=${bet.id}`)
     } catch (err) {
       console.error('Failed to elevate card to bet:', err)
@@ -232,7 +243,11 @@ export function CardShell({ card: initialCard }: CardShellProps) {
         <CardToolbar
           onEdit={() => setEditing(true)}
           onDelete={() => dispatch({ type: 'DELETE_CARD', id: card.id })}
-          onElevate={card.saved ? handleElevateToBet : undefined}
+          onElevate={
+            isElevatable(card, state.templateId)
+              ? handleElevateToBet
+              : undefined
+          }
         />
       ) : null}
       {card.collapsed && !editing ? (
