@@ -1,5 +1,50 @@
 # WORKLOG
 
+## 2026-06-04 (cont.) — Sprint 4b: Framework colors, dialogs, tests, in-flight page
+
+Continuation of overnight session (context compacted, resumed).
+
+**Framework column colors:**
+- Ported RICE/GPS/OKR/GIST column background CSS custom properties from
+  plinthboard to `@theme` block in `globals.css`. Templates now render with
+  correct column backgrounds.
+
+**Dialog components (ported from plinthboard):**
+- `ConfirmDialog` — generic confirm/cancel overlay, reskinned to paper/ink/terra.
+  9 tests (backdrop click, escape key, custom labels).
+- `TemplatePicker` — framework chooser grid showing all 5 templates with name,
+  short-name badge, description, and column pill previews. 10 tests.
+- `TEMPLATE_LIST` array export added to registry for iteration.
+- ImportExportDialog and SnapshotDialog deferred — need board state hooks/utils.
+
+**Board-level + card-level tests:**
+- `example-boards-all.test.ts` — 37 tests across RICE/GPS/OKR/GIST (card counts,
+  column validity, connection integrity, uniqueness, Dexie round-trip).
+- `rice-cards.test.tsx`, `gps-cards.test.tsx`, `okr-cards.test.tsx`,
+  `gist-cards.test.tsx` — 30 tests covering display mode (title, badges, progress,
+  status) and edit mode (form inputs, dropdowns) for all 13 new card components.
+
+**In-flight page (`/bet/run`):**
+- New monitoring dashboard: LockedBetMini summary, RuntimeBar progress,
+  PhaseToggle (in-flight/results), integrity checks (fingerprint verification,
+  SRM placeholder), guardrail rows, annotation sidebar with discipline nudges.
+- "Proceed to revisit" CTA when runtime completes.
+
+**Unified 6-step SpineRail:**
+- All 5 bet pages (wager, instrument, criteria, lock, revisit) + new run page
+  now show the full lifecycle: wager → instrument → criteria → lock → run → revisit.
+- Each page shows proper status progression (done/active/reachable/locked) and
+  links to reachable prior steps.
+- Design system specimen updated to show full 6-step lifecycle.
+
+**Housekeeping:**
+- `.gitignore`: added `dispatch-tasks/` and `.claude/`.
+- Design exploration handoff committed (`design/explorations/design-handoff-2026-06-04.md`).
+
+**Stats:** 508 tests, 42 test files, tsc clean, build clean.
+
+---
+
 ## 2026-06-04 — Sprint 4: Framework port + in-flight components + stats
 
 Overnight autonomous session. Completed the strategy framework port
