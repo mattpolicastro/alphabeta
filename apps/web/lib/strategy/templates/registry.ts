@@ -2,7 +2,7 @@ import { nsfTemplate } from "./nsf";
 import type { TemplateId } from "@/lib/strategy/types";
 import type { TemplateDefinition } from "./types";
 
-export const TEMPLATES: Record<TemplateId, TemplateDefinition> = {
+export const TEMPLATES: Partial<Record<TemplateId, TemplateDefinition>> = {
   nsf: nsfTemplate,
 };
 

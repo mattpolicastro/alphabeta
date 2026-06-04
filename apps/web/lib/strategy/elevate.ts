@@ -90,6 +90,6 @@ function nsfWorkDump(card: Card, board: BoardState): string {
 
 function ancestorTitle(card: Card): string {
   const f = card.fields;
-  if (f.columnId === "work") return f.description;
+  if (f.columnId === "work" || f.columnId === "tasks") return f.description;
   return f.title;
 }
