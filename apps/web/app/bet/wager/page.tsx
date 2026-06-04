@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ButtonLink } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
@@ -81,6 +81,20 @@ function BetWagerInner() {
 
   const losable = (bet.foldIf ?? "").trim().length > 0;
 
+  // Carry-forward gate: every wager field must be non-empty before the
+  // bet can move into instrument & feasibility. The fold-if check is
+  // the same one as `losable`, but we surface the full list of missing
+  // labels so the user knows what's left.
+  const missing: string[] = [];
+  if (!bet.change?.trim()) missing.push("change");
+  if (!bet.direction) missing.push("direction");
+  if (!bet.metric?.trim()) missing.push("metric");
+  if (!bet.magnitude?.trim()) missing.push("magnitude");
+  if (!bet.mechanism?.trim()) missing.push("mechanism");
+  if (!bet.confidence) missing.push("confidence");
+  if (!bet.foldIf?.trim()) missing.push("fold-if");
+  const ready = missing.length === 0;
+
   return (
     <div className="ab-wrap">
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
@@ -114,10 +128,16 @@ function BetWagerInner() {
       <SpineRail steps={lifecycleSteps(id)} />
       <BetSourceBadge cardId={cardId} />
 
-      <WagerDumpPanel
-        initialText={elevationDump}
-        onFill={(patch) => setBet((prev) => ({ ...prev, ...patch }))}
-      />
+      {/* Only mount the panel after hydration so its useState(initialText)
+       * sees the final elevation handoff value (race fix). Key on id so
+       * navigating between bets remounts with the right text. */}
+      {hydrated && (
+        <WagerDumpPanel
+          key={id ?? "anon"}
+          initialText={elevationDump}
+          onFill={(patch) => setBet((prev) => ({ ...prev, ...patch }))}
+        />
+      )}
 
       <div className="ab-cols">
         <div className="min-w-0">
@@ -138,19 +158,32 @@ function BetWagerInner() {
             </div>
             <CommittedLine bet={bet} />
             <div className="row-actions">
-              <ButtonLink
-                href={
-                  id ? `/bet/instrument?id=${id}` : "/bet/new"
-                }
-                variant="primary"
-              >
-                Carry into instrument &amp; feasibility ▸
-              </ButtonLink>
-              {!id && (
+              {ready ? (
+                <ButtonLink
+                  href={id ? `/bet/instrument?id=${id}` : "/bet/new"}
+                  variant="primary"
+                >
+                  Carry into instrument &amp; feasibility ▸
+                </ButtonLink>
+              ) : (
+                <Button
+                  variant="primary"
+                  disabled
+                  aria-disabled="true"
+                  title={`Still missing: ${missing.join(", ")}`}
+                >
+                  Carry into instrument &amp; feasibility ▸
+                </Button>
+              )}
+              {!id ? (
                 <span className="text-[11px] text-ink-faint">
                   no draft id — clicking will mint one
                 </span>
-              )}
+              ) : !ready ? (
+                <span className="text-[11px] text-ink-faint">
+                  still missing: {missing.join(", ")}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -307,7 +340,10 @@ function Tok({ bet, setField, k, placeholder, variant }: TokProps) {
       className={cls}
       value={value}
       placeholder={placeholder}
-      size={Math.max(value.length || placeholder.length, 6)}
+      size={Math.min(
+        Math.max(value.length || placeholder.length, 6),
+        40,
+      )}
       onChange={(e) => setField(k, e.target.value as never)}
       aria-label={k}
     />
