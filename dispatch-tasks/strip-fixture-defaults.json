@@ -1,0 +1,19 @@
+{
+  "name": "strip-fixture-defaults",
+  "branch": "fix/strip-fixture-defaults",
+  "model": "qwen3-coder:30b",
+  "edit_format": "diff",
+  "setup": "cd apps/web && npm install --prefer-offline --no-audit > /dev/null",
+  "files": [
+    "apps/web/app/bet/criteria/page.tsx",
+    "apps/web/app/bet/instrument/page.tsx",
+    "apps/web/app/bet/revisit/page.tsx"
+  ],
+  "read": [
+    ".dispatch-conventions.md",
+    "apps/web/lib/db/types.ts",
+    "apps/web/app/bet/wager/page.tsx"
+  ],
+  "verify": "cd apps/web && npx tsc --noEmit && npm test -- --run && npm run build",
+  "prompt": "Strip stub/fixture defaults from downstream bet stage pages. The user reported seeing 'fixtured data for the fold-if and other values later in the flow' — the carry button on /bet/wager now gates on all wager fields being non-empty, so downstream pages should reflect only what the user typed, not pre-filled sample values.\n\nThree specific changes:\n\n1. apps/web/app/bet/criteria/page.tsx — DEFAULT_WIN, DEFAULT_INCON, DEFAULT_LOSS are sample sentences ('Keep the redesign — roll to 100% this week.' etc.). Change them to empty strings. Then change the textarea / input placeholders for those three fields to show the old sample sentences as placeholder text (italic, faint, not committed) so first-time users still get the example without it silently being persisted as their own text. (The textareas are wired through criteriaWin/criteriaIncon/criteriaLoss state and a useEffect that calls updateDraft — that wiring stays the same; only the initial state strings change and the placeholders move into the JSX.)\n\n2. apps/web/app/bet/instrument/page.tsx — `useState<number>(4)` for foldIfPercent is a misleading default when the user's foldIf clause has no parseable percent. Change the default to 1 (the slider minimum, which the page already clamps to 1..10). The parse-from-articulation path (around line 95-100) keeps working; only the initial value when no number is found changes.\n\n3. apps/web/app/bet/criteria/page.tsx — same foldIfPercent default change, 4 → 1.\n\nDo not touch any test files. Do not change render copy except for adding placeholders to the criteria textareas. Do not touch app/bet/lock/page.tsx — it reads bet.foldIf directly and has no fixture issue. Do not touch app/bet/revisit/page.tsx (it's only in `files` so you can read the surrounding context if helpful, but the actualPercent slider starting position is the user's input field, not a fixture).\n\nVerification target: tsc clean, all 171 tests still pass, npm run build succeeds. The placeholder fields should still show the sample sentences in faint italic — that's the existing `.tok-empty::before` pattern from `apps/web/app/components.css` if you want to match the wager wording, or standard textarea `placeholder` attribute (textareas have native placeholder support — simpler)."
+}
