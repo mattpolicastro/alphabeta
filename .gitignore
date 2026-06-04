@@ -10,3 +10,7 @@ node_modules/
 .vscode/
 *.swp
 .aider*
+.claude/
+
+# dispatch task specs (Aider batch runner artifacts)
+dispatch-tasks/
