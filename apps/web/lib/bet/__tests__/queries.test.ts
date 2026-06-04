@@ -44,6 +44,16 @@ describe("mintDraft", () => {
     expect(bet.articulation.magnitude).toBe("5%");
   });
 
+  it("links to an objective when objectiveId is provided", async () => {
+    const bet = await mintDraft(undefined, { objectiveId: "obj-abc" });
+    expect(bet.objectiveId).toBe("obj-abc");
+  });
+
+  it("defaults objectiveId to null when no opts provided", async () => {
+    const bet = await mintDraft();
+    expect(bet.objectiveId).toBeNull();
+  });
+
   it("persists to Dexie (round-trippable)", async () => {
     const minted = await mintDraft();
     const fetched = await getBet(minted.id);

@@ -73,11 +73,15 @@ function emptyBet(id: string, now: string): Bet {
 
 export async function mintDraft(
   initial?: Partial<Articulation>,
+  opts?: { objectiveId?: string },
 ): Promise<Bet> {
   const now = new Date().toISOString();
   const bet = emptyBet(newId(), now);
   if (initial) {
     bet.articulation = { ...bet.articulation, ...initial };
+  }
+  if (opts?.objectiveId) {
+    bet.objectiveId = opts.objectiveId;
   }
   await getDb().bets.add(bet);
   return bet;
