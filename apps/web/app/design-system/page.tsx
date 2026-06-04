@@ -7,6 +7,11 @@ import { HeardCard } from "@/components/bet/HeardCard";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { WagerStatic } from "@/components/bet/WagerStatic";
 import { StepCard } from "@/components/bet/StepCard";
+import { IntegrityCheck } from '@/components/inflight/IntegrityCheck';
+import { BucketResult } from '@/components/inflight/BucketResult';
+import { RuntimeBar } from '@/components/inflight/RuntimeBar';
+import { GuardrailRow } from '@/components/inflight/GuardrailRow';
+import { ThemeCard } from '@/components/inflight/ThemeCard';
 
 export const metadata: Metadata = {
   title: "Design System — alphaBeta",
@@ -298,6 +303,55 @@ export default function DesignSystem() {
           <StepCard n={3} title="Make it a wager" sub="Sharpen." status="locked">
             <div className="text-[10px] text-ink-soft">Not yet reached in the flow.</div>
           </StepCard>
+        </Specimen>
+      </Section>
+
+      <Section label="Components · IntegrityCheck" id="integrity-check">
+        <Specimen note="ok · warn · fail states">
+          <div className="flex flex-col gap-[10px]">
+            <IntegrityCheck status="ok" title="Sample Ratio Mismatch (SRM)" detail="No mismatch detected. Ratio: 0.993." />
+            <IntegrityCheck status="warn" title="Peek exposure" detail={<>You viewed intermediate results <b>2 times</b>. Each peek inflates false-positive risk.</>} />
+            <IntegrityCheck status="fail" title="Guardrail breach" detail="App crash rate exceeded 0.5% threshold." />
+          </div>
+        </Specimen>
+      </Section>
+
+      <Section label="Components · BucketResult" id="bucket-result">
+        <Specimen note="Win bucket">
+          <BucketResult outcome="win" why="The primary metric exceeded the fold-if threshold." action="Keep the redesign — roll to 100% this week." />
+        </Specimen>
+        <Specimen note="Inconclusive bucket">
+          <BucketResult outcome="inconclusive" why="Positive but below the fold-if — the smallest effect that would change your mind." action="Hold — sharpen the variant and re-test next quarter." />
+        </Specimen>
+        <Specimen note="Loss bucket">
+          <BucketResult outcome="loss" why="Below zero or guardrail breach." action="Revert — log why in the decision journal." />
+        </Specimen>
+      </Section>
+
+      <Section label="Components · RuntimeBar" id="runtime-bar">
+        <Specimen note="Day 12 of 25">
+          <RuntimeBar currentDay={12} committedDays={25} />
+        </Specimen>
+        <Specimen note="Complete (day 25 of 25)">
+          <RuntimeBar currentDay={25} committedDays={25} />
+        </Specimen>
+      </Section>
+
+      <Section label="Components · GuardrailRow" id="guardrail-row">
+        <Specimen note="ok and warn states">
+          <div className="flex flex-col">
+            <GuardrailRow name="App crash rate" value="0.12%" status="ok" />
+            <GuardrailRow name="Page load time (p95)" value="2.4s" status="warn" />
+          </div>
+        </Specimen>
+      </Section>
+
+      <Section label="Components · ThemeCard" id="theme-card">
+        <Specimen note="supports · contradicts · neutral · emergent">
+          <ThemeCard name="Willingness to explore" participantCount="3 / 4 participants" direction="supports" quotes="&quot;If you showed me this on the homepage I'd probably click it.&quot;" />
+          <ThemeCard name="Awareness of investment products" participantCount="4 / 4 participants" direction="contradicts" quotes="&quot;I didn't even know you had investments.&quot;" />
+          <ThemeCard name="Trust in the platform" participantCount="2 / 4 participants" direction="neutral" />
+          <ThemeCard name="Pricing sensitivity" participantCount="1 / 4 (P3 only)" direction="neutral" directionLabel="emergent · exploratory" quotes="Surfaced from an off-guide question." />
         </Specimen>
       </Section>
     </div>
