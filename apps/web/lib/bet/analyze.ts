@@ -1,8 +1,19 @@
 // Regex-driven analysis of a free-text dump for the Bet Front Door.
 // Mirrors the reflection engine in `design/Bet Front Door.html`. Pure module —
 // no I/O, no side effects — so it's straightforward to test in isolation.
+//
+// Two source modes:
+//   - "free" (default) — stream-of-consciousness paste, reflection-only.
+//     Surfaces magnitude, confidence, mechanism, falsifier as coaching
+//     output; structured articulation fields stay undefined.
+//   - "strategy-card" — semi-structured dump produced by stringifying a
+//     kanban card (see lib/strategy/elevate.cardToDump). Label-aware
+//     extractors look for `Change:`, `Direction:`, `Metric:`, `Magnitude:`,
+//     `Mechanism:`, `Fold-if:`, `Confidence:` and prefer those over the
+//     loose heuristics. Free-text heuristics still run as a fallback for
+//     anything the labels didn't cover.
 
-import type { Confidence } from "@/lib/db/types";
+import type { Articulation, Confidence, Direction } from "@/lib/db/types";
 
 export type ConfidenceAnalysis = {
   level: Confidence;
@@ -26,7 +37,26 @@ export type DumpAnalysis = {
   confidence: ConfidenceAnalysis;
   mechanism: MechanismAnalysis;
   falsifier: FalsifierAnalysis;
+  // Consolidated, typed-articulation extraction. Mostly empty for free-text
+  // source; populated by label extractors for strategy-card source. Callers
+  // can spread this into a draft's articulation to seed structured fields.
+  articulation: Partial<Articulation>;
 };
+
+export type AnalyzeOptions = {
+  source?: "free" | "strategy-card";
+};
+
+const DIRECTIONS: Direction[] = ["lift", "reduce"];
+const CONFIDENCES: Confidence[] = ["hunch-level", "fairly", "highly"];
+
+function labelExtract(text: string, label: string): string | null {
+  // Match `<label>:` at the start of a line; capture through end of line.
+  // Case-insensitive on the label; preserve the value's original casing.
+  const re = new RegExp(`^\\s*${label}\\s*:\\s*(.+?)\\s*$`, "im");
+  const m = text.match(re);
+  return m ? m[1].trim() : null;
+}
 
 const HEDGES = [
   "maybe",
@@ -88,11 +118,34 @@ function extractMechanism(text: string): MechanismAnalysis {
   return { found: true, text: cleaned };
 }
 
-export function analyzeDump(text: string): DumpAnalysis {
+export function analyzeDump(
+  text: string,
+  opts: AnalyzeOptions = {},
+): DumpAnalysis {
+  const cardMode = opts.source === "strategy-card";
   const t = text.toLowerCase();
 
+  // Label-aware extraction happens first in card mode so labeled values
+  // win over loose heuristics. Each labeled value is null in free mode.
+  const labelChange = cardMode ? labelExtract(text, "Change") : null;
+  const labelDirRaw = cardMode ? labelExtract(text, "Direction") : null;
+  const labelMetric = cardMode ? labelExtract(text, "Metric") : null;
+  const labelMagnitude = cardMode ? labelExtract(text, "Magnitude") : null;
+  const labelMechanism = cardMode ? labelExtract(text, "Mechanism") : null;
+  const labelFoldIf = cardMode ? labelExtract(text, "Fold-if") : null;
+  const labelConfRaw = cardMode ? labelExtract(text, "Confidence") : null;
+
+  const labelDirection: Direction | null =
+    labelDirRaw && (DIRECTIONS as string[]).includes(labelDirRaw.toLowerCase())
+      ? (labelDirRaw.toLowerCase() as Direction)
+      : null;
+  const labelConfidence: Confidence | null =
+    labelConfRaw && (CONFIDENCES as string[]).includes(labelConfRaw.toLowerCase())
+      ? (labelConfRaw.toLowerCase() as Confidence)
+      : null;
+
   const magM = text.match(/(\d+(?:\.\d+)?\s?%)/);
-  const magnitude = magM ? magM[1].replace(/\s/, "") : null;
+  const magnitude = labelMagnitude ?? (magM ? magM[1].replace(/\s/, "") : null);
 
   const foundHedges = HEDGES.filter((h) => t.includes(h));
   const foundStrong = STRONG.filter((s) => t.includes(s));
@@ -110,10 +163,23 @@ export function analyzeDump(text: string): DumpAnalysis {
     label = "fairly confident";
   }
 
-  const mechanism = extractMechanism(text);
+  const mechanism = labelMechanism
+    ? { found: true, text: labelMechanism }
+    : extractMechanism(text);
 
-  const falsFound = FALSIFIER_RE.test(text);
+  const falsFound = !!labelFoldIf || FALSIFIER_RE.test(text);
   const clauseMatch = text.match(FALSIFIER_CLAUSE_RE);
+
+  // Build the consolidated articulation view. Only set keys that were
+  // explicitly recovered — undefined means "don't override the draft."
+  const articulation: Partial<Articulation> = {};
+  if (labelChange) articulation.change = labelChange;
+  if (labelDirection) articulation.direction = labelDirection;
+  if (labelMetric) articulation.metric = labelMetric;
+  if (labelMagnitude) articulation.magnitude = labelMagnitude;
+  if (labelMechanism) articulation.mechanism = labelMechanism;
+  if (labelFoldIf) articulation.foldIf = labelFoldIf;
+  if (labelConfidence) articulation.confidence = labelConfidence;
 
   return {
     magnitude,
@@ -121,7 +187,8 @@ export function analyzeDump(text: string): DumpAnalysis {
     mechanism,
     falsifier: {
       found: falsFound,
-      clause: clauseMatch ? clauseMatch[1].trim() : null,
+      clause: labelFoldIf ?? (clauseMatch ? clauseMatch[1].trim() : null),
     },
+    articulation,
   };
 }

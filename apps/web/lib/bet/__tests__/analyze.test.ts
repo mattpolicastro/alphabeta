@@ -116,3 +116,82 @@ describe("analyzeDump — falsifier", () => {
     expect(a.falsifier.found).toBe(false);
   });
 });
+
+describe("analyzeDump — strategy-card source (label-aware)", () => {
+  const dump = [
+    "Change: swap the hero CTA verb",
+    "Direction: lift",
+    "Metric: checkout-start rate",
+    "Magnitude: 8%",
+    "Mechanism: stronger verb increases salience",
+    "Fold-if: less than 3% lift after 2 weeks",
+    "Confidence: fairly",
+  ].join("\n");
+
+  it("extracts change from the Change: label", () => {
+    const a = analyzeDump(dump, { source: "strategy-card" });
+    expect(a.articulation.change).toBe("swap the hero CTA verb");
+  });
+
+  it("extracts direction as a typed Direction value", () => {
+    const a = analyzeDump(dump, { source: "strategy-card" });
+    expect(a.articulation.direction).toBe("lift");
+  });
+
+  it("extracts metric", () => {
+    const a = analyzeDump(dump, { source: "strategy-card" });
+    expect(a.articulation.metric).toBe("checkout-start rate");
+  });
+
+  it("prefers the Magnitude: label over loose-regex percentage", () => {
+    const a = analyzeDump(
+      "Magnitude: 8%\nDescription: we saw a 42% bounce in logs",
+      { source: "strategy-card" },
+    );
+    expect(a.articulation.magnitude).toBe("8%");
+  });
+
+  it("extracts mechanism from the Mechanism: label", () => {
+    const a = analyzeDump(dump, { source: "strategy-card" });
+    expect(a.articulation.mechanism).toBe(
+      "stronger verb increases salience",
+    );
+  });
+
+  it("extracts foldIf from the Fold-if: label", () => {
+    const a = analyzeDump(dump, { source: "strategy-card" });
+    expect(a.articulation.foldIf).toBe("less than 3% lift after 2 weeks");
+  });
+
+  it("extracts confidence as a typed Confidence value", () => {
+    const a = analyzeDump(dump, { source: "strategy-card" });
+    expect(a.articulation.confidence).toBe("fairly");
+  });
+
+  it("leaves articulation fields undefined when no labels match", () => {
+    const a = analyzeDump("just some prose with no labels", {
+      source: "strategy-card",
+    });
+    expect(a.articulation.change).toBeUndefined();
+    expect(a.articulation.metric).toBeUndefined();
+    expect(a.articulation.foldIf).toBeUndefined();
+  });
+
+  it("falls back to free-text heuristics for unlabeled fields", () => {
+    const a = analyzeDump(
+      "Change: swap CTA\n\nUsers are bouncing because the verb is weak.",
+      { source: "strategy-card" },
+    );
+    expect(a.articulation.change).toBe("swap CTA");
+    // mechanism came from the because-clause heuristic, not a label
+    expect(a.mechanism.found).toBe(true);
+  });
+});
+
+describe("analyzeDump — default source is free", () => {
+  it("does not populate articulation fields without the strategy-card flag", () => {
+    const a = analyzeDump("Change: swap CTA\nMetric: starts");
+    expect(a.articulation.change).toBeUndefined();
+    expect(a.articulation.metric).toBeUndefined();
+  });
+});
