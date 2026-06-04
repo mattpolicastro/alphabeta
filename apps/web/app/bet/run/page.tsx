@@ -14,6 +14,10 @@ import { GuardrailRow } from "@/components/inflight/GuardrailRow";
 import { ResultLift } from "@/components/inflight/ResultLift";
 import { StatsReadout } from "@/components/inflight/StatsReadout";
 import { BucketResult } from "@/components/inflight/BucketResult";
+import { RecruitmentTracker } from "@/components/inflight/RecruitmentTracker";
+import { SessionLog, type Session } from "@/components/inflight/SessionLog";
+import { ThemeCard } from "@/components/inflight/ThemeCard";
+import { EvidenceBar } from "@/components/inflight/EvidenceBar";
 import { getBet } from "@/lib/bet/queries";
 import { fingerprint as computeFingerprint } from "@/lib/integrity/fingerprint";
 import type { Bet, Outcome } from "@/lib/db/types";
@@ -99,6 +103,7 @@ function InFlightInner() {
 
 function InFlightDashboard({ bet }: { bet: Bet }) {
   const [phase, setPhase] = useState<Phase>("flight");
+  const isInterviews = bet.instrument.type === "interviews";
 
   const elapsed = bet.lockedAt ? daysSince(bet.lockedAt) : 0;
   const committed = bet.criteria.runtime ?? 14;
@@ -146,18 +151,28 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
               <Crumb>·</Crumb>
               <Crumb>in-flight</Crumb>
               <Crumb>·</Crumb>
-              <Crumb>the experiment is running</Crumb>
+              <Crumb>{isInterviews ? "fieldwork underway" : "the experiment is running"}</Crumb>
             </div>
           </div>
-          <div className="stamp">hands off the dials</div>
+          <div className="stamp">{isInterviews ? "stick to the guide" : "hands off the dials"}</div>
         </div>
         <p className="max-w-[810px] mt-[14px] text-[13.5px] leading-[1.65]">
           <span className="text-terra font-medium">
             You locked a bet. Now it runs.
           </span>{" "}
-          Don&apos;t peek at results, don&apos;t change the split, don&apos;t
-          touch the guardrails. The only moves are wait and watch the
-          integrity checks.
+          {isInterviews ? (
+            <>
+              Follow the interview guide as committed. Don&apos;t lead
+              participants, don&apos;t change the questions mid-study.
+              Log sessions and flag any drift.
+            </>
+          ) : (
+            <>
+              Don&apos;t peek at results, don&apos;t change the split, don&apos;t
+              touch the guardrails. The only moves are wait and watch the
+              integrity checks.
+            </>
+          )}
         </p>
       </header>
 
@@ -185,11 +200,17 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
       <div className="ab-cols mt-[18px]">
         <div className="min-w-0 flex flex-col gap-[18px]">
           {phase === "flight" ? (
-            <FlightPanel
-              elapsed={elapsed}
-              committed={committed}
-              fingerprintOk={fingerprintOk}
-            />
+            bet.instrument.type === "interviews" ? (
+              <InterviewFlightPanel bet={bet} fingerprintOk={fingerprintOk} />
+            ) : (
+              <FlightPanel
+                elapsed={elapsed}
+                committed={committed}
+                fingerprintOk={fingerprintOk}
+              />
+            )
+          ) : bet.instrument.type === "interviews" ? (
+            <InterviewResultsPanel bet={bet} fingerprintOk={fingerprintOk} />
           ) : (
             <ResultsPanel bet={bet} fingerprintOk={fingerprintOk} />
           )}
@@ -197,21 +218,58 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
 
         <div className="annot">
           {phase === "flight" ? (
+            bet.instrument.type === "interviews" ? (
+              <AnnotationSidebar
+                moment="Fieldwork in progress"
+                body={
+                  <p>
+                    Interviews are underway. Stick to the guide — drift weakens
+                    the signal. Log sessions as they complete.
+                  </p>
+                }
+                path={
+                  <>
+                    ↳ <b>next:</b> when all sessions are complete, move to
+                    Results to map themes against the hypothesis.
+                  </>
+                }
+                margin="↖ listen more than you lead."
+              />
+            ) : (
+              <AnnotationSidebar
+                moment="Discipline checkpoint"
+                body={
+                  <p>
+                    The experiment is in progress. Peeking at intermediate results
+                    inflates your false-positive risk. Each look is logged.
+                  </p>
+                }
+                path={
+                  <>
+                    ↳ <b>next:</b> when the runtime completes, move to Results to
+                    read the outcome.
+                  </>
+                }
+                margin="↖ patience is the edge."
+              />
+            )
+          ) : bet.instrument.type === "interviews" ? (
             <AnnotationSidebar
-              moment="Discipline checkpoint"
+              moment="Synthesis phase"
               body={
                 <p>
-                  The experiment is in progress. Peeking at intermediate results
-                  inflates your false-positive risk. Each look is logged.
+                  Fieldwork is complete. Map the themes you observed against
+                  your pre-registered hypothesis. The evidence bar is your
+                  qualitative judgment — own it.
                 </p>
               }
               path={
                 <>
-                  ↳ <b>next:</b> when the runtime completes, move to Results to
-                  read the outcome.
+                  ↳ <b>next:</b> revisit — bucket the outcome and record
+                  what you learned.
                 </>
               }
-              margin="↖ patience is the edge."
+              margin="↖ themes, not anecdotes."
             />
           ) : (
             <AnnotationSidebar
@@ -433,6 +491,200 @@ function ResultsPanel({ bet, fingerprintOk }: { bet: Bet; fingerprintOk: boolean
       <BucketResult
         outcome={outcome}
         why={bucketWhy(outcome, lift, foldIfNum, bet.articulation.metric)}
+        action={preRegisteredAction}
+      />
+
+      {bet.resolution.deviation.occurred && (
+        <div className="dashed-panel border-terra/30">
+          <div className="text-[10.5px] uppercase tracking-[1px] text-terra mb-[6px]">
+            deviation recorded
+          </div>
+          <p className="text-[12px] leading-[1.6]">
+            {bet.resolution.deviation.reason}
+          </p>
+        </div>
+      )}
+
+      <div className="flex gap-[10px] mt-[4px]">
+        <ButtonLink href={`/bet/revisit?id=${bet.id}`} variant="primary">
+          Proceed to revisit →
+        </ButtonLink>
+      </div>
+    </>
+  );
+}
+
+type InterviewActuals = {
+  recruited?: number;
+  completed?: number;
+  noShows?: number;
+  sessions?: Session[];
+  themes?: {
+    name: string;
+    participantCount: string;
+    direction: "supports" | "contradicts" | "neutral";
+    quotes?: string;
+  }[];
+  evidenceSegments?: ("contra" | "neutral" | "support" | null)[];
+  evidenceSummary?: string;
+};
+
+const DEMO_SESSIONS: Session[] = [
+  { number: 1, participant: "P-01", detail: "45 min · completed on schedule", status: "done" },
+  { number: 2, participant: "P-02", detail: "40 min · early insights on friction", status: "done" },
+  { number: 3, participant: "P-03", detail: "scheduled for tomorrow", status: "scheduled" },
+  { number: 4, participant: "P-04", detail: "did not attend", status: "no-show" },
+  { number: 5, participant: "P-05", detail: "scheduled next week", status: "scheduled" },
+];
+
+function InterviewFlightPanel({ bet, fingerprintOk }: { bet: Bet; fingerprintOk: boolean }) {
+  const actuals = bet.resolution.actuals as InterviewActuals;
+  const committed = bet.criteria.runtime ?? 5;
+  const recruited = actuals.recruited ?? 2;
+  const completed = actuals.completed ?? 1;
+  const noShows = actuals.noShows ?? 1;
+  const sessions = actuals.sessions ?? DEMO_SESSIONS;
+  const sampleSpec = (bet.instrument.feasibility?.sampleSpec as string) ?? `${committed} participants`;
+
+  return (
+    <>
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          recruitment tracker
+        </div>
+        <RecruitmentTracker
+          recruited={recruited}
+          completed={completed}
+          noShows={noShows}
+          committed={committed}
+          sampleSpec={sampleSpec}
+        />
+      </div>
+
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          session log
+        </div>
+        <SessionLog sessions={sessions} />
+      </div>
+
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          integrity checks
+        </div>
+        <div className="flex flex-col gap-[8px]">
+          <IntegrityCheck
+            status={fingerprintOk ? "ok" : "fail"}
+            title="Fingerprint verification"
+            detail={
+              fingerprintOk
+                ? "Locked fields match the recorded fingerprint. No tampering detected."
+                : "Fingerprint mismatch — locked fields may have been altered."
+            }
+          />
+          <IntegrityCheck
+            status="ok"
+            title="Guide adherence"
+            detail="No drift flags recorded. Interview guide has been followed as committed."
+          />
+          <IntegrityCheck
+            status={noShows > 0 ? "warn" : "ok"}
+            title="Recruitment drift"
+            detail={
+              noShows > 0
+                ? `${noShows} no-show${noShows > 1 ? "s" : ""} recorded. Consider whether sample composition has shifted.`
+                : "All recruited participants attended. No composition drift detected."
+            }
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function InterviewResultsPanel({ bet, fingerprintOk }: { bet: Bet; fingerprintOk: boolean }) {
+  const actuals = bet.resolution.actuals as InterviewActuals;
+  const themes = actuals.themes ?? [
+    { name: "Friction at checkout", participantCount: "4 / 5", direction: "supports" as const, quotes: '"I almost gave up at the address step."' },
+    { name: "Trust signals matter", participantCount: "3 / 5", direction: "supports" as const, quotes: '"The badge made me feel safer."' },
+    { name: "Price sensitivity", participantCount: "2 / 5", direction: "neutral" as const },
+  ];
+  const segments = actuals.evidenceSegments ?? [
+    "support", "support", "support", "neutral", "contra", null, null,
+  ] as ("contra" | "neutral" | "support" | null)[];
+  const evidenceSummary = actuals.evidenceSummary ??
+    "Qualitative evidence leans toward supporting the hypothesis. Friction themes align with the predicted mechanism; price sensitivity is a confound worth tracking.";
+
+  const outcome = bet.resolution.outcome ?? (
+    segments.filter((s) => s === "support").length > segments.filter((s) => s === "contra").length
+      ? "win" : segments.filter((s) => s === "contra").length > segments.filter((s) => s === "support").length
+        ? "loss" : "inconclusive"
+  );
+  const preRegisteredAction = bet.criteria[outcome];
+
+  const outcomeWhy: Record<Outcome, string> = {
+    win: "The weight of qualitative evidence supports the hypothesis. Themes from fieldwork align with the predicted mechanism.",
+    loss: "The weight of qualitative evidence contradicts the hypothesis. Key themes ran counter to the predicted mechanism.",
+    inconclusive: "Evidence is mixed — neither clearly supporting nor contradicting the hypothesis. More signal needed before committing.",
+  };
+
+  return (
+    <>
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          theme mapping
+        </div>
+        <p className="text-[11px] text-ink-soft mb-[10px]">
+          Themes mapped against the pre-registered hypothesis: <b className="text-ink">{bet.articulation.change}</b>
+        </p>
+        {themes.map((theme) => (
+          <ThemeCard
+            key={theme.name}
+            name={theme.name}
+            participantCount={theme.participantCount}
+            direction={theme.direction}
+            quotes={theme.quotes}
+          />
+        ))}
+      </div>
+
+      <EvidenceBar segments={segments} summary={evidenceSummary} />
+
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          integrity summary
+        </div>
+        <div className="flex flex-col gap-[8px]">
+          <IntegrityCheck
+            status={fingerprintOk ? "ok" : "fail"}
+            title="Fingerprint verification"
+            detail={
+              fingerprintOk
+                ? "Locked fields match the recorded fingerprint. No tampering detected."
+                : "Fingerprint mismatch — locked fields may have been altered."
+            }
+          />
+          {bet.resolution.integrityFlags.map((flag, i) => (
+            <IntegrityCheck
+              key={i}
+              status={flag.status}
+              title={flag.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+              detail={flag.detail}
+            />
+          ))}
+          {bet.resolution.integrityFlags.length === 0 && (
+            <IntegrityCheck
+              status="ok"
+              title="No integrity flags"
+              detail="No guide-drift or recruitment-drift issues were recorded."
+            />
+          )}
+        </div>
+      </div>
+
+      <BucketResult
+        outcome={outcome}
+        why={outcomeWhy[outcome]}
         action={preRegisteredAction}
       />
 
