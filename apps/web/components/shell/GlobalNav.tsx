@@ -24,7 +24,7 @@ type NavChild =
 const ITEMS: NavItem[] = [
   {
     kind: "disabled",
-    label: "aim",
+    label: "orient",
     layer: "Layer 1 — Strategy",
     note: "goals, frameworks, the work",
   },

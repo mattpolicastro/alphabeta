@@ -36,7 +36,7 @@ describe("GlobalNav", () => {
   it("renders disabled top-level layers without anchors", () => {
     usePathnameMock.mockReturnValue("/");
     render(<GlobalNav />);
-    for (const label of ["aim", "run", "learn"]) {
+    for (const label of ["orient", "run", "learn"]) {
       const node = screen.getByText(label);
       expect(node.tagName.toLowerCase()).toBe("span");
       expect(node).toHaveAttribute("aria-disabled", "true");
