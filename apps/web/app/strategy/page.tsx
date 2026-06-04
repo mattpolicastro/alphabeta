@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BoardProvider } from "@/components/strategy/hooks/BoardProvider";
 import { Board } from "@/components/strategy/Board";
-import { getBoard, listBoards } from "@/lib/strategy/queries";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { getBoard, listBoards, deleteBoard } from "@/lib/strategy/queries";
 import { TEMPLATE_LIST } from "@/lib/strategy/templates";
 import { setCurrentBoardId } from "@/lib/strategy/utils/storage";
 import type { BoardState, BoardRow, TemplateId } from "@/lib/strategy/types";
@@ -37,6 +38,7 @@ function StrategyInner() {
 function EmptyState() {
   const [boards, setBoards] = useState<BoardRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,8 +51,26 @@ function EmptyState() {
     return () => { cancelled = true; };
   }, []);
 
+  const handleDelete = useCallback(async () => {
+    if (!deleting) return;
+    await deleteBoard(deleting);
+    setBoards((prev) => prev.filter((b) => b.id !== deleting));
+    setDeleting(null);
+  }, [deleting]);
+
+  const boardToDelete = boards.find((b) => b.id === deleting);
+
   return (
     <div className="ab-wrap">
+      <ConfirmDialog
+        open={!!deleting}
+        title="Delete board?"
+        message={`"${boardToDelete?.cycleName || "Untitled board"}" and all its cards will be permanently removed.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleting(null)}
+      />
+
       <div className="dashed-panel">
         <div className="dashed-panel-title">Strategy</div>
         <p>
@@ -67,19 +87,31 @@ function EmptyState() {
           <div className="dashed-panel-title">Your boards</div>
           <div className="flex flex-col gap-[6px]">
             {boards.map((b) => (
-              <Link
+              <div
                 key={b.id}
-                href={`/strategy?id=${b.id}`}
-                className="flex items-baseline gap-[8px] text-[12.5px] hover:text-terra"
+                className="flex items-baseline gap-[8px] text-[12.5px]"
               >
-                <span className="rounded bg-terra-soft px-[5px] py-[1px] text-[9.5px] font-medium uppercase tracking-wide text-terra">
-                  {TEMPLATE_NAMES[b.templateId] ?? b.templateId}
-                </span>
-                <span>{b.cycleName || "Untitled board"}</span>
-                <span className="text-[10px] text-ink-faint ml-auto">
-                  {b.cards.length} cards
-                </span>
-              </Link>
+                <Link
+                  href={`/strategy?id=${b.id}`}
+                  className="flex items-baseline gap-[8px] flex-1 min-w-0 hover:text-terra"
+                >
+                  <span className="rounded bg-terra-soft px-[5px] py-[1px] text-[9.5px] font-medium uppercase tracking-wide text-terra">
+                    {TEMPLATE_NAMES[b.templateId] ?? b.templateId}
+                  </span>
+                  <span className="truncate">{b.cycleName || "Untitled board"}</span>
+                  <span className="text-[10px] text-ink-faint ml-auto flex-shrink-0">
+                    {b.cards.length} cards
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleting(b.id)}
+                  className="text-[10px] text-ink-faint hover:text-terra flex-shrink-0"
+                  aria-label={`Delete board ${b.cycleName || "Untitled board"}`}
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </div>
         </div>
