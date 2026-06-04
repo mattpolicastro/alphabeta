@@ -12,6 +12,9 @@ import { BucketResult } from '@/components/inflight/BucketResult';
 import { RuntimeBar } from '@/components/inflight/RuntimeBar';
 import { GuardrailRow } from '@/components/inflight/GuardrailRow';
 import { ThemeCard } from '@/components/inflight/ThemeCard';
+import { LockedBetMini } from '@/components/inflight/LockedBetMini';
+import { PhaseToggle } from '@/components/inflight/PhaseToggle';
+import { EvidenceBar } from '@/components/inflight/EvidenceBar';
 
 export const metadata: Metadata = {
   title: "Design System — alphaBeta",
@@ -343,6 +346,53 @@ export default function DesignSystem() {
             <GuardrailRow name="App crash rate" value="0.12%" status="ok" />
             <GuardrailRow name="Page load time (p95)" value="2.4s" status="warn" />
           </div>
+        </Specimen>
+      </Section>
+
+      <Section label="Components · LockedBetMini" id="locked-bet-mini">
+        <Specimen note="Default — with lockedAgo">
+          <LockedBetMini
+            title="A/B test 3 email bodies"
+            foldIf="+4%"
+            metric="7-day login"
+            lockedAgo="18 days ago"
+          />
+        </Specimen>
+        <Specimen note="Results phase — with extra content">
+          <LockedBetMini
+            title="A/B test 3 email bodies"
+            foldIf="+4%"
+            metric="7-day login"
+            extra={<span className="font-medium text-terra"> · runtime complete · day 25</span>}
+          />
+        </Specimen>
+      </Section>
+
+      <Section label="Components · PhaseToggle" id="phase-toggle">
+        <Specimen note="Two phases — first active">
+          <PhaseToggle
+            phases={[
+              { id: 'flight', label: '4a · In-flight' },
+              { id: 'results', label: '4b · Results' },
+            ]}
+            activeId="flight"
+            onChange={() => {}}
+          />
+        </Specimen>
+      </Section>
+
+      <Section label="Components · EvidenceBar" id="evidence-bar">
+        <Specimen note="Qualitative evidence — leans against">
+          <EvidenceBar
+            segments={['contra', 'contra', 'neutral', null, null]}
+            summary="2 of 4 themes contradict · 1 supports · 1 neutral. The weight of evidence leans against the hypothesis."
+          />
+        </Specimen>
+        <Specimen note="Strongly supports">
+          <EvidenceBar
+            segments={['support', 'support', 'support', 'support', 'neutral']}
+            summary="4 of 5 themes support the hypothesis."
+          />
         </Specimen>
       </Section>
 
