@@ -17,8 +17,9 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { analyzeDump, type DumpAnalysis } from "@/lib/bet/analyze";
+import { analyzeDumpWithLLM } from "@/lib/bet/analyze-llm";
 import type { AbBet } from "@/lib/bet/storage";
 
 type Props = {
@@ -29,12 +30,32 @@ type Props = {
 export function WagerDumpPanel({ onFill, initialText = "" }: Props) {
   const [text, setText] = useState(initialText);
   const [open, setOpen] = useState(initialText.length > 0);
+  const [llmResult, setLlmResult] = useState<Partial<AbBet> | null>(null);
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [llmError, setLlmError] = useState<string | null>(null);
 
   const analysis: DumpAnalysis | null = useMemo(
     () =>
       text.trim() ? analyzeDump(text, { source: "strategy-card" }) : null,
     [text],
   );
+
+  const handleLlmParse = useCallback(async () => {
+    if (!text.trim()) return;
+    setLlmLoading(true);
+    setLlmError(null);
+    setLlmResult(null);
+    try {
+      const result = await analyzeDumpWithLLM(text);
+      setLlmResult(result);
+    } catch (err) {
+      setLlmError(
+        err instanceof Error ? err.message : "LLM parse failed",
+      );
+    } finally {
+      setLlmLoading(false);
+    }
+  }, [text]);
 
   function handleFill() {
     if (!analysis) return;
@@ -61,6 +82,11 @@ export function WagerDumpPanel({ onFill, initialText = "" }: Props) {
       patch.foldIf = analysis.falsifier.clause;
     }
     onFill(patch);
+  }
+
+  function handleLlmFill() {
+    if (!llmResult) return;
+    onFill(llmResult);
   }
 
   return (
@@ -91,7 +117,7 @@ export function WagerDumpPanel({ onFill, initialText = "" }: Props) {
             <div className="mt-[8px] flex items-center gap-[8px]">
               <button
                 type="button"
-                className="btn-primary"
+                className="btn btn-primary"
                 onClick={handleFill}
                 data-dump-panel-fill
               >
@@ -103,9 +129,74 @@ export function WagerDumpPanel({ onFill, initialText = "" }: Props) {
               </span>
             </div>
           )}
+          {text.trim() && (
+            <div className="mt-[12px] border-t border-dashed border-rule-faint pt-[10px]">
+              <div className="flex items-center gap-[8px]">
+                <button
+                  type="button"
+                  className="text-[11px] py-[6px] px-[10px] border-[1.5px] border-dashed border-terra-line bg-terra-soft text-terra font-medium cursor-pointer hover:bg-terra hover:text-paper transition-colors"
+                  onClick={handleLlmParse}
+                  disabled={llmLoading}
+                >
+                  {llmLoading ? "parsing…" : "⌁ LLM parse"}
+                </button>
+                <span className="text-[10px] text-ink-faint">
+                  sends to local Ollama — extracts structured fields via Qwen
+                </span>
+              </div>
+              {llmError && (
+                <div className="mt-[6px] text-[11px] text-terra">
+                  {llmError}
+                </div>
+              )}
+              {llmResult && (
+                <>
+                  <LlmReflection result={llmResult} />
+                  <div className="mt-[8px] flex items-center gap-[8px]">
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleLlmFill}
+                    >
+                      Fill from LLM
+                    </button>
+                    <span className="text-[11px] text-ink-faint">
+                      overwrites current wager fields with LLM extraction
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+function LlmReflection({ result }: { result: Partial<AbBet> }) {
+  const fields: [string, string | undefined][] = [
+    ["change", result.change],
+    ["direction", result.direction],
+    ["metric", result.metric],
+    ["magnitude", result.magnitude],
+    ["mechanism", result.mechanism],
+    ["confidence", result.confidence],
+    ["fold-if", result.foldIf],
+  ];
+  return (
+    <ul className="mt-[8px] flex flex-col gap-[4px] text-[12px]" data-llm-reflection>
+      {fields.map(([label, value]) => (
+        <li key={label}>
+          <span className="text-ink-soft">{label} — </span>
+          {value ? (
+            <b className="text-ink">{value}</b>
+          ) : (
+            <em className="text-ink-faint">not extracted</em>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

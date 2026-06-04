@@ -45,10 +45,12 @@ const ITEMS: NavItem[] = [
     layer: "Layer 3 — Refinement",
   },
   {
-    kind: "disabled",
+    kind: "dropdown",
     label: "run",
     layer: "Layer 4 — In-flight",
-    note: "needs a locked bet",
+    children: [
+      { kind: "link", href: "/bet/run", label: "in-flight", note: "needs a locked bet" },
+    ],
   },
   {
     kind: "disabled",
