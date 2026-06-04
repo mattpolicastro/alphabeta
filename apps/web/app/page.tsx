@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ButtonLink } from "@/components/ui/Button";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { DashedPanel } from "@/components/ui/DashedPanel";
 import { BetCard } from "@/components/journal/BetCard";
 import { BoardView } from "@/components/journal/BoardView";
 import { listBets } from "@/lib/bet/queries";
+import { seedDemoBets, clearDemoBets } from "@/lib/bet/seed";
 import {
   ALL_STATUSES,
   filterBetsByStatus,
@@ -28,22 +29,37 @@ export default function Home() {
   const [lens, setLens] = useState<Lens>("log");
   const [activeStatuses, setActiveStatuses] = useState<BetStatus[]>([]);
 
+  const refresh = useCallback(async () => {
+    try {
+      const result = await listBets();
+      setBets(result);
+      setLoad(result.length > 0 ? "loaded" : "empty");
+    } catch {
+      setLoad("empty");
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const result = await listBets();
-        if (cancelled) return;
-        setBets(result);
-        setLoad(result.length > 0 ? "loaded" : "empty");
-      } catch {
-        if (!cancelled) setLoad("empty");
-      }
-    })();
+    refresh().then(() => {
+      if (cancelled) return;
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refresh]);
+
+  const hasDemo = bets.some((b) => b.id.startsWith("demo-bet-"));
+
+  const handleSeedDemo = async () => {
+    await seedDemoBets();
+    await refresh();
+  };
+
+  const handleClearDemo = async () => {
+    await clearDemoBets();
+    await refresh();
+  };
 
   const filtered = useMemo(
     () => filterBetsByStatus(bets, activeStatuses),
@@ -92,9 +108,36 @@ export default function Home() {
 
       {load === "empty" && (
         <DashedPanel title="No bets yet">
-          The discipline starts the first time you sharpen a loose idea into
-          something that can lose. Start your first bet to see it persist here.
+          <p>
+            The discipline starts the first time you sharpen a loose idea into
+            something that can lose. Start your first bet to see it persist here.
+          </p>
+          <Button
+            onClick={handleSeedDemo}
+            className="mt-[12px]"
+          >
+            Load demo bets
+          </Button>
+          <span className="text-[10.5px] text-ink-faint ml-[10px]">
+            5 fixtured bets across lifecycle stages, seeded from the GPS example board
+          </span>
         </DashedPanel>
+      )}
+
+      {load === "loaded" && hasDemo && (
+        <div className="flex items-center gap-[10px] mb-[14px] text-[10.5px]">
+          <span className="text-ink-faint uppercase tracking-[1px]">
+            demo data loaded
+          </span>
+          <button
+            type="button"
+            onClick={handleClearDemo}
+            className="btn"
+            style={{ fontSize: 10, padding: "3px 8px" }}
+          >
+            Clear demo bets
+          </button>
+        </div>
       )}
 
       {load === "loaded" && (
