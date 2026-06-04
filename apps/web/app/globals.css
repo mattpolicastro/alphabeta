@@ -55,6 +55,27 @@
   --color-nsf-state-active: #22c55e;
   --color-nsf-state-prospect: #3b82f6;
   --color-nsf-state-pool: #9ca3af;
+
+  /* OKR column backgrounds */
+  --color-okr-objectives: #eef0fb;
+  --color-okr-keyresults: #fbeeef;
+  --color-okr-initiatives: #eefbf0;
+
+  /* RICE column backgrounds */
+  --color-rice-ideas: #fbf5ee;
+  --color-rice-scoring: #eeeefb;
+  --color-rice-prioritized: #eefbee;
+
+  /* GIST column backgrounds */
+  --color-gist-goals: #eef4fb;
+  --color-gist-ideas: #fbf0ee;
+  --color-gist-steps: #eefbf2;
+  --color-gist-tasks: #fdfbee;
+
+  /* GPS column backgrounds */
+  --color-gps-goals: #eef0fb;
+  --color-gps-problems: #fdfbee;
+  --color-gps-solutions: #eefbf2;
 }
 
 :root {
