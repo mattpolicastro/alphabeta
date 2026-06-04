@@ -52,12 +52,20 @@ export default function Home() {
   const hasDemo = bets.some((b) => b.id.startsWith("demo-bet-"));
 
   const handleSeedDemo = async () => {
-    await seedDemoBets();
+    try {
+      await seedDemoBets();
+    } catch (e) {
+      console.error("seedDemoBets failed:", e);
+    }
     await refresh();
   };
 
   const handleClearDemo = async () => {
-    await clearDemoBets();
+    try {
+      await clearDemoBets();
+    } catch (e) {
+      console.error("clearDemoBets failed:", e);
+    }
     await refresh();
   };
 
@@ -124,19 +132,32 @@ export default function Home() {
         </DashedPanel>
       )}
 
-      {load === "loaded" && hasDemo && (
+      {load === "loaded" && (
         <div className="flex items-center gap-[10px] mb-[14px] text-[10.5px]">
-          <span className="text-ink-faint uppercase tracking-[1px]">
-            demo data loaded
-          </span>
-          <button
-            type="button"
-            onClick={handleClearDemo}
-            className="btn"
-            style={{ fontSize: 10, padding: "3px 8px" }}
-          >
-            Clear demo bets
-          </button>
+          {hasDemo ? (
+            <>
+              <span className="text-ink-faint uppercase tracking-[1px]">
+                demo data loaded
+              </span>
+              <button
+                type="button"
+                onClick={handleClearDemo}
+                className="btn"
+                style={{ fontSize: 10, padding: "3px 8px" }}
+              >
+                Clear demo bets
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSeedDemo}
+              className="btn"
+              style={{ fontSize: 10, padding: "3px 8px" }}
+            >
+              Load demo bets
+            </button>
+          )}
         </div>
       )}
 

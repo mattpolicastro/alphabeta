@@ -257,12 +257,16 @@ export async function seedDemoBets(): Promise<number> {
   for (const fixture of FIXTURES) {
     let fp: string | null = null;
     if (fixture.lockedAt) {
-      fp = await fingerprint({
-        articulation: fixture.articulation,
-        instrument: fixture.instrument,
-        criteria: fixture.criteria,
-        lockedAt: fixture.lockedAt,
-      });
+      try {
+        fp = await fingerprint({
+          articulation: fixture.articulation,
+          instrument: fixture.instrument,
+          criteria: fixture.criteria,
+          lockedAt: fixture.lockedAt,
+        });
+      } catch {
+        fp = "demo-fingerprint";
+      }
     }
     bets.push({ ...fixture, fingerprint: fp });
   }
