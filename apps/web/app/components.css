@@ -449,7 +449,10 @@ a.srail:hover {
   padding: 0 3px;
   cursor: text;
   outline: none;
-  white-space: nowrap;
+  /* Default tokens stay short (lift / fairly / —), but a fully-typed
+   * `change` value can be a long sentence — keep it inline-wrapping
+   * rather than overflowing the wager panel. */
+  overflow-wrap: anywhere;
 }
 .tok:focus {
   background: var(--color-terra-soft);

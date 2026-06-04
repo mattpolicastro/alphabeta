@@ -58,4 +58,36 @@ describe("WagerDumpPanel", () => {
     const patch = onFill.mock.calls[0][0];
     expect(patch.foldIf).toMatch(/under \+?4%/);
   });
+
+  it("opens with the textarea pre-filled when initialText is provided", () => {
+    render(
+      <WagerDumpPanel
+        onFill={() => {}}
+        initialText="Change: swap CTA\nDescription: try a stronger verb"
+      />,
+    );
+    const ta = screen.getByPlaceholderText(/slack thread/i) as HTMLTextAreaElement;
+    expect(ta).toBeInTheDocument();
+    expect(ta.value).toContain("swap CTA");
+  });
+
+  it("fills labeled fields (change, direction, metric) when the dump has them", async () => {
+    const onFill = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <WagerDumpPanel
+        onFill={onFill}
+        initialText={[
+          "Change: swap the hero CTA verb",
+          "Direction: lift",
+          "Metric: checkout-start rate",
+        ].join("\n")}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /fill into wager/i }));
+    const patch = onFill.mock.calls[0][0];
+    expect(patch.change).toBe("swap the hero CTA verb");
+    expect(patch.direction).toBe("lift");
+    expect(patch.metric).toBe("checkout-start rate");
+  });
 });

@@ -13,8 +13,8 @@ import { useLineageOffset } from '@/components/strategy/hooks/LineageAlignmentCo
 import { getColumnDef, getTemplate } from '@/lib/strategy/templates'
 import { ANCHOR_OFFSET_PX } from '@/components/strategy/hooks/useConnections'
 import { mintDraft } from '@/lib/bet/queries'
-import { analyzeDump } from '@/lib/bet/analyze'
 import { cardToDump, isElevatable } from '@/lib/strategy/elevate'
+import { stashElevationDump } from '@/lib/bet/elevationDump'
 
 interface CardShellProps {
   /** May be passed either as an initial snapshot or used only as an ID hint. */
@@ -146,8 +146,12 @@ export function CardShell({ card: initialCard }: CardShellProps) {
         connections: state.connections,
       }
       const dump = cardToDump(card, board, state.templateId)
-      const analysis = analyzeDump(dump, { source: 'strategy-card' })
-      const bet = await mintDraft(analysis.articulation, { cardId: card.id })
+      // Mint with an empty articulation — fields populate after the user
+      // reviews and Analyzes the dump in WagerDumpPanel. Keeps elevation
+      // transparent: no fields land in the wager that the user can't see
+      // the provenance of, and they can edit the source text first.
+      const bet = await mintDraft({}, { cardId: card.id })
+      stashElevationDump(bet.id, dump)
       router.push(`/bet/wager?id=${bet.id}`)
     } catch (err) {
       console.error('Failed to elevate card to bet:', err)

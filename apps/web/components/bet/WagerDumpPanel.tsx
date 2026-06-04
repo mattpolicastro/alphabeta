@@ -1,18 +1,19 @@
 // Free-text dump panel for /bet/wager. The user pastes context (a slack
-// thread, a meeting note, an LLM brain-dump) and gets back the original
-// Bet Front Door reflection: magnitude detected, hedge words, mechanism,
-// fold-if. A "Fill into wager" button merges the recoverable bits of the
-// analysis into the structured wager fields below.
+// thread, a meeting note, an LLM brain-dump, a stringified strategy
+// card) and gets back the original Bet Front Door reflection: magnitude
+// detected, hedge words, mechanism, fold-if. The "Fill into wager"
+// button merges the recovered fields into the structured wager below.
 //
-// Two facts about the analyze engine that shape this UI:
-//   1. Free-text source only recovers magnitude / mechanism / confidence
-//      level / falsifier clause confidently — it doesn't try to infer
-//      change/metric from prose. So "Fill into wager" sets at most four
-//      fields. Change/metric/direction stay manual.
-//   2. The labeled strategy-card source (used by elevation, not this
-//      panel) recovers the full Articulation up-front, so a card-elevated
-//      bet lands with structured fields already populated and this panel
-//      stays empty unless the user wants to paste more context.
+// Analyze always runs with `source: "strategy-card"` — label extraction
+// kicks in only if labels are present (Change:, Metric:, etc.), and
+// free-text heuristics fall through underneath for anything unlabeled.
+// One analyzer, two input shapes.
+//
+// `initialText` is the elevation-handoff path: CardShell stashes a
+// cardToDump() payload before navigating; /bet/wager reads it from
+// localStorage and passes it here. When present, the panel opens
+// automatically with the textarea pre-filled — the user sees the source
+// text behind any subsequent Fill action.
 
 "use client";
 
@@ -22,26 +23,43 @@ import type { AbBet } from "@/lib/bet/storage";
 
 type Props = {
   onFill: (patch: Partial<AbBet>) => void;
+  initialText?: string;
 };
 
-export function WagerDumpPanel({ onFill }: Props) {
-  const [text, setText] = useState("");
-  const [open, setOpen] = useState(false);
+export function WagerDumpPanel({ onFill, initialText = "" }: Props) {
+  const [text, setText] = useState(initialText);
+  const [open, setOpen] = useState(initialText.length > 0);
 
   const analysis: DumpAnalysis | null = useMemo(
-    () => (text.trim() ? analyzeDump(text) : null),
+    () =>
+      text.trim() ? analyzeDump(text, { source: "strategy-card" }) : null,
     [text],
   );
 
   function handleFill() {
     if (!analysis) return;
     const patch: Partial<AbBet> = {};
-    if (analysis.magnitude) patch.magnitude = analysis.magnitude;
-    if (analysis.mechanism.found && analysis.mechanism.text) {
+    // Labeled (strategy-card) fields the analyzer pulled.
+    if (analysis.articulation.change) patch.change = analysis.articulation.change;
+    if (analysis.articulation.direction) patch.direction = analysis.articulation.direction;
+    if (analysis.articulation.metric) patch.metric = analysis.articulation.metric;
+    if (analysis.articulation.magnitude) patch.magnitude = analysis.articulation.magnitude;
+    if (analysis.articulation.mechanism) patch.mechanism = analysis.articulation.mechanism;
+    if (analysis.articulation.foldIf) patch.foldIf = analysis.articulation.foldIf;
+    if (analysis.articulation.confidence) patch.confidence = analysis.articulation.confidence;
+    // Free-text fallbacks for anything the labels missed.
+    if (!patch.magnitude && analysis.magnitude) patch.magnitude = analysis.magnitude;
+    if (
+      !patch.mechanism &&
+      analysis.mechanism.found &&
+      analysis.mechanism.text
+    ) {
       patch.mechanism = analysis.mechanism.text;
     }
-    patch.confidence = analysis.confidence.level;
-    if (analysis.falsifier.clause) patch.foldIf = analysis.falsifier.clause;
+    if (!patch.confidence) patch.confidence = analysis.confidence.level;
+    if (!patch.foldIf && analysis.falsifier.clause) {
+      patch.foldIf = analysis.falsifier.clause;
+    }
     onFill(patch);
   }
 
@@ -80,8 +98,8 @@ export function WagerDumpPanel({ onFill }: Props) {
                 Fill into wager
               </button>
               <span className="text-[11px] text-ink-faint">
-                only the parts the analyzer recovered — change/metric/direction
-                stay yours.
+                only the parts the analyzer recovered — anything missing
+                stays yours.
               </span>
             </div>
           )}
@@ -92,8 +110,24 @@ export function WagerDumpPanel({ onFill }: Props) {
 }
 
 function DumpReflection({ analysis }: { analysis: DumpAnalysis }) {
+  const a = analysis.articulation;
   return (
-    <ul className="mt-[8px] flex flex-col gap-[4px] text-[12px]" data-dump-panel-reflection>
+    <ul
+      className="mt-[8px] flex flex-col gap-[4px] text-[12px]"
+      data-dump-panel-reflection
+    >
+      {a.change && (
+        <li>
+          <span className="text-ink-soft">change — </span>
+          <b className="text-ink">{a.change}</b>
+        </li>
+      )}
+      {a.metric && (
+        <li>
+          <span className="text-ink-soft">metric — </span>
+          <b className="text-ink">{a.metric}</b>
+        </li>
+      )}
       <li>
         <span className="text-ink-soft">magnitude — </span>
         {analysis.magnitude ? (

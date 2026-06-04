@@ -7,6 +7,7 @@ import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { WagerDumpPanel } from "@/components/bet/WagerDumpPanel";
+import { takeElevationDump } from "@/lib/bet/elevationDump";
 import type { AbBet } from "@/lib/bet/storage";
 import { getBet, updateDraft } from "@/lib/bet/queries";
 import type { Bet, Confidence, Direction } from "@/lib/db/types";
@@ -31,6 +32,10 @@ function BetWagerInner() {
   const [bet, setBet] = useState<AbBet>({});
   const [cardId, setCardId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  // Elevation handoff: read once on mount (per id) and pass to the dump
+  // panel as its initial textarea contents. takeElevationDump clears the
+  // entry so a refresh doesn't re-open the panel.
+  const [elevationDump, setElevationDump] = useState<string>("");
 
   // Hydrate the draft from Dexie on mount. If there's no id (someone hit
   // /bet/wager directly), stay in the empty draft state. Persistence won't
@@ -48,6 +53,8 @@ function BetWagerInner() {
         setBet(asAbBet(row));
         setCardId(row.cardId);
       }
+      const stash = takeElevationDump(id);
+      if (stash) setElevationDump(stash);
       setHydrated(true);
     })();
     return () => {
@@ -107,7 +114,10 @@ function BetWagerInner() {
       <SpineRail steps={lifecycleSteps(id)} />
       <BetSourceBadge cardId={cardId} />
 
-      <WagerDumpPanel onFill={(patch) => setBet((prev) => ({ ...prev, ...patch }))} />
+      <WagerDumpPanel
+        initialText={elevationDump}
+        onFill={(patch) => setBet((prev) => ({ ...prev, ...patch }))}
+      />
 
       <div className="ab-cols">
         <div className="min-w-0">
