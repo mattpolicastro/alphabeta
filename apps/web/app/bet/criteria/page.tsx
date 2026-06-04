@@ -24,9 +24,9 @@ const INSTRUMENT_NAMES: Record<FeasibilityInstrument, string> = {
   holdback: "Holdback",
 };
 
-const DEFAULT_WIN = "Keep the redesign — roll to 100% this week.";
-const DEFAULT_INCON = "Hold — sharpen the variant and re-test next quarter.";
-const DEFAULT_LOSS = "Revert — log why in the decision journal.";
+const DEFAULT_WIN = "";
+const DEFAULT_INCON = "";
+const DEFAULT_LOSS = "";
 
 function isFeasibilityInstrument(s: unknown): s is FeasibilityInstrument {
   return s === "ab" || s === "quasi" || s === "observational" || s === "holdback";
@@ -62,7 +62,7 @@ function CriteriaPageInner() {
   const [criteriaWin, setCriteriaWin] = useState<string>(DEFAULT_WIN);
   const [criteriaIncon, setCriteriaIncon] = useState<string>(DEFAULT_INCON);
   const [criteriaLoss, setCriteriaLoss] = useState<string>(DEFAULT_LOSS);
-  const [foldIfPercent, setFoldIfPercent] = useState<number>(4);
+  const [foldIfPercent, setFoldIfPercent] = useState<number>(1);
 
   const hydrated = state === "hydrated" && bet !== null;
 
@@ -244,6 +244,7 @@ function CriteriaPageInner() {
               }
               value={criteriaWin}
               onChange={setCriteriaWin}
+              placeholder="Keep the redesign — roll to 100% this week."
             />
             <CriteriaRow
               tag="incon."
@@ -255,6 +256,7 @@ function CriteriaPageInner() {
               }
               value={criteriaIncon}
               onChange={setCriteriaIncon}
+              placeholder="Hold — sharpen the variant and re-test next quarter."
             />
             <CriteriaRow
               tag="loss"
@@ -262,6 +264,7 @@ function CriteriaPageInner() {
               threshold={<>≤ <b>0</b>, or any guardrail drop</>}
               value={criteriaLoss}
               onChange={setCriteriaLoss}
+              placeholder="Revert — log why in the decision journal."
             />
           </div>
 
@@ -359,6 +362,7 @@ type CriteriaRowProps = {
   threshold: React.ReactNode;
   value: string;
   onChange: (next: string) => void;
+  placeholder?: string;
 };
 
 function CriteriaRow({
@@ -367,6 +371,7 @@ function CriteriaRow({
   threshold,
   value,
   onChange,
+  placeholder,
 }: CriteriaRowProps) {
   const tagCls = [
     "flex-shrink-0 w-[84px] border-[1.5px] border-dashed flex items-center justify-center text-[10.5px] uppercase tracking-[1px]",
@@ -386,6 +391,7 @@ function CriteriaRow({
           style={{ minHeight: 56 }}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
         />
       </div>
     </div>

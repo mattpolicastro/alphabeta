@@ -73,7 +73,7 @@ function InstrumentPageInner() {
   const [claim, setClaim] = useState<number>(3);
   const [overrideReason, setOverrideReason] = useState<string>("");
   const [showOverride, setShowOverride] = useState<boolean>(false);
-  const [foldIfPercent, setFoldIfPercent] = useState<number>(4);
+  const [foldIfPercent, setFoldIfPercent] = useState<number>(1);
 
   const hydrated = state === "hydrated" && bet !== null;
 
