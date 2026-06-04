@@ -41,6 +41,20 @@
 
   /* Layout */
   --container-content: 1140px;
+
+  /* Strategy layer — NSF column backgrounds + state colors (ported from
+   * Plinth Board). Mismatched with alphaBeta's paper/ink palette by design
+   * — Plinth's visual register is intentional for the kanban view. May
+   * re-skin to blueprint-register later. */
+  --color-nsf-northstar: #ffffff;
+  --color-nsf-drivers: #eef4fb;
+  --color-nsf-problems: #fdfbee;
+  --color-nsf-goals: #eefbf2;
+  --color-nsf-work: #fbf0ee;
+  --color-nsf-arrow: #e07070;
+  --color-nsf-state-active: #22c55e;
+  --color-nsf-state-prospect: #3b82f6;
+  --color-nsf-state-pool: #9ca3af;
 }
 
 :root {

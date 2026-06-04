@@ -7,6 +7,7 @@ function makeBet(overrides: Partial<Bet> = {}): Bet {
   const base: Bet = {
     id: "test-bet",
     objectiveId: null,
+    cardId: null,
     ownerId: null,
     type: "single",
     articulation: {
