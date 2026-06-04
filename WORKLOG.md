@@ -1,5 +1,83 @@
 # WORKLOG
 
+## 2026-06-04 — Sprint 4: Framework port + in-flight components + stats
+
+Overnight autonomous session. Completed the strategy framework port
+(all 5 frameworks now have cards + templates + example data), landed
+the in-flight component library, and ported the portable stats modules
+from legacy.
+
+**Strategy — cards (Qwen dispatch + manual port):**
+- RICE (3 cards) and GPS (3 cards) dispatched to Qwen 3.6 27B MTP
+  via Aider. RICE needed 3 retries due to import-path bug (subdirectory
+  cards copying `./sharedEdit` instead of `../sharedEdit`). GPS passed
+  on 1 retry after the spec was updated with explicit paths.
+- OKR (3 cards) and GIST (4 cards) failed dispatch — multi-file
+  whole-edit produced empty 0-byte files (Aider's parser can't always
+  parse Qwen's output for multi-file tasks). Ported manually.
+- Types extended: `RiceIdeaFields`, `RiceScoringFields`,
+  `RicePrioritizedFields`, `GpsGoalFields`, `GpsProblemFields`,
+  `GpsSolutionFields`, `OkrObjectiveFields`, `OkrKeyResultFields`
+  (+ `owner`), `OkrInitiativeFields`, `GistGoalFields`, `GistIdeaFields`,
+  `GistStepFields`, `GistTaskFields`. `CardFields` union updated.
+
+**Strategy — templates:**
+- `rice.ts`, `gps.ts`, `okr.ts`, `gist.ts` — full template definitions
+  with card component wrappers and example board data. Each template
+  includes 10-15 example cards with realistic scenarios and 6-12
+  connections.
+- Registry completed: `TEMPLATES` is now `Record<TemplateId, ...>`
+  (no longer `Partial`). All 5 templates registered.
+- OKR columnId fixed: `key-results` (matching CardFields union, not
+  plinthboard's `keyresults`).
+
+**In-flight components (8 total, 6 new this session):**
+- Previously: `IntegrityCheck`, `BucketResult`, `RuntimeBar`,
+  `GuardrailRow`, `ThemeCard` (dispatched to Qwen R2).
+- New: `LockedBetMini` (compact locked-bet reminder with fold-if
+  and metric), `PhaseToggle` (segmented toggle for in-flight/results
+  phases), `EvidenceBar` (qualitative 5-segment evidence scale for
+  interview-style bets).
+- All 8 components have tests and design-system specimens.
+
+**Stats port from legacy:**
+- `lib/stats/types.ts` — `AnalysisRequest`, `AnalysisResponse`,
+  `MetricVariationResult`, `VariationData`, worker message types.
+- `lib/stats/powerCalculator.ts` — Cohen's h, probit (A&S 26.2.23),
+  `computePowerCalc` (two-proportion z-test sample size). 120+
+  fixture-driven parity tests against statsmodels reference.
+- `lib/csv/welford.ts` — Welford's online mean/variance algorithm.
+  7 tests including numerical stability check.
+- `transformResponse.ts` and `runAnalysis.ts` NOT ported — they depend
+  on the legacy DB schema and zustand stores. Will make sense when
+  alphaBeta has its own experiment result schema.
+
+**Cleanup:**
+- 12 stale dispatch branches deleted (all merged).
+- GIST worktree cleaned up (empty-file false positive).
+- Remote `dispatch/strip-fixture-defaults` branch deleted.
+
+**Dispatch lessons (saved to memory):**
+- Qwen 3.6 27B MTP excels at single-file generation with reference
+  files. Multi-file dispatches have ~30% failure rate.
+- Empty-file false positive: verify steps must check file content, not
+  just compilation (empty .tsx compiles fine).
+- Import path bug in subdirectory cards: always spell out exact import
+  paths in multi-file specs.
+- `((var++))` with `set -e` kills the script — use `var=$((var + 1))`.
+
+**Stats:** 422/422 tests pass across 35 files. tsc + build clean.
+Origin is current.
+
+**Scope remaining (not started):**
+- In-flight page assembly (`/bet/inflight/page.tsx`).
+- SpineRail: add in-flight lifecycle step.
+- Legacy stats: `transformResponse`, `runAnalysis` (need DB schema first).
+- Plinth dialogs (TemplatePicker, ImportExport, Snapshot, Confirm).
+- Board-level tests.
+- Design exploration: onboarding, plan view, KM/learn (handoff written
+  for Claude Design at `design/explorations/design-handoff-2026-06-04.md`).
+
 ## 2026-06-03 — Sprint 3: Strategy layer ported from Plinth Board
 
 The `orient` nav slot is now live: a full kanban board at `/strategy`
