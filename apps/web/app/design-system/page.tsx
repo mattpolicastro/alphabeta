@@ -229,13 +229,15 @@ export default function DesignSystem() {
       </Section>
 
       <Section label="Components · SpineRail" id="rail">
-        <Specimen note="Active → reachable → reachable → reachable">
+        <Specimen note="Full 6-step lifecycle: done → done → active → reachable → locked → locked">
           <SpineRail
             steps={[
-              { n: 1, label: "bet", status: "active" },
-              { n: 2, label: "instrument", status: "reachable", href: "#" },
-              { n: 3, label: "criteria", status: "reachable", href: "#" },
-              { n: 4, label: "commit", status: "reachable", href: "#" },
+              { n: 1, label: "wager", status: "done", href: "#" },
+              { n: 2, label: "instrument", status: "done", href: "#" },
+              { n: 3, label: "criteria", status: "active" },
+              { n: 4, label: "lock", status: "reachable", href: "#" },
+              { n: 5, label: "run", status: "locked" },
+              { n: 6, label: "revisit", status: "locked" },
             ]}
           />
         </Specimen>
