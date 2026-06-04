@@ -23,7 +23,7 @@ export function BoardView({ bets }: BoardViewProps) {
             <div className="flex flex-col gap-[10px]">
               {betGroup.length > 0 ? (
                 betGroup.map((bet) => (
-                  <BetCard key={bet.id} bet={bet} />
+                  <BetCard key={bet.id} bet={bet} compact />
                 ))
               ) : (
                 <div className="text-[11px] text-ink-faint italic">no bets yet</div>

@@ -6,7 +6,13 @@ import { WagerStatic } from "@/components/bet/WagerStatic";
 import type { AbBet } from "@/lib/bet/storage";
 import type { Bet } from "@/lib/db/types";
 
-type BetCardProps = { bet: Bet };
+type BetCardProps = {
+  bet: Bet;
+  // Compact mode: drop the full wager sentence (it has `nowrap` tokens that
+  // overflow narrow columns) and show a one-line change + magnitude summary.
+  // Used by the BoardView; Log view keeps the full wager.
+  compact?: boolean;
+};
 
 function buildAbBet(b: Bet): AbBet {
   return {
@@ -61,7 +67,15 @@ function metadataLine(bet: Bet): string {
   return `locked ${stamp}${fpShort ? ` · ${fpShort}` : ""}`;
 }
 
-export function BetCard({ bet }: BetCardProps) {
+function compactSummary(bet: Bet): string {
+  const a = bet.articulation;
+  const change = a.change?.trim() || "—";
+  const magnitude = a.magnitude?.trim() || "?";
+  const dir = a.direction === "reduce" ? "↓" : "↑";
+  return `${change} · ${dir}${magnitude}`;
+}
+
+export function BetCard({ bet, compact = false }: BetCardProps) {
   const badge = badgeFor(bet);
   return (
     <a
@@ -72,8 +86,14 @@ export function BetCard({ bet }: BetCardProps) {
       <div className="dashed-panel">
         <div className="flex justify-between items-start gap-[10px]">
           <div className="flex-1 min-w-0">
-            <WagerStatic bet={buildAbBet(bet)} />
-            <div className="mt-[8px] text-[11.5px] text-ink-soft">
+            {compact ? (
+              <div className="text-[12.5px] leading-[1.4] break-words">
+                {compactSummary(bet)}
+              </div>
+            ) : (
+              <WagerStatic bet={buildAbBet(bet)} />
+            )}
+            <div className="mt-[8px] text-[11.5px] text-ink-soft break-all">
               {metadataLine(bet)}
             </div>
           </div>
