@@ -1,9 +1,17 @@
 import { nsfTemplate } from "./nsf";
+import { riceTemplate } from "./rice";
+import { gpsTemplate } from "./gps";
+import { okrTemplate } from "./okr";
+import { gistTemplate } from "./gist";
 import type { TemplateId } from "@/lib/strategy/types";
 import type { TemplateDefinition } from "./types";
 
-export const TEMPLATES: Partial<Record<TemplateId, TemplateDefinition>> = {
+export const TEMPLATES: Record<TemplateId, TemplateDefinition> = {
   nsf: nsfTemplate,
+  rice: riceTemplate,
+  gps: gpsTemplate,
+  okr: okrTemplate,
+  gist: gistTemplate,
 };
 
 export function getTemplate(id: TemplateId): TemplateDefinition {

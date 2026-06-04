@@ -133,6 +133,7 @@ export interface OkrKeyResultFields {
   startValue?: string;
   targetValue?: string;
   currentValue?: string;
+  owner?: string;
 }
 
 export interface OkrInitiativeFields {

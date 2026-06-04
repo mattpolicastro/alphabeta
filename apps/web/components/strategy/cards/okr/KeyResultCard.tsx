@@ -39,6 +39,11 @@ function KeyResultDisplay({ fields }: { fields: OkrKeyResultFields }) {
           {fields.targetValue ?? '?'}
         </p>
       ) : null}
+      {fields.owner ? (
+        <span className="inline-block self-start rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">
+          {fields.owner}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -91,6 +96,13 @@ function KeyResultEdit({
           value={fields.targetValue ?? ''}
           onChange={(v) => set('targetValue', v || undefined)}
           ariaLabel="Target value"
+        />
+      </Labeled>
+      <Labeled label="Owner">
+        <TextInput
+          value={fields.owner ?? ''}
+          onChange={(v) => set('owner', v || undefined)}
+          ariaLabel="Owner"
         />
       </Labeled>
     </div>
