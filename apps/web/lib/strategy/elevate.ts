@@ -73,7 +73,7 @@ export function cardToDump(
   }
 
   const cfg = DUMP_CONFIG[templateId];
-  const f = card.fields as Record<string, unknown>;
+  const f = card.fields as unknown as unknown as Record<string, unknown>;
   const ancestors = resolveAncestors(card.id, board);
 
   const lines: string[] = [];
@@ -87,7 +87,7 @@ export function cardToDump(
       cfg.goalColumns.includes(c.fields.columnId),
     );
     if (goal) {
-      const gf = goal.fields as Record<string, unknown>;
+      const gf = goal.fields as unknown as Record<string, unknown>;
       const metric = str(gf[cfg.metricField]);
       const magnitude = str(gf[cfg.magnitudeField]);
       if (metric) lines.push(`Metric: ${metric}`);
@@ -100,7 +100,7 @@ export function cardToDump(
       cfg.mechanismColumns.includes(c.fields.columnId),
     );
     if (mech) {
-      const mf = mech.fields as Record<string, unknown>;
+      const mf = mech.fields as unknown as Record<string, unknown>;
       const mechanism = str(mf[cfg.mechanismField]);
       if (mechanism) lines.push(`Mechanism: ${mechanism}`);
     }
@@ -134,7 +134,7 @@ function appendRiceExtras(
 ): void {
   const scoring = ancestors.find((c) => c.fields.columnId === "scoring");
   if (scoring) {
-    const s = scoring.fields as Record<string, unknown>;
+    const s = scoring.fields as unknown as Record<string, unknown>;
     const parts = [
       s.reach != null ? `R:${s.reach}` : null,
       s.impact != null ? `I:${s.impact}` : null,
@@ -171,7 +171,7 @@ function appendAncestorContext(lines: string[], ancestors: Card[]): void {
 }
 
 function cardLabel(card: Card): string {
-  const f = card.fields as Record<string, unknown>;
+  const f = card.fields as unknown as Record<string, unknown>;
   if (typeof f.description === "string") return f.description;
   if (typeof f.title === "string") return f.title;
   return "";
