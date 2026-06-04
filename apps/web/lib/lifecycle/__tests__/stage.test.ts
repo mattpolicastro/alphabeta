@@ -24,6 +24,7 @@ function bet(status: BetStatus): Bet {
       loss: "",
       minMindChanger: "",
       evidenceBar: "",
+      runtime: null,
     },
     status,
     lockedAt: null,

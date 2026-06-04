@@ -23,6 +23,7 @@ const sample: LockedSnapshot = {
     loss: "revert",
     minMindChanger: "less than 3% lift",
     evidenceBar: "CI excludes 0 at 95%",
+    runtime: 14,
   },
   lockedAt: "2026-06-03T18:00:00.000Z",
 };
@@ -48,6 +49,7 @@ describe("fingerprint", () => {
         loss: sample.criteria.loss,
         inconclusive: sample.criteria.inconclusive,
         win: sample.criteria.win,
+        runtime: sample.criteria.runtime,
       },
       instrument: {
         feasibility: {

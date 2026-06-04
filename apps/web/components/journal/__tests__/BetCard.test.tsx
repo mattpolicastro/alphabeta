@@ -25,6 +25,7 @@ function makeBet(overrides: Partial<Bet> = {}): Bet {
       loss: "",
       minMindChanger: "",
       evidenceBar: "",
+      runtime: null,
     },
     status: "draft",
     lockedAt: null,

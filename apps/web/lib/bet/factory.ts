@@ -32,6 +32,7 @@ export function buildLockedSnapshot(
       loss: "",
       minMindChanger: articulation.foldIf,
       evidenceBar: "",
+      runtime: null,
     },
     lockedAt,
   };

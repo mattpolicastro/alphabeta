@@ -98,8 +98,7 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
   const [phase, setPhase] = useState<Phase>("flight");
 
   const elapsed = bet.lockedAt ? daysSince(bet.lockedAt) : 0;
-  // MVP: committed runtime not yet in Criteria schema. Default to 14 days.
-  const committed = 14;
+  const committed = bet.criteria.runtime ?? 14;
 
   const [fingerprintOk, setFingerprintOk] = useState(true);
 

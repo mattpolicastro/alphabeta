@@ -36,6 +36,7 @@ export interface Criteria {
   loss: string;
   minMindChanger: string;
   evidenceBar: string;
+  runtime: number | null;
 }
 
 export type IntegrityFlagType =

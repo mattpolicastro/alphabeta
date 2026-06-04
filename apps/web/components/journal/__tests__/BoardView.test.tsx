@@ -25,6 +25,7 @@ function makeBet(id: string, status: BetStatus, overrides: Partial<Bet> = {}): B
       loss: "",
       minMindChanger: "",
       evidenceBar: "",
+      runtime: null,
     },
     status,
     lockedAt: status === "draft" ? null : "2026-05-30T00:00:00.000Z",

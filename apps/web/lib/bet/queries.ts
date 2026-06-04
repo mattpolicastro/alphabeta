@@ -52,6 +52,7 @@ function emptyBet(id: string, now: string): Bet {
       loss: "",
       minMindChanger: "",
       evidenceBar: "",
+      runtime: null,
     },
     status: "draft",
     lockedAt: null,

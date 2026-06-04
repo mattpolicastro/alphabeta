@@ -63,6 +63,7 @@ function CriteriaPageInner() {
   const [criteriaIncon, setCriteriaIncon] = useState<string>(DEFAULT_INCON);
   const [criteriaLoss, setCriteriaLoss] = useState<string>(DEFAULT_LOSS);
   const [foldIfPercent, setFoldIfPercent] = useState<number>(1);
+  const [runtime, setRuntime] = useState<number>(14);
 
   const hydrated = state === "hydrated" && bet !== null;
 
@@ -88,6 +89,7 @@ function CriteriaPageInner() {
         if (row.criteria.win) setCriteriaWin(row.criteria.win);
         if (row.criteria.inconclusive) setCriteriaIncon(row.criteria.inconclusive);
         if (row.criteria.loss) setCriteriaLoss(row.criteria.loss);
+        if (row.criteria.runtime != null) setRuntime(row.criteria.runtime);
         setBet(row);
         setState("hydrated");
       } catch {
@@ -122,6 +124,7 @@ function CriteriaPageInner() {
         loss: criteriaLoss,
         minMindChanger: bet.articulation.foldIf,
         evidenceBar: evidenceText,
+        runtime,
       },
     }).catch(() => {
       // Locked rows reject; nothing to do here.
@@ -134,6 +137,7 @@ function CriteriaPageInner() {
     criteriaIncon,
     criteriaLoss,
     evidenceText,
+    runtime,
   ]);
 
   if (state === "loading") {
@@ -292,6 +296,36 @@ function CriteriaPageInner() {
                   ),
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="dashed-panel">
+            <div className="dashed-panel-title">
+              Committed runtime
+            </div>
+            <div className="dashed-panel-sub">
+              How many days will the experiment run before you look at results?
+            </div>
+            <div className="flex items-baseline gap-[10px] mt-[8px]">
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={runtime}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(v) && v >= 1) setRuntime(Math.min(v, 365));
+                }}
+                className="dump w-[80px] text-center text-[20px] font-bold"
+                aria-label="Runtime in days"
+              />
+              <span className="text-[12.5px] text-ink-soft">
+                day{runtime === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="text-[11px] text-ink-faint mt-[6px] leading-[1.55]">
+              Locked alongside the criteria. The in-flight page tracks elapsed
+              days against this commitment.
             </div>
           </div>
 

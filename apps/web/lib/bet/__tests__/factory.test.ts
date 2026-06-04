@@ -77,7 +77,7 @@ describe('buildLockedSnapshotFromBet', () => {
       type: 'single',
       articulation: buildArticulation(fullBet),
       instrument: { type: 'quasi', overrideReason: null, feasibility: {} },
-      criteria: { win: 'ship it', inconclusive: '', loss: '', minMindChanger: '', evidenceBar: '' },
+      criteria: { win: 'ship it', inconclusive: '', loss: '', minMindChanger: '', evidenceBar: '', runtime: null },
       status: 'locked',
       lockedAt: '2026-01-01T00:00:00Z',
       fingerprint: 'fp',
