@@ -91,7 +91,8 @@ describe("BetCard", () => {
 
   it("links draft bets to /bet/wager", () => {
     render(<BetCard bet={makeBet({ id: "abc", status: "draft" })} />);
-    const link = screen.getByTestId("bet-card-abc");
+    const card = screen.getByTestId("bet-card-abc");
+    const link = card.querySelector("a");
     expect(link).toHaveAttribute("href", "/bet/wager?id=abc");
   });
 
@@ -106,7 +107,8 @@ describe("BetCard", () => {
         })}
       />,
     );
-    const link = screen.getByTestId("bet-card-xyz");
+    const card = screen.getByTestId("bet-card-xyz");
+    const link = card.querySelector("a");
     expect(link).toHaveAttribute("href", "/bet/revisit?id=xyz");
   });
 });

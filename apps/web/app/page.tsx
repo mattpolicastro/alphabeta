@@ -5,7 +5,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { DashedPanel } from "@/components/ui/DashedPanel";
 import { BetCard } from "@/components/journal/BetCard";
 import { BoardView } from "@/components/journal/BoardView";
-import { listBets } from "@/lib/bet/queries";
+import { listBets, deleteBet } from "@/lib/bet/queries";
 import { seedDemoBets, clearDemoBets } from "@/lib/bet/seed";
 import {
   ALL_STATUSES,
@@ -65,6 +65,15 @@ export default function Home() {
       await clearDemoBets();
     } catch (e) {
       console.error("clearDemoBets failed:", e);
+    }
+    await refresh();
+  };
+
+  const handleDeleteBet = async (id: string) => {
+    try {
+      await deleteBet(id);
+    } catch (e) {
+      console.error("deleteBet failed:", e);
     }
     await refresh();
   };
@@ -171,12 +180,12 @@ export default function Home() {
           {filtered.length > 0 && lens === "log" && (
             <div className="flex flex-col gap-[10px]">
               {filtered.map((bet) => (
-                <BetCard key={bet.id} bet={bet} />
+                <BetCard key={bet.id} bet={bet} onDelete={handleDeleteBet} />
               ))}
             </div>
           )}
           {filtered.length > 0 && lens === "board" && (
-            <BoardView bets={filtered} />
+            <BoardView bets={filtered} onDeleteBet={handleDeleteBet} />
           )}
         </>
       )}

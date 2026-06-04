@@ -1,17 +1,13 @@
-// One row in the journal — links to the appropriate lifecycle stage based
-// on the bet's status. Used by both the chronological log view in the
-// home page and the kanban-style BoardView.
-
+import { useState } from "react";
 import { WagerStatic } from "@/components/bet/WagerStatic";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { AbBet } from "@/lib/bet/storage";
 import type { Bet } from "@/lib/db/types";
 
 type BetCardProps = {
   bet: Bet;
-  // Compact mode: drop the full wager sentence (it has `nowrap` tokens that
-  // overflow narrow columns) and show a one-line change + magnitude summary.
-  // Used by the BoardView; Log view keeps the full wager.
   compact?: boolean;
+  onDelete?: (id: string) => void;
 };
 
 function buildAbBet(b: Bet): AbBet {
@@ -75,15 +71,17 @@ function compactSummary(bet: Bet): string {
   return `${change} · ${dir}${magnitude}`;
 }
 
-export function BetCard({ bet, compact = false }: BetCardProps) {
+export function BetCard({ bet, compact = false, onDelete }: BetCardProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const badge = badgeFor(bet);
+  const isDraft = bet.status === "draft";
+
   return (
-    <a
-      href={hrefFor(bet)}
-      className="text-inherit no-underline"
-      data-testid={`bet-card-${bet.id}`}
-    >
-      <div className="dashed-panel">
+    <div className="dashed-panel relative" data-testid={`bet-card-${bet.id}`}>
+      <a
+        href={hrefFor(bet)}
+        className="text-inherit no-underline block"
+      >
         <div className="flex justify-between items-start gap-[10px]">
           <div className="flex-1 min-w-0">
             {compact ? (
@@ -99,7 +97,33 @@ export function BetCard({ bet, compact = false }: BetCardProps) {
           </div>
           <span className={`st ${badge.cls} flex-shrink-0`}>{badge.label}</span>
         </div>
-      </div>
-    </a>
+      </a>
+      {isDraft && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setConfirmOpen(true);
+          }}
+          className="absolute top-[8px] right-[8px] text-[10px] text-ink-faint hover:text-terra"
+          aria-label="Delete draft"
+          title="Delete draft"
+        >
+          ✕
+        </button>
+      )}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete draft?"
+        message="This draft bet will be permanently removed. Locked and resolved bets cannot be deleted."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onDelete?.(bet.id);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </div>
   );
 }

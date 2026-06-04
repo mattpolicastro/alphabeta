@@ -73,14 +73,10 @@ describe("BoardView", () => {
       makeBet("locked-1", "locked"),
     ];
     render(<BoardView bets={bets} />);
-    expect(screen.getByTestId("bet-card-draft-1")).toHaveAttribute(
-      "href",
-      "/bet/wager?id=draft-1",
-    );
-    expect(screen.getByTestId("bet-card-locked-1")).toHaveAttribute(
-      "href",
-      "/bet/revisit?id=locked-1",
-    );
+    const draft = screen.getByTestId("bet-card-draft-1");
+    expect(draft.querySelector("a")).toHaveAttribute("href", "/bet/wager?id=draft-1");
+    const locked = screen.getByTestId("bet-card-locked-1");
+    expect(locked.querySelector("a")).toHaveAttribute("href", "/bet/revisit?id=locked-1");
   });
 
   it("renders the 'no bets yet' hint in empty columns", () => {

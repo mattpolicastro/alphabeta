@@ -140,6 +140,17 @@ export async function lockBet(
   });
 }
 
+export async function deleteBet(id: string): Promise<void> {
+  const existing = await getDb().bets.get(id);
+  if (!existing) return;
+  if (existing.status !== "draft") {
+    throw new Error(
+      `Cannot delete a ${existing.status} bet — locked records are immutable`,
+    );
+  }
+  await getDb().bets.delete(id);
+}
+
 export async function recordResolution(
   id: string,
   resolution: Resolution,

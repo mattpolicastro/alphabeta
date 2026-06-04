@@ -4,9 +4,10 @@ import { groupBetsByStatus, ALL_STATUSES } from "@/lib/journal/filter";
 
 type BoardViewProps = {
   bets: Bet[];
+  onDeleteBet?: (id: string) => void;
 };
 
-export function BoardView({ bets }: BoardViewProps) {
+export function BoardView({ bets, onDeleteBet }: BoardViewProps) {
   const groups = groupBetsByStatus(bets);
   
   return (
@@ -23,7 +24,7 @@ export function BoardView({ bets }: BoardViewProps) {
             <div className="flex flex-col gap-[10px]">
               {betGroup.length > 0 ? (
                 betGroup.map((bet) => (
-                  <BetCard key={bet.id} bet={bet} compact />
+                  <BetCard key={bet.id} bet={bet} compact onDelete={onDeleteBet} />
                 ))
               ) : (
                 <div className="text-[11px] text-ink-faint italic">no bets yet</div>
