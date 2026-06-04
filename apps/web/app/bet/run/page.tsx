@@ -11,9 +11,12 @@ import { PhaseToggle } from "@/components/inflight/PhaseToggle";
 import { RuntimeBar } from "@/components/inflight/RuntimeBar";
 import { IntegrityCheck } from "@/components/inflight/IntegrityCheck";
 import { GuardrailRow } from "@/components/inflight/GuardrailRow";
+import { ResultLift } from "@/components/inflight/ResultLift";
+import { StatsReadout } from "@/components/inflight/StatsReadout";
+import { BucketResult } from "@/components/inflight/BucketResult";
 import { getBet } from "@/lib/bet/queries";
 import { fingerprint as computeFingerprint } from "@/lib/integrity/fingerprint";
-import type { Bet } from "@/lib/db/types";
+import type { Bet, Outcome } from "@/lib/db/types";
 
 type PageState = "loading" | "missing" | "not-locked" | "ready";
 type Phase = "flight" | "results";
@@ -188,7 +191,7 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
               fingerprintOk={fingerprintOk}
             />
           ) : (
-            <ResultsPanel betId={bet.id} />
+            <ResultsPanel bet={bet} fingerprintOk={fingerprintOk} />
           )}
         </div>
 
@@ -311,22 +314,141 @@ function FlightPanel({
   );
 }
 
-function ResultsPanel({ betId }: { betId: string }) {
+function parseFoldIfNumber(foldIf: string): number {
+  const m = foldIf.match(/[+-]?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : 0;
+}
+
+function computeBucket(
+  lift: number,
+  foldIf: number,
+): Outcome {
+  if (lift >= foldIf) return "win";
+  if (lift <= 0) return "loss";
+  return "inconclusive";
+}
+
+function bucketWhy(outcome: Outcome, lift: number, foldIf: number, metric: string): string {
+  const sign = lift >= 0 ? "+" : "";
+  const liftStr = `${sign}${lift.toFixed(1)}%`;
+  const foldStr = `+${foldIf}%`;
+  switch (outcome) {
+    case "win":
+      return `${liftStr} exceeds your ${foldStr} fold-if on ${metric}. The effect cleared the bar you set before the test.`;
+    case "loss":
+      return `${liftStr} on ${metric}. The effect moved in the wrong direction.`;
+    case "inconclusive":
+      return `${liftStr} is positive but below your ${foldStr} fold-if — the smallest effect you said would change your mind.`;
+  }
+}
+
+function ResultsPanel({ bet, fingerprintOk }: { bet: Bet; fingerprintOk: boolean }) {
+  const actuals = bet.resolution.actuals as { lift?: number; ci?: [number, number]; guardrails?: string };
+  const hasResults = actuals.lift !== undefined;
+
+  if (!hasResults) {
+    return (
+      <>
+        <div className="dashed-panel">
+          <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+            results pending
+          </div>
+          <p className="text-[13px] leading-[1.6]">
+            No results data has been imported yet. When the experiment platform
+            reports results, import them here or proceed to the revisit to
+            record them manually.
+          </p>
+        </div>
+        <div className="flex gap-[10px] mt-[4px]">
+          <ButtonLink href={`/bet/revisit?id=${bet.id}`} variant="primary">
+            Proceed to revisit →
+          </ButtonLink>
+        </div>
+      </>
+    );
+  }
+
+  const lift = actuals.lift!;
+  const ci = actuals.ci ?? null;
+  const foldIfNum = parseFoldIfNumber(bet.articulation.foldIf);
+  const outcome = bet.resolution.outcome ?? computeBucket(lift, foldIfNum);
+  const preRegisteredAction = bet.criteria[outcome];
+
   return (
     <>
       <div className="dashed-panel">
-        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
-          results pending
-        </div>
-        <p className="text-[13px] leading-[1.6]">
-          No results data has been imported yet. When the experiment platform
-          reports results, import them here or proceed to the revisit to
-          record them manually.
-        </p>
+        <ResultLift
+          lift={lift}
+          ci={ci}
+          metric={bet.articulation.metric}
+          foldIf={foldIfNum}
+        />
       </div>
 
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          stats readout
+        </div>
+        <StatsReadout
+          cells={[
+            { label: "observed lift", value: `${lift >= 0 ? "+" : ""}${lift.toFixed(1)}%` },
+            { label: "locked fold-if", value: bet.articulation.foldIf || "—", highlight: true },
+            { label: "guardrails", value: actuals.guardrails ?? "—" },
+          ]}
+        />
+      </div>
+
+      <div className="dashed-panel">
+        <div className="text-[10.5px] uppercase tracking-[1px] text-ink-soft mb-[10px]">
+          integrity summary
+        </div>
+        <div className="flex flex-col gap-[8px]">
+          <IntegrityCheck
+            status={fingerprintOk ? "ok" : "fail"}
+            title="Fingerprint verification"
+            detail={
+              fingerprintOk
+                ? "Locked fields match the recorded fingerprint. No tampering detected."
+                : "Fingerprint mismatch — locked fields may have been altered."
+            }
+          />
+          {bet.resolution.integrityFlags.map((flag, i) => (
+            <IntegrityCheck
+              key={i}
+              status={flag.status}
+              title={flag.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+              detail={flag.detail}
+            />
+          ))}
+          {bet.resolution.integrityFlags.length === 0 && (
+            <IntegrityCheck
+              status="ok"
+              title="No integrity flags"
+              detail="No SRM, peek, or guardrail issues were recorded."
+            />
+          )}
+        </div>
+      </div>
+
+      <BucketResult
+        outcome={outcome}
+        why={bucketWhy(outcome, lift, foldIfNum, bet.articulation.metric)}
+        action={preRegisteredAction}
+      />
+
+      {bet.resolution.deviation.occurred && (
+        <div className="dashed-panel border-terra/30">
+          <div className="text-[10.5px] uppercase tracking-[1px] text-terra mb-[6px]">
+            deviation recorded
+          </div>
+          <p className="text-[12px] leading-[1.6]">
+            {bet.resolution.deviation.reason}
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-[10px] mt-[4px]">
-        <ButtonLink href={`/bet/revisit?id=${betId}`} variant="primary">
+        <ButtonLink href={`/bet/revisit?id=${bet.id}`} variant="primary">
           Proceed to revisit →
         </ButtonLink>
       </div>

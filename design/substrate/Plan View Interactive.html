@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Plan View · Interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --amber:#b8860b;--amber-soft:rgba(184,134,11,.08);--amber-line:rgba(184,134,11,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:24px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12.5px;line-height:1.6;margin-bottom:18px;}
+  .narrator::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;display:block;margin-bottom:6px;}
+  .narrator em{color:#eeb9a4;} .narrator b{color:#b8d4b0;}
+  .narrator .ni{margin-top:6px;display:flex;gap:8px;align-items:baseline;}
+  .narrator .tag{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink);background:#e3a487;padding:2px 7px;font-weight:700;white-space:nowrap;}
+
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .legend{display:flex;gap:12px;font-size:10px;color:var(--ink-soft);flex-wrap:wrap;}
+  .legend .li{display:flex;align-items:center;gap:5px;}
+  .legend .swatch{width:12px;height:8px;border:1px solid;}
+  .btn{font-family:inherit;font-size:11px;padding:7px 13px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.on{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+
+  /* timeline */
+  .tl{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);overflow-x:auto;position:relative;user-select:none;}
+  .tl-head{display:grid;border-bottom:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.3);position:sticky;top:0;z-index:5;}
+  .tl-corner{border-right:1.5px dashed var(--rule-faint);padding:8px 12px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);}
+  .tl-wk{text-align:center;font-size:9px;color:var(--ink-faint);padding:6px 0;border-right:1px dashed var(--rule-faint);min-width:70px;}
+  .tl-wk:last-child{border-right:none;}
+  .tl-wk.now{color:var(--terra);font-weight:700;background:var(--terra-soft);}
+
+  .tl-body{position:relative;}
+
+  /* GROUP header */
+  .grp-head{display:grid;align-items:center;background:var(--terra-soft);border-bottom:1px dashed var(--terra-line);border-top:2px solid var(--terra-line);cursor:grab;min-height:32px;}
+  .grp-head:active{cursor:grabbing;}
+  .grp-head.drag-over{border-bottom:3px solid var(--terra);}
+  .grp-head.dragging{opacity:.35;}
+  .grp-head .gh-label{display:flex;align-items:center;gap:8px;padding:6px 12px;border-right:1.5px dashed var(--terra-line);}
+  .grp-head .gh-handle{font-size:12px;color:var(--ink-faint);cursor:grab;}
+  .grp-head .gh-name{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--terra);}
+  .grp-head .gh-chain{font-size:9px;color:var(--ink-soft);letter-spacing:.3px;}
+  .grp-head .gh-track{grid-column:2/-1;position:relative;height:100%;}
+
+  /* group child row */
+  .grp-row{display:grid;align-items:center;border-bottom:1px dashed var(--rule-faint);min-height:48px;position:relative;background:color-mix(in srgb, var(--terra) 3%, transparent);}
+  .grp-row:last-child{border-bottom:2px solid var(--terra-line);}
+  .grp-row .tl-label{padding:6px 12px 6px 28px;border-right:1.5px dashed var(--rule-faint);display:flex;flex-direction:column;gap:2px;}
+  .grp-row .tl-label .branch{color:var(--terra);font-size:10px;position:absolute;left:12px;top:50%;transform:translateY(-50%);}
+
+  /* standalone row */
+  .solo-row{display:grid;align-items:center;border-bottom:1px dashed var(--rule-faint);min-height:48px;position:relative;cursor:grab;}
+  .solo-row:active{cursor:grabbing;}
+  .solo-row.drag-over{border-bottom:3px solid var(--terra);}
+  .solo-row.dragging{opacity:.35;}
+  .solo-row .tl-label{padding:6px 12px;border-right:1.5px dashed var(--rule-faint);display:flex;flex-direction:column;gap:2px;}
+
+  .tl-label .tln{font-size:11px;font-weight:600;line-height:1.3;display:flex;align-items:center;gap:6px;}
+  .tl-label .tln .handle{font-size:12px;color:var(--ink-faint);cursor:grab;}
+  .tl-label .tlm{font-size:9px;color:var(--ink-soft);}
+  .tl-label .tls{font-size:8px;letter-spacing:.5px;text-transform:uppercase;padding:1px 6px;border:1px solid;display:inline-block;width:fit-content;}
+  .tls.won{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .tls.running{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .tls.locked{color:var(--terra);border-color:var(--terra-line);}
+  .tls.draft{color:var(--ink-faint);border-color:var(--rule-faint);border-style:dashed;}
+
+  .tl-track{position:relative;display:flex;height:100%;align-items:center;grid-column:2/-1;}
+
+  /* bars */
+  .bar{position:absolute;height:22px;border:1.5px solid;display:flex;align-items:center;padding:0 7px;font-size:9px;font-weight:600;letter-spacing:.3px;white-space:nowrap;overflow:hidden;z-index:1;transition:box-shadow .1s;}
+  .bar.won{background:var(--green-soft);border-color:var(--green-line);color:var(--green);}
+  .bar.running{background:var(--terra-soft);border-color:var(--terra);color:var(--terra);}
+  .bar.locked{background:rgba(255,255,255,.5);border-color:var(--terra-line);color:var(--terra);}
+  .bar.draft{background:rgba(255,255,255,.35);border-color:var(--rule-faint);color:var(--ink-faint);border-style:dashed;}
+  .bar.slidable{cursor:ew-resize;}
+  .bar.slidable:hover{box-shadow:0 0 0 2px var(--terra-line);}
+  .bar.sliding{box-shadow:0 0 0 2px var(--terra);z-index:10;}
+
+  /* inline chain connector (thin line between adjacent bars in a group) */
+  .chain-line{position:absolute;height:0;border-top:1.5px dashed var(--terra-line);z-index:0;pointer-events:none;}
+  .chain-line.resolved{border-top-color:var(--green);border-top-style:solid;}
+  .chain-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--terra);z-index:1;pointer-events:none;transform:translate(-50%,-50%);}
+  .chain-dot.resolved{background:var(--green);}
+
+  .contention-zone{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(166,77,59,.06) 4px,rgba(166,77,59,.06) 5px);border-left:2px solid var(--amber-line);border-right:2px solid var(--amber-line);z-index:0;pointer-events:none;}
+
+  .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--terra);z-index:3;pointer-events:none;}
+  .today-line::before{content:"today";position:absolute;top:-20px;left:-14px;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);font-weight:700;}
+  .horizon-line{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--plinth);z-index:3;pointer-events:none;}
+  .horizon-line::before{content:"soft horizon";position:absolute;top:-20px;left:-22px;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--plinth);font-weight:700;white-space:nowrap;}
+
+  .callouts{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .callout{border:1.5px dashed var(--amber-line);background:var(--amber-soft);padding:10px 14px;display:flex;gap:10px;align-items:baseline;font-size:11.5px;line-height:1.5;}
+  .callout .ci{font-size:13px;flex:0 0 auto;}
+  .callout b{color:var(--amber);}
+  .callout.ok{border-color:var(--green-line);background:var(--green-soft);}
+  .callout.ok .ci{color:var(--green);} .callout.ok b{color:var(--green);}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#e6dfce;padding:10px 18px;font-size:12px;z-index:100;box-shadow:4px 4px 0 rgba(42,42,42,.2);opacity:0;transition:opacity .2s;pointer-events:none;}
+  .toast.show{opacity:1;} .toast em{color:#eeb9a4;} .toast b{color:#b8d4b0;}
+
+  .interact{margin-top:14px;border:1.5px dashed var(--rule);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .interact .lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);}
+  .interact .note{font-size:10.5px;color:var(--ink-soft);font-style:italic;margin-left:auto;}
+
+  .narrator2{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12px;line-height:1.6;margin-top:18px;}
+  .narrator2 .nh{font-family:"Caveat",cursive;font-size:15px;color:#e3a487;margin-bottom:8px;}
+  .narrator2 em{color:#eeb9a4;} .narrator2 b{color:#b8d4b0;}
+
+  footer.foot{margin-top:22px;border-top:1.5px dashed var(--rule);padding-top:12px;font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot a{color:var(--terra);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">plan view · interactive</div>
+  </header>
+
+  <div class="narrator">
+    Sequences are <em>groups</em> now — a header row + indented children with a shared background. The grouping IS the dependency; no SVG lines to trace.
+    <div class="ni"><span class="tag">slide ↔</span> Drag a locked/draft bar left-right to reschedule. Contention updates live. Dependency constraints snap back.</div>
+    <div class="ni"><span class="tag">reorder ↕</span> Drag a group header or standalone row up-down to change priority. Sequences move as a unit.</div>
+  </div>
+
+  <div class="controls">
+    <div class="legend">
+      <div class="li"><span class="swatch" style="background:var(--green-soft);border-color:var(--green-line);"></span> resolved</div>
+      <div class="li"><span class="swatch" style="background:var(--terra-soft);border-color:var(--terra);"></span> running</div>
+      <div class="li"><span class="swatch" style="background:rgba(255,255,255,.5);border-color:var(--terra-line);"></span> locked</div>
+      <div class="li"><span class="swatch" style="border-color:var(--rule-faint);border-style:dashed;background:rgba(255,255,255,.35);"></span> draft</div>
+      <div class="li"><span class="swatch" style="background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(184,134,11,.12) 3px,rgba(184,134,11,.12) 4px);border-color:var(--amber-line);"></span> contention</div>
+    </div>
+    <button class="btn" id="resetBtn" style="margin-left:auto">⟲ reset</button>
+  </div>
+
+  <div class="tl" id="tl">
+    <div class="tl-head" id="tlHead"></div>
+    <div class="tl-body" id="tlBody"></div>
+  </div>
+
+  <div class="callouts" id="callouts"></div>
+  <div class="interact"><span class="lbl">try it</span><span class="note">slide the CTA bar into weeks 2–3 · drag "onboarding" above the checkout sequence</span></div>
+
+  <div class="narrator2" id="narrator2">
+    <div class="nh">▶ what changed from the flat list</div>
+    <div><b>Sequences are visually grouped.</b> The terracotta header row + shared background band says "these bets are one chain" without badges or elbow lines. The dependency is the row order within the group — top to bottom = first to last in the chain.</div>
+    <div style="margin-top:8px"><b>Standalones sit between groups</b> as plain rows. You can instantly see "email sequence, then the plan-picker (standalone), then checkout sequence, then onboarding (standalone)."</div>
+    <div style="margin-top:8px"><b>Drag semantics are clear:</b> group headers move the whole sequence; standalone rows move themselves. Bars slide horizontally for rescheduling. Won/running bars are fixed — you can't reschedule what's in flight.</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <footer class="foot">Plan view — Layer 2. Grouped sequences, not annotated flat lists. &nbsp;—&nbsp; <a href="Plan View.html">static version</a></footer>
+</div>
+
+<script>
+const WEEKS=10, LW=190, WW=70;
+const COLS=()=>`${LW}px repeat(${WEEKS},${WW}px)`;
+
+/* data: groups (sequences) and solos, in display order */
+const INIT=[
+  {type:'seq',id:'email',name:'Email campaign',chain:'A → B',bets:[
+    {id:'a',name:'Subject-line A/B',surface:'email · open rate',metric:'open rate',status:'won',start:0,dur:2,resolved:true},
+    {id:'b',name:'Email body A/B',surface:'email · login CTA',metric:'7-day login',status:'running',start:2,dur:3,dep:'a'},
+  ]},
+  {type:'solo',bet:{id:'c',name:'Plan-picker above fold',surface:'pricing page',metric:'checkout-start',status:'running',start:1,dur:4}},
+  {type:'seq',id:'checkout',name:'Checkout sequence',chain:'D → F',bets:[
+    {id:'d',name:'CTA color test',surface:'pricing page',metric:'checkout-start',status:'locked',start:4,dur:2},
+    {id:'f',name:'Winning CTA + copy',surface:'pricing page',metric:'checkout-start',status:'draft',start:6,dur:2,dep:'d'},
+  ]},
+  {type:'solo',bet:{id:'e',name:'Onboarding simplify',surface:'signup flow',metric:'completion rate',status:'draft',start:7,dur:3}},
+];
+let DATA=JSON.parse(JSON.stringify(INIT));
+
+function allBets(){const r=[];DATA.forEach(g=>{if(g.type==='seq')g.bets.forEach(b=>r.push(b));else r.push(g.bet);});return r;}
+function betById(id){return allBets().find(b=>b.id===id);}
+
+function toast(msg,ms){const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),ms||2200);}
+
+function findContentions(){
+  const bets=allBets(),cs=[];
+  for(let i=0;i<bets.length;i++) for(let j=i+1;j<bets.length;j++){
+    const a=bets[i],b=bets[j];
+    if(a.surface===b.surface||a.metric===b.metric){
+      const s=Math.max(a.start,b.start),e=Math.min(a.start+a.dur,b.start+b.dur);
+      cs.push({a,b,start:s,end:e,overlaps:e>s,surface:a.surface===b.surface?a.surface:a.metric});
+    }
+  }
+  return cs;
+}
+
+function stCls(s){return s==='won'?'won':s==='running'?'running':s==='locked'?'locked':'draft';}
+function canSlide(b){return b.status==='locked'||b.status==='draft';}
+
+function render(){
+  const today=2.5,horizon=8,cols=COLS(),contentions=findContentions();
+  // head
+  let hd=`<div class="tl-corner">plan</div>`;
+  for(let w=0;w<WEEKS;w++) hd+=`<div class="tl-wk${Math.floor(today)===w?' now':''}">wk ${w+1}</div>`;
+  const tlh=document.getElementById('tlHead');tlh.style.gridTemplateColumns=cols;tlh.innerHTML=hd;
+
+  // body
+  let body='';
+  DATA.forEach((g,gi)=>{
+    const gid=g.type==='seq'?g.id:g.bet.id;
+
+    if(g.type==='seq'){
+      // group header
+      body+=`<div class="grp-head" data-gidx="${gi}" draggable="true" style="grid-template-columns:${cols}">
+        <div class="gh-label"><span class="gh-handle">⠿</span><span class="gh-name">⛓ ${g.name}</span><span class="gh-chain">${g.chain}</span></div>
+        <div class="gh-track"></div>
+      </div>`;
+      // children
+      g.bets.forEach((b,bi)=>{
+        const left=b.start*WW,width=b.dur*WW,sc=stCls(b.status);
+        const isLast=bi===g.bets.length-1;
+        // contention zones
+        let zones='';
+        contentions.forEach(ct=>{if(!ct.overlaps)return;if(ct.a.id===b.id||ct.b.id===b.id){
+          zones+=`<div class="contention-zone" style="left:${ct.start*WW}px;width:${(ct.end-ct.start)*WW}px"></div>`;
+        }});
+        // chain connector to next bet in sequence
+        let chainLine='';
+        if(bi<g.bets.length-1){
+          const next=g.bets[bi+1];
+          const lx=b.start*WW+b.dur*WW, rx=next.start*WW;
+          if(rx>lx){
+            const resolved=b.resolved;
+            chainLine=`<div class="chain-line${resolved?' resolved':''}" style="left:${lx}px;width:${rx-lx}px;top:50%"></div>`;
+            chainLine+=`<div class="chain-dot${resolved?' resolved':''}" style="left:${rx}px;top:50%"></div>`;
+          }
+        }
+
+        body+=`<div class="grp-row${isLast?' grp-last':''}" data-gidx="${gi}" data-bidx="${bi}" style="grid-template-columns:${cols}">
+          <div class="tl-label"><span class="branch">${isLast?'└':'├'}</span>
+            <span class="tln">${b.name}</span>
+            <span class="tlm">${b.surface}</span>
+            <span class="tls ${sc}">${b.status}</span>
+          </div>
+          <div class="tl-track">
+            ${zones}${chainLine}
+            <div class="bar ${sc}${canSlide(b)?' slidable':''}" data-bid="${b.id}" style="left:${left}px;width:${width}px">${b.dur}w · ${b.metric}</div>
+          </div>
+        </div>`;
+      });
+    } else {
+      // standalone
+      const b=g.bet,left=b.start*WW,width=b.dur*WW,sc=stCls(b.status);
+      let zones='';
+      contentions.forEach(ct=>{if(!ct.overlaps)return;if(ct.a.id===b.id||ct.b.id===b.id){
+        zones+=`<div class="contention-zone" style="left:${ct.start*WW}px;width:${(ct.end-ct.start)*WW}px"></div>`;
+      }});
+      body+=`<div class="solo-row" data-gidx="${gi}" draggable="true" style="grid-template-columns:${cols}">
+        <div class="tl-label">
+          <span class="tln"><span class="handle">⠿</span>${b.name}</span>
+          <span class="tlm">${b.surface}</span>
+          <span class="tls ${sc}">${b.status}</span>
+        </div>
+        <div class="tl-track">
+          ${zones}
+          <div class="bar ${sc}${canSlide(b)?' slidable':''}" data-bid="${b.id}" style="left:${left}px;width:${width}px">${b.dur}w · ${b.metric}</div>
+        </div>
+      </div>`;
+    }
+  });
+
+  // lines
+  body+=`<div class="today-line" style="left:${LW+today*WW}px"></div>`;
+  body+=`<div class="horizon-line" style="left:${LW+horizon*WW}px"></div>`;
+  document.getElementById('tlBody').innerHTML=body;
+
+  // callouts
+  let ch='';
+  contentions.forEach(c=>{
+    if(!c.overlaps&&c.a.surface===c.b.surface){
+      ch+=`<div class="callout ok"><span class="ci">✓</span><div><b>Sequenced:</b> "${c.a.name}" and "${c.b.name}" share <b>${c.surface}</b> — no overlap.</div></div>`;
+    }else if(c.overlaps){
+      ch+=`<div class="callout"><span class="ci">⚠</span><div><b>Contention:</b> "${c.a.name}" and "${c.b.name}" overlap on <b>${c.surface}</b> wk ${c.start+1}–${c.end}. Resequence?</div></div>`;
+    }
+  });
+  document.getElementById('callouts').innerHTML=ch;
+
+  bindSlide();
+  bindReorder();
+}
+
+/* ===== BAR SLIDE ===== */
+function bindSlide(){
+  document.querySelectorAll('.bar.slidable').forEach(bar=>{
+    const id=bar.dataset.bid;
+    bar.addEventListener('pointerdown',e=>{
+      e.preventDefault();e.stopPropagation();
+      const b=betById(id); if(!b)return;
+      const startX=e.clientX,origStart=b.start;
+      bar.classList.add('sliding');
+      bar.setPointerCapture(e.pointerId);
+      const move=ev=>{
+        const dx=ev.clientX-startX;
+        const newStart=Math.max(0,Math.min(WEEKS-b.dur,Math.round((origStart*WW+dx)/WW)));
+        bar.style.left=newStart*WW+'px';
+        b.start=newStart;
+        // live contention update on this row
+        const track=bar.parentElement;
+        track.querySelectorAll('.contention-zone').forEach(z=>z.remove());
+        allBets().forEach(other=>{
+          if(other.id===id)return;
+          if(other.surface!==b.surface&&other.metric!==b.metric)return;
+          const s=Math.max(b.start,other.start),e2=Math.min(b.start+b.dur,other.start+other.dur);
+          if(e2>s){const z=document.createElement('div');z.className='contention-zone';z.style.left=s*WW+'px';z.style.width=(e2-s)*WW+'px';track.appendChild(z);}
+        });
+      };
+      const up=()=>{
+        bar.classList.remove('sliding');
+        bar.removeEventListener('pointermove',move);
+        bar.removeEventListener('pointerup',up);
+        // dep constraint
+        if(b.dep){const p=betById(b.dep);if(p&&b.start<p.start+p.dur){
+          toast(`<em>Can't start before "${p.name}" ends.</em> Dependency = <b>hard constraint</b>.`);
+          b.start=origStart;
+        }}
+        // push dependents
+        allBets().filter(x=>x.dep===id).forEach(d=>{
+          if(d.start<b.start+b.dur){d.start=b.start+b.dur;toast(`"${d.name}" pushed to wk ${d.start+1}.`);}
+        });
+        render();
+      };
+      bar.addEventListener('pointermove',move);
+      bar.addEventListener('pointerup',up);
+    });
+  });
+}
+
+/* ===== ROW REORDER ===== */
+function bindReorder(){
+  const draggables=[...document.querySelectorAll('.grp-head[draggable], .solo-row[draggable]')];
+  let dragIdx=null;
+  draggables.forEach(el=>{
+    const gi=+el.dataset.gidx;
+    el.addEventListener('dragstart',e=>{dragIdx=gi;el.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(gi));});
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');draggables.forEach(r=>r.classList.remove('drag-over'));dragIdx=null;});
+    el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';draggables.forEach(r=>r.classList.remove('drag-over'));if(+el.dataset.gidx!==dragIdx)el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',e=>{
+      e.preventDefault();draggables.forEach(r=>r.classList.remove('drag-over'));
+      const from=+e.dataTransfer.getData('text/plain'),to=+el.dataset.gidx;
+      if(from===to)return;
+      const [moved]=DATA.splice(from,1);
+      DATA.splice(to>from?to:to,0,moved);
+      const nm=moved.type==='seq'?moved.name:moved.bet.name;
+      toast(`Reordered: <b>${nm}</b> moved ${from>to?'up':'down'}.`);
+      render();
+    });
+  });
+}
+
+document.getElementById('resetBtn').addEventListener('click',()=>{DATA=JSON.parse(JSON.stringify(INIT));render();toast('Reset.');});
+render();
+</script>
+</body>
+</html>
