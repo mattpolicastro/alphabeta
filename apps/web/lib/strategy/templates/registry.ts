@@ -14,6 +14,8 @@ export const TEMPLATES: Record<TemplateId, TemplateDefinition> = {
   gist: gistTemplate,
 };
 
+export const TEMPLATE_LIST: TemplateDefinition[] = Object.values(TEMPLATES);
+
 export function getTemplate(id: TemplateId): TemplateDefinition {
   const t = TEMPLATES[id];
   if (!t) throw new Error(`Unknown template: ${id}`);
