@@ -23,10 +23,10 @@ type NavChild =
 
 const ITEMS: NavItem[] = [
   {
-    kind: "disabled",
+    kind: "link",
+    href: "/strategy",
     label: "orient",
     layer: "Layer 1 — Strategy",
-    note: "goals, frameworks, the work",
   },
   {
     kind: "dropdown",

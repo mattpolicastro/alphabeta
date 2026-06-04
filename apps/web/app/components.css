@@ -673,3 +673,14 @@ textarea.dump:focus {
   background: var(--color-terra);
   border-color: var(--color-terra);
 }
+
+/* ── Strategy canvas — full-bleed flex container for the kanban Board ─ */
+/* Sits under the 38px sticky gnav and gives the Board the full remaining */
+/* viewport height for horizontal column overflow. Departs from the      */
+/* paper/ink register on purpose — the Plinth visual language is its own. */
+.strategy-canvas {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 38px);
+  width: 100%;
+}

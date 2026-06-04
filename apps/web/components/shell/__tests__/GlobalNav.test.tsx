@@ -33,10 +33,18 @@ describe("GlobalNav", () => {
     ).toHaveAttribute("href", "/design-system");
   });
 
+  it("renders 'orient' as a direct top-level link to /strategy", () => {
+    usePathnameMock.mockReturnValue("/");
+    render(<GlobalNav />);
+    expect(
+      screen.getByRole("link", { name: "orient" }),
+    ).toHaveAttribute("href", "/strategy");
+  });
+
   it("renders disabled top-level layers without anchors", () => {
     usePathnameMock.mockReturnValue("/");
     render(<GlobalNav />);
-    for (const label of ["orient", "run", "learn"]) {
+    for (const label of ["run", "learn"]) {
       const node = screen.getByText(label);
       expect(node.tagName.toLowerCase()).toBe("span");
       expect(node).toHaveAttribute("aria-disabled", "true");
