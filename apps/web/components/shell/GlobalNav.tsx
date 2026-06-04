@@ -34,11 +34,8 @@ const ITEMS: NavItem[] = [
     layer: "Layer 2 — Planning",
     children: [
       { kind: "link", href: "/", label: "journal" },
-      {
-        kind: "disabled",
-        label: "sequencing",
-        note: "single vs sequence; chains and fan-in",
-      },
+      { kind: "link", href: "/plan", label: "timeline" },
+      { kind: "link", href: "/sequencing", label: "sequencing" },
     ],
   },
   {
