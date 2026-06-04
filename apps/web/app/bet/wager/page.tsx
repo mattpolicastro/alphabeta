@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
@@ -334,18 +334,32 @@ function Tok({ bet, setField, k, placeholder, variant }: TokProps) {
   ]
     .filter(Boolean)
     .join(" ");
+
+  // Contenteditable span — wraps inline with the wager sentence so long
+  // values don't blow out the panel. Sync from prop only when the span
+  // is unfocused; otherwise React would clobber the user's caret on
+  // every keystroke. Mirrors the Vue prototype's pattern (uncontrolled
+  // after mount, push on input).
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (document.activeElement === el) return;
+    if ((el.textContent ?? "") !== value) el.textContent = value;
+  }, [value]);
+
   return (
-    <input
-      type="text"
-      className={cls}
-      value={value}
-      placeholder={placeholder}
-      size={Math.min(
-        Math.max(value.length || placeholder.length, 6),
-        40,
-      )}
-      onChange={(e) => setField(k, e.target.value as never)}
+    <span
+      ref={ref}
+      role="textbox"
       aria-label={k}
+      contentEditable
+      suppressContentEditableWarning
+      className={cls}
+      data-placeholder={placeholder}
+      onInput={(e) =>
+        setField(k, ((e.currentTarget.textContent ?? "") as never))
+      }
     />
   );
 }

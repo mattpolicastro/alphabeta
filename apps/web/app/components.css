@@ -449,12 +449,13 @@ a.srail:hover {
   padding: 0 3px;
   cursor: text;
   outline: none;
-  /* Tok is an <input>, which can't wrap. The size attr expands the
-   * input to fit its value (capped in JS), and max-width keeps a long
-   * value from escaping the wager panel — overflow scrolls inside the
-   * input instead. min-width: 0 lets it shrink in a flex/grid cell. */
-  max-width: 100%;
-  min-width: 0;
+  /* Inline contenteditable span — flows with the wager sentence and
+   * wraps on word boundaries. The dashed border-bottom breaks per
+   * inline-line box, so multi-line values still read as one token. */
+}
+.tok-empty::before {
+  content: attr(data-placeholder);
+  pointer-events: none;
 }
 .tok:focus {
   background: var(--color-terra-soft);
