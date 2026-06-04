@@ -1,5 +1,45 @@
 # WORKLOG
 
+## 2026-06-04 (cont. 2) — Sprint 4c: Strategy UX, test coverage, schema refinement
+
+Continuation of overnight session (second context compaction).
+
+**Build fix:**
+- Design-system page split into server (`page.tsx` with metadata) and client
+  (`content.tsx` with `'use client'`). Next.js 16 rejected event handlers in
+  server component props.
+
+**Strategy UX improvements:**
+- `/strategy/new` now shows TemplatePicker dialog for all 5 frameworks when
+  no `?example` param. `?example=<id>` generalized beyond NSF.
+- `/strategy` empty state shows existing board list (from Dexie) with template
+  badge, cycle name, card count, and delete button.
+- Board deletion with ConfirmDialog confirmation.
+- Example board links for all 5 frameworks (NSF, RICE, GPS, OKR, GIST).
+
+**Schema: Criteria.runtime:**
+- Added `runtime: number | null` to Criteria interface.
+- Criteria page: runtime picker (number input, default 14 days) persisted
+  alongside criteria. Hydrated from saved bet on load.
+- In-flight page: reads `bet.criteria.runtime` instead of hardcoded 14 days.
+
+**Test coverage (508 → 608, +100 tests across 12 new files):**
+- bet/: StepCard (11), BetSourceBadge (4), HeardCard (6), AnnotationSidebar (8)
+- ui/: DashedPanel (7), MarginNote (4)
+- strategy/: InlineEdit (10), BadgeRow (5), MetricChips (9), MilestoneBar (7),
+  Expandable (6), sharedEdit (23)
+
+**Stats:** 608 tests, 54 test files, tsc clean, build clean (15 routes).
+Origin is current at `9b2e06e`.
+
+**Scope remaining (not started):**
+- Legacy stats: `transformResponse`, `runAnalysis` (legacy repo not on MLPC).
+- ImportExport/Snapshot dialogs (need board state hooks).
+- Board-level integration tests (Playwright).
+- Design exploration: onboarding, plan view, KM/learn (handoff written).
+
+---
+
 ## 2026-06-04 (cont.) — Sprint 4b: Framework colors, dialogs, tests, in-flight page
 
 Continuation of overnight session (context compacted, resumed).
