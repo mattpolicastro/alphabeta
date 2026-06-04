@@ -258,6 +258,8 @@ function lifecycleSteps(id: string | null): SpineStep[] {
       status: "reachable",
       href: id ? `/bet/lock?id=${id}` : "/bet/new",
     },
+    { n: 5, label: "run", status: "locked" },
+    { n: 6, label: "revisit", status: "locked" },
   ];
 }
 

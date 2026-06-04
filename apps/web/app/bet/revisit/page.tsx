@@ -289,9 +289,12 @@ function RevisitBody({
 
       <SpineRail
         steps={[
-          { n: 1, label: "setup (locked)", status: "done", href: "/" },
-          { n: 2, label: "running", status: "done" },
-          { n: 3, label: "revisit", status: "active" },
+          { n: 1, label: "wager", status: "done" },
+          { n: 2, label: "instrument", status: "done" },
+          { n: 3, label: "criteria", status: "done" },
+          { n: 4, label: "lock", status: "done", href: `/bet/lock?id=${bet.id}` },
+          { n: 5, label: "run", status: "done", href: `/bet/run?id=${bet.id}` },
+          { n: 6, label: "revisit", status: "active" },
         ]}
       />
       <BetSourceBadge cardId={bet.cardId} />

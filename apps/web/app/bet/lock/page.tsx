@@ -487,5 +487,16 @@ function lifecycleSteps(id: string | null, commitDone: boolean): SpineStep[] {
       label: "lock",
       status: commitDone ? "done" : "active",
     },
+    {
+      n: 5,
+      label: "run",
+      status: commitDone ? "reachable" : "locked",
+      href: commitDone ? `/bet/run${q}` : undefined,
+    },
+    {
+      n: 6,
+      label: "revisit",
+      status: "locked",
+    },
   ];
 }

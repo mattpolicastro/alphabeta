@@ -10,7 +10,7 @@ import type {
 } from '@/lib/strategy/types'
 
 const GOAL: GpsGoalFields = {
-  columnId: 'gps-goals',
+
   title: 'Increase retention',
   successCriteria: '90% 30-day retention',
   measuredBy: 'Retention rate',
@@ -18,7 +18,7 @@ const GOAL: GpsGoalFields = {
 }
 
 const PROBLEM: GpsProblemFields = {
-  columnId: 'gps-problems',
+
   title: 'High churn in month 2',
   description: 'Users drop off after initial onboarding',
   severity: 'critical',
@@ -26,7 +26,7 @@ const PROBLEM: GpsProblemFields = {
 }
 
 const SOLUTION: GpsSolutionFields = {
-  columnId: 'solutions',
+
   title: 'Automated re-engagement emails',
   description: 'Drip campaign targeting inactive users',
   effort: 'medium',

@@ -12,7 +12,7 @@ import type {
 } from '@/lib/strategy/types'
 
 const GOAL: GistGoalFields = {
-  columnId: 'gist-goals',
+
   title: 'Reduce support tickets',
   measuredBy: 'Tickets per week',
   targetValue: '< 50',
@@ -20,7 +20,7 @@ const GOAL: GistGoalFields = {
 }
 
 const IDEA: GistIdeaFields = {
-  columnId: 'gist-ideas',
+
   title: 'Self-service knowledge base',
   description: 'User-facing FAQ and troubleshooting guides',
   confidence: 'high',
@@ -28,7 +28,7 @@ const IDEA: GistIdeaFields = {
 }
 
 const STEP: GistStepFields = {
-  columnId: 'steps',
+
   title: 'Design KB information architecture',
   description: 'Map article categories to common ticket topics',
   status: 'in-progress',
@@ -36,7 +36,7 @@ const STEP: GistStepFields = {
 }
 
 const TASK: GistTaskFields = {
-  columnId: 'tasks',
+
   description: 'Write top 10 FAQ articles',
   done: false,
   owner: 'Content team',

@@ -418,5 +418,7 @@ function lifecycleSteps(id: string | null): SpineStep[] {
     },
     { n: 3, label: "criteria", status: "active" },
     { n: 4, label: "lock", status: "reachable", href: `/bet/lock${q}` },
+    { n: 5, label: "run", status: "locked" },
+    { n: 6, label: "revisit", status: "locked" },
   ];
 }

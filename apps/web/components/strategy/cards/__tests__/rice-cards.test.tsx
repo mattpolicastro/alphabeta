@@ -10,14 +10,14 @@ import type {
 } from '@/lib/strategy/types'
 
 const IDEA: RiceIdeaFields = {
-  columnId: 'ideas',
+
   title: 'Onboarding checklist',
   description: 'Guide new users',
   category: 'Activation',
 }
 
 const SCORING: RiceScoringFields = {
-  columnId: 'scoring',
+
   title: 'Onboarding checklist',
   reach: 80,
   impact: 2,
@@ -26,7 +26,7 @@ const SCORING: RiceScoringFields = {
 }
 
 const PRIO: RicePrioritizedFields = {
-  columnId: 'prioritized',
+
   title: 'Onboarding checklist',
   riceScore: 72.0,
   status: 'in-progress',
@@ -60,7 +60,7 @@ describe('RICE ScoringCard', () => {
   })
 
   it('shows dash for missing values', () => {
-    const empty: RiceScoringFields = { columnId: 'scoring', title: 'X' }
+    const empty: RiceScoringFields = { title: 'X' }
     render(<ScoringCard fields={empty} editing={false} onDraft={() => {}} />)
     expect(screen.getByText(/Reach: —/)).toBeInTheDocument()
   })

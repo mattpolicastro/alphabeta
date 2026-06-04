@@ -10,7 +10,7 @@ import type {
 } from '@/lib/strategy/types'
 
 const OBJECTIVE: OkrObjectiveFields = {
-  columnId: 'objectives',
+
   title: 'Expand to APAC market',
   description: 'Enter three APAC markets by Q3',
   timeframe: 'Q3 2026',
@@ -18,7 +18,7 @@ const OBJECTIVE: OkrObjectiveFields = {
 }
 
 const KEY_RESULT: OkrKeyResultFields = {
-  columnId: 'key-results',
+
   title: '100 paying customers in Japan',
   measuredBy: 'Customer count',
   startValue: '0',
@@ -28,7 +28,7 @@ const KEY_RESULT: OkrKeyResultFields = {
 }
 
 const INITIATIVE: OkrInitiativeFields = {
-  columnId: 'initiatives',
+
   title: 'Localize marketing site',
   description: 'Translate and launch JP/KR/AU versions',
   status: 'in-progress',
@@ -80,7 +80,7 @@ describe('OKR InitiativeCard', () => {
 
   it('defaults to not-started when status omitted', () => {
     const noStatus: OkrInitiativeFields = {
-      columnId: 'initiatives',
+    
       title: 'No status',
     }
     render(<InitiativeCard fields={noStatus} editing={false} onDraft={() => {}} />)
