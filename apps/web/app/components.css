@@ -684,3 +684,18 @@ textarea.dump:focus {
   min-height: calc(100vh - 38px);
   width: 100%;
 }
+
+/* ── Bet-source badge — shown on bet stage pages when bet.cardId set ── */
+.bet-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 2px 8px;
+  border: 1px dashed var(--color-plinth-line);
+  border-radius: 9999px;
+  background: var(--color-plinth-soft);
+  color: var(--color-plinth);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}

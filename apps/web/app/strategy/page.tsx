@@ -38,6 +38,14 @@ function EmptyState() {
         <p>
           <Link href="/strategy/new">Start a new board →</Link>
         </p>
+        <p>
+          <Link href="/strategy/new?example=nsf">
+            Load the example NSF board →
+          </Link>{" "}
+          <span className="text-ink-faint text-[11px]">
+            (22 cards, 14 connections — for exploration)
+          </span>
+        </p>
       </div>
     </div>
   );

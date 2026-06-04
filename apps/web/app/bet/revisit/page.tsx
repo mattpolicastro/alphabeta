@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
+import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { WagerStatic } from "@/components/bet/WagerStatic";
 import { buildLockedSnapshotFromBet } from "@/lib/bet/factory";
 import { useSearchParams } from "next/navigation";
@@ -293,6 +294,7 @@ function RevisitBody({
           { n: 3, label: "revisit", status: "active" },
         ]}
       />
+      <BetSourceBadge cardId={bet.cardId} />
 
       <div className="text-[11.5px] text-ink-soft mt-[8px] mb-[12px]">
         Locked <b className="text-ink">{elapsed} day{elapsed === 1 ? "" : "s"}</b>{" "}

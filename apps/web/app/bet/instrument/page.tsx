@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
+import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { CarriedWager } from "@/components/bet/CarriedWager";
 import { SegmentedButtons } from "@/components/ui/SegmentedButtons";
 import { ConstraintSlider } from "@/components/ui/ConstraintSlider";
@@ -232,6 +233,7 @@ function InstrumentPageInner() {
       </header>
 
       <SpineRail steps={lifecycleSteps(id)} />
+      <BetSourceBadge cardId={bet?.cardId ?? null} />
 
       <div className="ab-cols">
         <div className="min-w-0">

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
+import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { WagerStatic } from "@/components/bet/WagerStatic";
 import { buildLockedSnapshotFromBet } from "@/lib/bet/factory";
 import { getBet, lockBet } from "@/lib/bet/queries";
@@ -151,6 +152,7 @@ function CommitAndLockInner() {
       </header>
 
       <SpineRail steps={lifecycleSteps(id, isLocked)} />
+      <BetSourceBadge cardId={betRow?.cardId ?? null} />
 
       <div className="ab-cols">
         <div className="min-w-0">

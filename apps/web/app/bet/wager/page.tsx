@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
+import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import type { AbBet } from "@/lib/bet/storage";
 import { getBet, updateDraft } from "@/lib/bet/queries";
 import type { Bet, Confidence, Direction } from "@/lib/db/types";
@@ -27,6 +28,7 @@ function BetWagerInner() {
   const id = searchParams.get("id");
 
   const [bet, setBet] = useState<AbBet>({});
+  const [cardId, setCardId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   // Hydrate the draft from Dexie on mount. If there's no id (someone hit
@@ -41,7 +43,10 @@ function BetWagerInner() {
     (async () => {
       const row = await getBet(id);
       if (cancelled) return;
-      if (row) setBet(asAbBet(row));
+      if (row) {
+        setBet(asAbBet(row));
+        setCardId(row.cardId);
+      }
       setHydrated(true);
     })();
     return () => {
@@ -99,6 +104,7 @@ function BetWagerInner() {
       </header>
 
       <SpineRail steps={lifecycleSteps(id)} />
+      <BetSourceBadge cardId={cardId} />
 
       <div className="ab-cols">
         <div className="min-w-0">

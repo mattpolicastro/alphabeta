@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { CarriedWager } from "@/components/bet/CarriedWager";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
+import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { evidenceFor } from "@/lib/instrument/evidence";
 import {
   type FeasibilityInstrument,
@@ -193,6 +194,7 @@ function CriteriaPageInner() {
       </header>
 
       <SpineRail steps={lifecycleSteps(id)} />
+      <BetSourceBadge cardId={bet?.cardId ?? null} />
 
       <div className="ab-cols">
         <div className="min-w-0">

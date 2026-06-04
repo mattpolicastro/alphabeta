@@ -6,11 +6,13 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Card, CardFields, ColumnId } from '@/lib/strategy/types'
 import { useBoard, useLineageSet } from '@/components/strategy/hooks/useBoardState'
 import { useLineageOffset } from '@/components/strategy/hooks/LineageAlignmentContext'
 import { getColumnDef, getTemplate } from '@/lib/strategy/templates'
 import { ANCHOR_OFFSET_PX } from '@/components/strategy/hooks/useConnections'
+import { mintDraft } from '@/lib/bet/queries'
 
 interface CardShellProps {
   /** May be passed either as an initial snapshot or used only as an ID hint. */
@@ -18,6 +20,7 @@ interface CardShellProps {
 }
 
 export function CardShell({ card: initialCard }: CardShellProps) {
+  const router = useRouter()
   const { state, dispatch } = useBoard()
   // Always read the canonical card from state so updates flow through.
   // If the card has been removed from state, hide ourselves.
@@ -130,6 +133,16 @@ export function CardShell({ card: initialCard }: CardShellProps) {
     dispatch({ type: 'UPDATE_CARD', id: card.id, fields: next })
   }
 
+  async function handleElevateToBet() {
+    if (!card.saved) return
+    try {
+      const bet = await mintDraft({}, { cardId: card.id })
+      router.push(`/bet/wager?id=${bet.id}`)
+    } catch (err) {
+      console.error('Failed to elevate card to bet:', err)
+    }
+  }
+
   function handleToggleMilestone(milestoneId: string) {
     if (card.fields.columnId !== 'goals') return
     if (card.fields.mode !== 'milestones') return
@@ -219,6 +232,7 @@ export function CardShell({ card: initialCard }: CardShellProps) {
         <CardToolbar
           onEdit={() => setEditing(true)}
           onDelete={() => dispatch({ type: 'DELETE_CARD', id: card.id })}
+          onElevate={card.saved ? handleElevateToBet : undefined}
         />
       ) : null}
       {card.collapsed && !editing ? (
@@ -339,12 +353,17 @@ function ConnectionDot({
 function CardToolbar({
   onEdit,
   onDelete,
+  onElevate,
 }: {
   onEdit: () => void
   onDelete: () => void
+  onElevate?: () => void
 }) {
   return (
     <div className="absolute bottom-1 right-1 flex gap-0.5 rounded border border-gray-200 bg-white/95 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition focus-within:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100">
+      {onElevate ? (
+        <IconBtn label="Elevate to bet" onClick={onElevate} char="↗" />
+      ) : null}
       <IconBtn label="Edit" onClick={onEdit} char="✎" />
       <IconBtn label="Delete" onClick={onDelete} char="🗑" />
     </div>
