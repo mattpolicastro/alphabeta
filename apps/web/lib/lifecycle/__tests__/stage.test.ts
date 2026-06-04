@@ -5,7 +5,6 @@ import type { Bet, BetStatus } from "@/lib/db/types";
 function bet(status: BetStatus): Bet {
   return {
     id: "test",
-    objectiveId: null,
     cardId: null,
     ownerId: null,
     type: "single",

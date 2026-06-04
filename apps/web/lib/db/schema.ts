@@ -1,10 +1,9 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { Bet, Objective } from "./types";
+import type { Bet } from "./types";
 import type { BoardRow } from "@/lib/strategy/types";
 
 export class AlphabetaDB extends Dexie {
   bets!: EntityTable<Bet, "id">;
-  objectives!: EntityTable<Objective, "id">;
   boards!: EntityTable<BoardRow, "id">;
 
   constructor() {
@@ -47,6 +46,21 @@ export class AlphabetaDB extends Dexie {
       .upgrade(async (tx) => {
         await tx.table("bets").toCollection().modify((b) => {
           if (b.cardId === undefined) b.cardId = null;
+        });
+      });
+
+    // v4: retire the Objective entity. The Plinth-port `cards` blob inside
+    // the boards table now owns the role objectiveId used to play. Drop
+    // the objectives table, strip Bet.objectiveId, drop its index.
+    this.version(4)
+      .stores({
+        bets: "id, cardId, ownerId, status, lockedAt, previousVersionId, updatedAt",
+        objectives: null,
+        boards: "id, ownerId, templateId, updatedAt",
+      })
+      .upgrade(async (tx) => {
+        await tx.table("bets").toCollection().modify((b) => {
+          delete b.objectiveId;
         });
       });
   }

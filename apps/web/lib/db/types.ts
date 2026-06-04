@@ -13,7 +13,6 @@ export type InstrumentType =
 export type BetStatus = "draft" | "locked" | "running" | "resolved";
 export type Outcome = "win" | "inconclusive" | "loss";
 export type Call = "keep" | "hold" | "revert";
-export type Framework = "NSF" | "RICE" | "GPS" | "OKR" | "GIST";
 
 export interface Articulation {
   change: string;
@@ -73,8 +72,7 @@ export interface Learning {
 
 export interface Bet {
   id: string;
-  objectiveId: string | null; // deprecated; superseded by cardId. Cleanup in SP-F.
-  cardId: string | null; // strategy-card the bet was elevated from
+  cardId: string | null;
   ownerId: string | null;
   type: "single" | "sequence";
 
@@ -93,18 +91,6 @@ export interface Bet {
   resolution: Resolution;
   learning: Learning;
 
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Objective {
-  id: string;
-  ownerId: string | null;
-  title: string;
-  metric: string;
-  target: { start: number; goal: number };
-  framework: Framework;
-  tag: string;
   createdAt: string;
   updatedAt: string;
 }

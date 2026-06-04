@@ -47,13 +47,11 @@ describe("mintDraft", () => {
   it("links to a strategy card when cardId is provided", async () => {
     const bet = await mintDraft(undefined, { cardId: "card-abc" });
     expect(bet.cardId).toBe("card-abc");
-    expect(bet.objectiveId).toBeNull();
   });
 
-  it("defaults cardId and objectiveId to null when no opts provided", async () => {
+  it("defaults cardId to null when no opts provided", async () => {
     const bet = await mintDraft();
     expect(bet.cardId).toBeNull();
-    expect(bet.objectiveId).toBeNull();
   });
 
   it("persists to Dexie (round-trippable)", async () => {

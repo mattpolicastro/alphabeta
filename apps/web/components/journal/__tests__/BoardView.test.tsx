@@ -6,7 +6,6 @@ import type { Bet, BetStatus } from "@/lib/db/types";
 function makeBet(id: string, status: BetStatus, overrides: Partial<Bet> = {}): Bet {
   const base: Bet = {
     id,
-    objectiveId: null,
     cardId: null,
     ownerId: null,
     type: "single",

@@ -9,7 +9,6 @@ import type { Bet, BetStatus } from "@/lib/db/types";
 function bet(id: string, status: BetStatus): Bet {
   return {
     id,
-    objectiveId: null,
     cardId: null,
     ownerId: null,
     type: "single",

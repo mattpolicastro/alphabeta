@@ -64,7 +64,6 @@ export function buildBetRecord(
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `bet-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    objectiveId: null,
     cardId: null,
     ownerId: null,
     type: "single",

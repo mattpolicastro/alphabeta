@@ -1,5 +1,121 @@
 # WORKLOG
 
+## 2026-06-03 — Sprint 3: Strategy layer ported from Plinth Board
+
+The `orient` nav slot is now live: a full kanban board at `/strategy`
+ported from [Plinth Board](https://github.com/mattpolicastro/plinthboard)
+(`~/Projects/nsf-board`). Strategy boards hold the North Star, drivers,
+problems, goals, and work — plus the lineage arrows between them — and
+any card can be elevated to a bet, threading Layer 1 (strategy) into
+Layer 3 (refinement).
+
+This sprint also retired the SS-A Objective stub. `Bet.cardId` is now
+the canonical strategy link; the Objective entity, the
+`lib/objective/` tree, and `Bet.objectiveId` are gone.
+
+**SP-A — Schema + queries (orchestrator, TDD):**
+- `Bet.cardId: string | null` added; `Bet.objectiveId` kept for one
+  sprint as deprecated. Dexie v3 migration adds the `boards` table
+  (JSON-blob shape: one row per board, full BoardState inline),
+  indexes `cardId` on bets, backfills `null` on existing rows.
+- `lib/strategy/queries.ts` — `mintBoard`, `getBoard`, `listBoards`,
+  `saveBoard`, `deleteBoard`. 8 tests up front with `fake-indexeddb`.
+- `mintDraft` extended with `opts.cardId` for the bet seam.
+
+**SP-B — NSF template + cards (manual port):**
+- `lib/strategy/types.ts` (narrowed CardFields discriminated union to
+  the 5 NSF column shapes), `lib/strategy/templates/{types,nsf,
+  registry,index}.ts` (verbatim from nsf-board — registry trimmed to
+  just NSF; OKR/RICE/GIST/GPS deferred), `lib/strategy/constants.ts`.
+- `components/strategy/cards/{NorthStar,Driver,Problem,Goal,Work}
+  Card.tsx` plus shared edit primitives (Labeled, TextInput, TextArea,
+  ImpactSelect, EffortSelect), Expandable, BadgeRow, MetricChips,
+  MilestoneBar. NSF column backgrounds + state colors added to
+  `globals.css @theme`.
+- 13 card display/edit tests (`components/strategy/cards/__tests__/
+  cards.test.tsx`) re-restored after the BoardProvider port landed.
+
+**SP-C — Board scaffolding + hooks:**
+- `components/strategy/{Board,Column,CardShell,CardList,SortableCard,
+  ColumnHeader,InlineEdit}.tsx` (kanban container + DnD reorder via
+  @dnd-kit). `ConnectionLayer.tsx` + `DragConnectLayer.tsx` (SVG
+  overlay with orthogonal H-V-H routing, chain coloring, drag-to-
+  connect).
+- `hooks/{useBoardState,useConnections,useLineageAlignment,
+  BoardProvider,LineageAlignmentContext}.{ts,tsx}` — single
+  `useReducer` board with debounced persistence, BFS lineage
+  alignment, focus mode, chain coloring.
+- Storage adapter swap: `lib/strategy/utils/storage.ts` keeps the
+  sync `loadBoard()/saveBoard()` signatures `useBoardState` expects
+  but routes writes through `queries.saveBoard` against a
+  module-level `currentBoardId`. Pages call `setCurrentBoardId(id)`
+  before mounting `BoardProvider` and pass `initialState` from
+  Dexie. `loadBoard()` is a default-state fallback (tests /
+  unminted boards).
+- Deps: `@dnd-kit/core ^6.1.0`, `@dnd-kit/sortable ^8.0.0`,
+  `@dnd-kit/utilities ^3.2.2` (same pins as nsf-board).
+
+**SP-D — Page mount + nav:**
+- `/strategy/page.tsx` — Suspense-wrapped, splits between empty-state
+  CTA (no `?id`) and board mount (with `?id`). Mount hydrates via
+  `getBoard(id)`, wires `setCurrentBoardId`, passes the row in as
+  `initialState`. Unmount clears the id.
+- `/strategy/new/page.tsx` — mirrors `/bet/new`. Mints
+  `defaultBoardState()` and `router.replace`s to
+  `/strategy?id=<uuid>`.
+- `GlobalNav` — `orient` flipped from disabled to `<Link href=
+  "/strategy">`. Test updated.
+- `.strategy-canvas` CSS — full-bleed flex container under the 38px
+  sticky gnav so Board owns the remaining viewport.
+
+**SP-E — Bet seam + example onramp:**
+- `CardShell` toolbar gets a third icon (`↗`, "Elevate to bet"),
+  visible only when `card.saved`. Handler: `mintDraft({}, { cardId:
+  card.id })` → `router.push('/bet/wager?id=<betId>')`.
+- `components/bet/BetSourceBadge.tsx` — small dashed plinth pill,
+  rendered on all five stage pages just below `SpineRail` when
+  `bet.cardId` is non-null. No back-link to the source card yet —
+  that needs a future `Bet.boardId` field.
+- `/strategy/new` accepts `?example=nsf` and seeds the new board with
+  `getTemplate('nsf').exampleBoard()` (22 cards, 14 connections — the
+  Plinth demo fixture). Empty state shows both onramps. Fixture smoke
+  test in `lib/strategy/__tests__/example-board.test.ts` (5 assertions:
+  shape, columns valid, connections refer to existing cards, round-
+  trips through Dexie).
+
+**SP-F — Cleanup:**
+- Deleted `lib/objective/` (queries + tests).
+- Removed `Bet.objectiveId` from `lib/db/types.ts`, removed the
+  `Objective` interface, removed the unused `Framework` union.
+- Dexie v4 migration: drops the `objectives` table (`objectives:
+  null`), removes the `objectiveId` index on bets, strips
+  `objectiveId` from existing rows.
+- `lib/bet/{factory,queries}.ts` no longer init `objectiveId: null`.
+- Tests swept: 4 fixture files (`BetCard`, `BoardView`, `filter`,
+  `stage`) lose their `objectiveId: null,` line; `lib/bet/__tests__/
+  queries.test.ts` drops the two `expect(bet.objectiveId).toBeNull()`
+  assertions.
+
+**Stats:** 143/143 tests pass across 17 files. tsc + build clean. New
+routes prerendered static: `/strategy`, `/strategy/new`. Dev-server
+smoke check: all routes 200; both empty-state CTAs render; the
+example-board onramp seeds the demo data. Full kanban interaction
+(DnD reorder, drag-to-connect, lineage alignment focus, arrow chain
+coloring) needs a real browser to verify end-to-end.
+
+**Scope deferred (called out for later sprints):**
+- Other 4 framework templates (OKR, RICE, GPS, GIST) — only NSF was
+  ported.
+- Plinth dialogs (TemplatePicker, ImportExport, Snapshot, Confirm).
+- Plinth Board-level tests (Board, ConnectionLayer, CardShell,
+  useBoardState, useConnections, useLineageAlignment, storage,
+  lineage util) — only the card-level tests and the fixture smoke
+  test were ported.
+- Bet back-link from `BetSourceBadge` — needs `Bet.boardId` (future
+  schema bump).
+- Board list / picker UI on `/strategy` for users with multiple
+  boards.
+
 ## 2026-06-03 — Sprint 2: Feasibility & Instrument + Decision Criteria
 
 The pre-lock lifecycle is now five-stage end-to-end: wager → instrument → criteria → lock → revisit.

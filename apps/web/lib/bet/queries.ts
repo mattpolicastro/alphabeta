@@ -41,7 +41,6 @@ function emptyArticulation(): Articulation {
 function emptyBet(id: string, now: string): Bet {
   return {
     id,
-    objectiveId: null,
     cardId: null,
     ownerId: null,
     type: "single",
