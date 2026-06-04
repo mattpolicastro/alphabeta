@@ -2,6 +2,64 @@
  * Plain CSS using the `@theme` tokens from `globals.css`.
  * Components import this once via the root layout; JSX stays clean. */
 
+/* ── Global nav (gnav) — sticky dark strip ──────────────────────────── */
+
+.gnav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-ink);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 18px;
+  height: 38px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gnav a {
+  color: #e6dfce;
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 0 11px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+.gnav a:hover {
+  color: #e3a487;
+}
+.gnav a[aria-current="page"] {
+  color: #e3a487;
+}
+
+.gnav-logo {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  padding-right: 14px;
+  margin-right: 4px;
+}
+.gnav-logo .a,
+.gnav-logo .b {
+  color: #e3a487;
+}
+
+.gnav-sep {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  height: 16px;
+  margin: 0 3px;
+}
+
+.gnav-spacer {
+  flex: 1;
+}
+
 /* ── Layout ─────────────────────────────────────────────────────────── */
 
 .ab-wrap {

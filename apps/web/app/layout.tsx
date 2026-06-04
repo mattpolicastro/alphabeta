@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Caveat } from "next/font/google";
+import { GlobalNav } from "@/components/shell/GlobalNav";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -24,7 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jetbrainsMono.variable} ${caveat.variable}`}>
-      <body>{children}</body>
+      <body>
+        <GlobalNav />
+        {children}
+      </body>
     </html>
   );
 }
