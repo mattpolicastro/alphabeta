@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { __resetDb, getDb } from "@/lib/db";
 import { seedDemoBets, clearDemoBets } from "@/lib/bet/seed";
 import { getWalkthroughEnabled, setWalkthroughEnabled } from "@/lib/walkthrough";
+import {
+  exportAll,
+  importAll,
+  downloadExport,
+  readImportFile,
+} from "@/lib/db/portable";
 
 export function DebugPanel({
   open,
@@ -13,20 +19,27 @@ export function DebugPanel({
   onClose: () => void;
 }) {
   const [betCount, setBetCount] = useState<number | null>(null);
+  const [boardCount, setBoardCount] = useState<number | null>(null);
   const [walkthroughOn, setWalkthroughOn] = useState(true);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
-      getDb().bets.count().then(setBetCount);
+      const db = getDb();
+      db.bets.count().then(setBetCount);
+      db.boards.count().then(setBoardCount);
       setWalkthroughOn(getWalkthroughEnabled());
+      setImportStatus(null);
     }
   }, [open]);
 
   if (!open) return null;
 
-  async function refreshCount() {
-    const count = await getDb().bets.count();
-    setBetCount(count);
+  async function refreshCounts() {
+    const db = getDb();
+    setBetCount(await db.bets.count());
+    setBoardCount(await db.boards.count());
   }
 
   return (
@@ -95,7 +108,9 @@ export function DebugPanel({
         </div>
 
         <div style={{ fontSize: 11.5, marginBottom: 12 }}>
-          {betCount !== null ? `${betCount} bet(s) in store` : "loading…"}
+          {betCount !== null
+            ? `${betCount} bet(s), ${boardCount ?? 0} board(s) in store`
+            : "loading…"}
         </div>
 
         <div
@@ -111,7 +126,7 @@ export function DebugPanel({
             style={{ width: "100%", textAlign: "center" }}
             onClick={async () => {
               await seedDemoBets();
-              await refreshCount();
+              await refreshCounts();
             }}
           >
             Load demo fixtures
@@ -121,7 +136,7 @@ export function DebugPanel({
             style={{ width: "100%", textAlign: "center" }}
             onClick={async () => {
               await clearDemoBets();
-              await refreshCount();
+              await refreshCounts();
             }}
           >
             Clear demo fixtures
@@ -152,6 +167,100 @@ export function DebugPanel({
           }}
         >
           Nuke deletes the entire IndexedDB and reloads the page.
+        </div>
+
+        {/* import / export */}
+        <div
+          style={{
+            fontSize: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: "var(--color-ink-soft)",
+            marginBottom: 10,
+          }}
+        >
+          import / export
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <button
+            className="btn"
+            style={{ width: "100%", textAlign: "center" }}
+            onClick={async () => {
+              const envelope = await exportAll();
+              downloadExport(envelope);
+            }}
+          >
+            Export all data
+          </button>
+          <button
+            className="btn"
+            style={{ width: "100%", textAlign: "center" }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import (merge)
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: "none" }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const data = await readImportFile(file);
+                const result = await importAll(data, "merge");
+                if (result.ok) {
+                  setImportStatus(
+                    `Imported ${result.counts.bets} bet(s), ${result.counts.boards} board(s)`,
+                  );
+                  await refreshCounts();
+                } else {
+                  setImportStatus(`Error: ${result.error}`);
+                }
+              } catch (err) {
+                setImportStatus(
+                  `Error: ${err instanceof Error ? err.message : String(err)}`,
+                );
+              }
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        {importStatus && (
+          <div
+            style={{
+              fontSize: 10,
+              color: importStatus.startsWith("Error")
+                ? "var(--color-terra)"
+                : "var(--color-ink-soft)",
+              fontStyle: "italic",
+              marginBottom: 24,
+            }}
+          >
+            {importStatus}
+          </div>
+        )}
+
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--color-ink-faint)",
+            fontStyle: "italic",
+            marginBottom: 24,
+          }}
+        >
+          Export saves all bets and boards as a versioned JSON file.
+          Import merges into existing data (matching IDs are overwritten).
         </div>
 
         {/* settings */}
