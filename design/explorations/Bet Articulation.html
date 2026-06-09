@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⍺lphaβeta — Articulating the Bet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:rgba(166,77,59,.07);--terra-line:rgba(166,77,59,.45);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:20px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:20px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:1px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:800px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+  .lead .g{color:var(--green);font-weight:500;}
+
+  /* funnel locator */
+  .funnel{display:flex;align-items:center;gap:0;margin:20px 0 6px;flex-wrap:wrap;font-size:11px;}
+  .funnel .f{padding:6px 12px;border:1.5px dashed var(--rule-faint);color:var(--ink-faint);margin:0 7px 7px 0;letter-spacing:.5px;}
+  .funnel .f.here{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);font-weight:700;}
+  .funnel .far{color:var(--ink-faint);margin:0 7px 7px 0;}
+
+  /* tabs */
+  .tabs{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;}
+  .tab{flex:1 1 260px;min-width:240px;cursor:pointer;background:transparent;border:1.5px dashed var(--rule);padding:13px 15px;text-align:left;font-family:inherit;color:var(--ink);display:flex;flex-direction:column;gap:5px;transition:background .12s,border-color .12s;}
+  .tab:hover{background:var(--paper-2);}
+  .tab.on{border-color:var(--terra);border-style:solid;background:var(--terra-soft);}
+  .tab .tk{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  .tab.on .tk{color:var(--terra);}
+  .tab .tn{font-size:14px;font-weight:700;}
+  .tab .td{font-size:11px;color:var(--ink-soft);line-height:1.4;}
+
+  .approach{display:none;}
+  .approach.on{display:block;}
+
+  .cols{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start;}
+  .col{min-width:0;}
+  .panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:20px;}
+  .panel-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  .panel-title{font-size:17px;font-weight:700;margin:5px 0 4px;}
+  .panel-sub{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-bottom:18px;}
+
+  /* ---- Approach 1: wager sentence ---- */
+  .wager{font-size:21px;line-height:1.85;color:var(--ink);}
+  .tok{border-bottom:2px dashed var(--terra-line);color:var(--terra);font-weight:500;padding:0 3px;cursor:text;outline:none;white-space:nowrap;}
+  .tok:focus{background:var(--terra-soft);}
+  .tok.cycle{cursor:pointer;border-bottom-style:solid;}
+  .tok.cycle::after{content:" ⇅";font-size:12px;color:var(--ink-faint);}
+  .tok.empty{color:var(--ink-faint);font-style:italic;font-weight:400;}
+  .tok.fals.empty{border-bottom-color:var(--terra);background:var(--terra-soft);}
+  .wager .lead-in{color:var(--ink-soft);}
+
+  .struct{margin-top:24px;border-top:1.5px dashed var(--rule-faint);padding-top:16px;}
+  .struct-h{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;}
+  .struct-row{display:flex;gap:10px;align-items:baseline;margin-bottom:8px;font-size:12px;}
+  .struct-row .sk{flex:0 0 96px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);}
+  .struct-row .sv{color:var(--ink);font-weight:500;}
+  .struct-row .sv.miss{color:var(--terra);font-style:italic;font-weight:400;}
+  .losable{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-size:11px;padding:5px 11px;border:1.5px solid;}
+  .losable.yes{color:var(--green);border-color:var(--green-line);background:var(--green-soft);}
+  .losable.no{color:var(--terra);border-color:var(--terra-line);background:var(--terra-soft);}
+
+  /* ---- Approach 2: dump & reflect ---- */
+  .dump textarea{width:100%;font-family:inherit;font-size:13.5px;line-height:1.6;color:var(--ink);background:rgba(255,255,255,.45);border:1.5px dashed var(--rule-faint);padding:14px;resize:vertical;min-height:170px;}
+  .relisten{margin-top:12px;}
+  .reflect-h{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);margin-bottom:12px;}
+  .heard{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.34);padding:12px 13px;margin-bottom:9px;}
+  .heard .hk{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px;}
+  .heard .hv{font-size:12.5px;color:var(--ink);line-height:1.5;}
+  .heard.gap{border-color:var(--terra-line);border-style:solid;background:var(--terra-soft);}
+  .heard.gap .hk{color:var(--terra);}
+  .heard.gap .hv{color:var(--terra);font-style:italic;}
+  .heard.filled{border-color:var(--green-line);background:var(--green-soft);}
+  .gap-fill{margin-top:9px;display:flex;gap:8px;}
+  .gap-fill input{flex:1;font-family:inherit;font-size:12px;color:var(--ink);background:rgba(255,255,255,.6);border:1.5px dashed var(--terra-line);padding:8px 10px;}
+
+  /* ---- Approach 3: triage grid ---- */
+  .grid-wrap{position:relative;}
+  .grid2{position:relative;width:100%;aspect-ratio:1/1;max-width:340px;margin:6px auto 0;border:1.5px solid var(--rule);background:
+    repeating-linear-gradient(0deg,transparent,transparent 33px,rgba(42,42,42,.04) 33px,rgba(42,42,42,.04) 34px),
+    repeating-linear-gradient(90deg,transparent,transparent 33px,rgba(42,42,42,.04) 33px,rgba(42,42,42,.04) 34px);
+    touch-action:none;cursor:crosshair;}
+  .grid2 .ql{position:absolute;font-size:9px;letter-spacing:.5px;color:var(--ink-faint);text-transform:uppercase;padding:5px 7px;line-height:1.3;max-width:46%;}
+  .ql.tl{top:0;left:0;} .ql.tr{top:0;right:0;text-align:right;} .ql.bl{bottom:0;left:0;} .ql.br{bottom:0;right:0;text-align:right;}
+  .axis-x{text-align:center;font-size:10px;color:var(--ink-soft);margin-top:8px;letter-spacing:1px;text-transform:uppercase;}
+  .axis-y{position:absolute;left:-30px;top:50%;transform:rotate(-90deg) translateX(50%);transform-origin:left;font-size:10px;color:var(--ink-soft);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+  .dot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--terra);border:2px solid var(--paper);box-shadow:0 0 0 1.5px var(--terra);transform:translate(-50%,-50%);cursor:grab;}
+  .dot:active{cursor:grabbing;}
+  .triage-out{margin-top:18px;border-top:1.5px dashed var(--rule-faint);padding-top:15px;}
+  .triage-q{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:7px;}
+  .triage-msg{font-size:12.5px;line-height:1.6;color:var(--ink);font-style:italic;margin-bottom:14px;}
+  .dial-readout{display:flex;gap:8px;flex-wrap:wrap;}
+  .dchip{font-size:10px;border:1.5px dashed var(--rule-faint);padding:4px 9px;color:var(--ink-soft);}
+  .dchip b{color:var(--terra);font-weight:700;}
+
+  /* annotation (shared right col) */
+  .annot{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px;position:relative;}
+  .annot::before{content:"DISCIPLINE LAYER";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:10px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.6;margin:0 0 11px;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .annot .seam{border-top:1px dashed var(--terra-line);margin-top:13px;padding-top:12px;font-size:11.5px;color:var(--ink-soft);font-style:italic;}
+  .annot .seam b{color:var(--terra);font-style:normal;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:14px 0 0;}
+
+  footer.foot{margin-top:30px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+  footer.foot a{color:var(--terra);}
+  .crosslink{margin-top:8px;}
+
+  @media(max-width:860px){.cols{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark"><span class="a">⍺</span>lph<span class="b">aβ</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">the front door</span><span class="crumb">·</span>
+          <span class="crumb">idea → bet</span><span class="crumb">·</span>
+          <span class="crumb">low friction, real commitment</span>
+        </div>
+      </div>
+      <div class="stamp">a bet you can't lose isn't a bet</div>
+    </div>
+    <p class="lead"><span class="g">Before feasibility, before the instrument — the idea has to become a bet.</span> A claim with a direction, a magnitude, a confidence, and the one thing that makes it a wager: <em>what would change your mind.</em> Three personalities for the front door. The discipline can't feel like a form — it has to fall out of how you'd naturally say the idea.</p>
+  </header>
+
+  <div class="funnel">
+    <span class="f here">articulate the bet</span>
+    <span class="far">→</span>
+    <span class="f">feasibility / instrument</span>
+    <span class="far">→</span>
+    <span class="f">decision criteria</span>
+    <span class="far">→</span>
+    <span class="f">commit & lock</span>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-a="sentence"><span class="tk">approach 1</span><span class="tn">The wager sentence</span><span class="td">Discipline hidden in the blanks of one readable sentence.</span></button>
+    <button class="tab" data-a="dump"><span class="tk">approach 2</span><span class="tn">Dump &amp; reflect</span><span class="td">Say it freely; the tool reflects the bet and flags the gap.</span></button>
+    <button class="tab" data-a="triage"><span class="tk">approach 3</span><span class="tn">Triage first</span><span class="td">Place the bet; its position sets how much rigor setup demands.</span></button>
+  </div>
+
+  <!-- ===== APPROACH 1 ===== -->
+  <section class="approach on" data-approach="sentence">
+    <div class="cols">
+      <div class="col">
+        <div class="panel">
+          <div class="panel-eyebrow">write the wager</div>
+          <div class="panel-title">Say it as one sentence</div>
+          <div class="panel-sub">Click the terracotta blanks to edit. The ⇅ tokens cycle. You're writing a sentence — but every blank is a field you're committing to.</div>
+          <div class="wager" id="wager">
+            <span class="lead-in">I'm betting that</span>
+            <span class="tok" contenteditable="true" data-k="change">moving the plan-picker above the fold</span>
+            <span class="lead-in">will</span>
+            <span class="tok cycle" data-k="dir" data-cycle="lift|cut">lift</span>
+            <span class="tok" contenteditable="true" data-k="metric">checkout-start</span>
+            <span class="lead-in">by about</span>
+            <span class="tok" contenteditable="true" data-k="mag">8%</span><span class="lead-in">.</span>
+            <span class="lead-in">I'm</span>
+            <span class="tok cycle" data-k="conf" data-cycle="hunch-level|fairly|highly">fairly</span>
+            <span class="lead-in">sure, because</span>
+            <span class="tok" contenteditable="true" data-k="why">replays show scroll drop-off at the testimonials</span><span class="lead-in">.</span>
+            <span class="lead-in">I'll fold if</span>
+            <span class="tok fals" contenteditable="true" data-k="fals" data-empty="name what would change your mind">it comes in under +4% or dents a guardrail</span><span class="lead-in">.</span>
+          </div>
+
+          <div class="struct">
+            <div class="struct-h"><span>what ⍺lphaβeta heard</span><span style="color:var(--ink-faint);text-transform:none;letter-spacing:0;font-style:italic">a form, filled without a form</span></div>
+            <div class="struct-row"><span class="sk">expectation</span><span class="sv" id="s-exp">—</span></div>
+            <div class="struct-row"><span class="sk">magnitude</span><span class="sv" id="s-mag">—</span></div>
+            <div class="struct-row"><span class="sk">confidence</span><span class="sv" id="s-conf">—</span></div>
+            <div class="struct-row"><span class="sk">falsifier</span><span class="sv" id="s-fals">—</span></div>
+            <div class="losable" id="losable"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="annot">
+          <div class="moment">Structure-in-language</div>
+          <p>The form never appears, but it gets filled. Each blank is a pre-registration field; writing the sentence <em>is</em> the commitment. No field can be skipped without the sentence reading wrong — the grammar does the enforcing.</p>
+          <p>For the stats-gap persona this is the gentlest on-ramp: they write the way they'd speak, and the discipline assembles underneath.</p>
+          <div class="seam">↳ <b>the one near-insistence:</b> the <em>fold-if</em> blank glows until filled. Not gated — but the "losable" stamp stays red until your bet can actually lose.</div>
+          <p class="margin-note">↖ you wrote a sentence. it heard a commitment.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== APPROACH 2 ===== -->
+  <section class="approach" data-approach="dump">
+    <div class="cols">
+      <div class="col">
+        <div class="panel dump">
+          <div class="panel-eyebrow">just say it</div>
+          <div class="panel-title">What's the idea?</div>
+          <div class="panel-sub">No fields. Brain-dump it the way you'd say it to a colleague. ⍺lphaβeta listens and reflects back the bet it heard.</div>
+          <textarea id="dumpText">The /pricing page buries the plans below a big testimonial band. I'm pretty sure people bounce before they ever see the plans — the session replays show this big scroll drop-off right around the testimonials. If we move the plan-picker above the fold I think checkout-starts go up, maybe 8% or so. Worth trying.</textarea>
+          <button class="btn go relisten" id="relisten" style="font-family:inherit;font-size:11.5px;padding:9px 14px;border:1.5px solid var(--terra-line);background:var(--terra);color:var(--paper);cursor:pointer;">Re-listen ▸</button>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <div class="reflect-h">the bet I'm hearing</div>
+          <div class="heard"><div class="hk">change</div><div class="hv">Move the plan-picker above the fold on /pricing.</div></div>
+          <div class="heard"><div class="hk">expected effect</div><div class="hv">Checkout-start up ~8% (your words: "maybe 8% or so").</div></div>
+          <div class="heard"><div class="hk">confidence — softer than it sounds</div><div class="hv">"Pretty sure" + "I think" + "maybe" — reads like a <b>hunch</b>, not a strong conviction. Worth marking honestly.</div></div>
+          <div class="heard gap" id="gapCard">
+            <div class="hk">⚠ what would change your mind?</div>
+            <div class="hv">You didn't say. This is the one thing a bet needs — without it, any result can be spun as a win.</div>
+            <div class="gap-fill"><input id="gapInput" placeholder="e.g. under +4%, or any guardrail drop"><button class="btn" id="gapBtn" style="font-family:inherit;font-size:11px;padding:8px 12px;border:1.5px solid var(--terra-line);background:var(--terra);color:var(--paper);cursor:pointer;">add</button></div>
+          </div>
+        </div>
+        <div class="annot" style="margin-top:18px">
+          <div class="moment">Capture, then structure</div>
+          <p>Lowest friction to <em>start</em> — but the reflection is where the risk lives. An auto-parsed bet is the easiest thing in the world to rubber-stamp, which is exactly the bad-faith move.</p>
+          <p>So the reflection earns its keep only by <em>pushing back</em>: softening the overconfident "pretty sure" to a hunch, and refusing to let the missing <em>fold-if</em> pass quietly.</p>
+          <p class="margin-note">↖ the gap, not the summary, is the product.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== APPROACH 3 ===== -->
+  <section class="approach" data-approach="triage">
+    <div class="cols">
+      <div class="col">
+        <div class="panel">
+          <div class="panel-eyebrow">place the bet</div>
+          <div class="panel-title">How big a bet is this?</div>
+          <div class="panel-sub">Drag the dot. Where your bet sits — how sure you are against how hard it'd be to undo — sets how much discipline the rest of setup asks for.</div>
+          <div class="grid-wrap">
+            <div class="axis-y">hard to reverse →</div>
+            <div class="grid2" id="grid2">
+              <span class="ql tl">low conf · hard to undo<br>the dangerous corner</span>
+              <span class="ql tr">sure · hard to undo<br>pre-register hard</span>
+              <span class="ql bl">low conf · cheap<br>just try it</span>
+              <span class="ql br">sure · cheap<br>log &amp; go</span>
+              <span class="dot" id="dot" style="left:30%;top:28%"></span>
+            </div>
+            <div class="axis-x">hunch → highly confident</div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <div class="triage-out" style="border-top:none;padding-top:0;margin-top:0">
+            <div class="triage-q" id="triageQ"></div>
+            <div class="triage-msg" id="triageMsg"></div>
+            <div class="dial-readout" id="dialReadout"></div>
+          </div>
+        </div>
+        <div class="annot" style="margin-top:18px">
+          <div class="moment">Triage sets the rigor</div>
+          <p>This is the architecturally powerful one: the bet's <em>shape</em> drives everything downstream — how scaffolded the register is, how strict the criteria, how rigorous an instrument you should reach for.</p>
+          <p>The catch I'd watch: asking for confidence and stakes <em>before</em> the idea is stated feels backwards. I'd make this a <em>consequence</em> of the wager sentence, not a gate in front of it.</p>
+          <div class="seam">↳ <b>the chain:</b> bet position → register dial + instrument rigor → the constraints the <b>Instrument Finder</b> opens with.</div>
+          <p class="margin-note">↖ a hunch you can't undo deserves the most discipline.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div><b>the front door, three ways:</b> structure-in-language (the sentence does the enforcing) · capture-then-structure (the gap is the product) · triage-first (the bet's shape sets the rigor). All three are trying to make pre-registration feel like articulation, not paperwork.</div>
+    <div class="crosslink"><b>react / next:</b> which front door? · is the falsifier the right thing to gently insist on, or too clever? · should triage be a consequence of the sentence (my lean) or its own step? &nbsp;—&nbsp; downstream: <a href="Instrument Finder.html">Instrument Finder</a> · <a href="Decision-Method.html">Decision × Method</a></div>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- tabs ---------- */
+const tabs=document.getElementById('tabs');
+const approaches=[...document.querySelectorAll('.approach')];
+function setApproach(a){
+  [...tabs.children].forEach(b=>b.classList.toggle('on',b.dataset.a===a));
+  approaches.forEach(s=>s.classList.toggle('on',s.dataset.approach===a));
+  sessionStorage.setItem('ab_bet_tab',a);
+}
+tabs.addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)setApproach(b.dataset.a);});
+
+/* ---------- approach 1: wager sentence ---------- */
+const CYCLES={dir:['lift','cut'],conf:['hunch-level','fairly','highly']};
+const CONF_LABEL={'hunch-level':'a hunch','fairly':'fairly confident','highly':'highly confident'};
+const wager=document.getElementById('wager');
+function tokVal(k){const e=wager.querySelector(`[data-k="${k}"]`);return e?e.textContent.trim():'';}
+function isEmpty(k){const e=wager.querySelector(`[data-k="${k}"]`);if(!e)return true;const t=e.textContent.trim();return !t || t===e.dataset.empty;}
+function updStruct(){
+  const dir=tokVal('dir'), metric=tokVal('metric'), mag=tokVal('mag'), change=tokVal('change');
+  document.getElementById('s-exp').textContent = (change&&metric)?`${change} → ${dir} ${metric}`:'—';
+  document.getElementById('s-mag').textContent = mag?`~${mag.replace(/^~/,'')}`:'—';
+  document.getElementById('s-conf').textContent = CONF_LABEL[tokVal('conf')]||tokVal('conf');
+  const falsEl=document.getElementById('s-fals');
+  const fals=wager.querySelector('[data-k="fals"]');
+  const falsEmpty=isEmpty('fals');
+  if(falsEmpty){falsEl.textContent='unfalsifiable — name what would change your mind';falsEl.className='sv miss';}
+  else{falsEl.textContent=fals.textContent.trim();falsEl.className='sv';}
+  // falsifier token glow
+  fals.classList.toggle('empty',falsEmpty);
+  // losable stamp
+  const l=document.getElementById('losable');
+  if(falsEmpty){l.className='losable no';l.textContent='✕ not yet a bet — it can\u2019t lose';}
+  else{l.className='losable yes';l.textContent='✓ losable — this is a real wager';}
+}
+wager.addEventListener('input',updStruct);
+wager.addEventListener('click',e=>{
+  const t=e.target.closest('.tok.cycle');if(!t)return;
+  const arr=CYCLES[t.dataset.k];let i=arr.indexOf(t.textContent.trim());
+  t.textContent=arr[(i+1)%arr.length];updStruct();
+});
+/* handle falsifier placeholder behaviour */
+const falsTok=wager.querySelector('[data-k="fals"]');
+falsTok.addEventListener('focus',()=>{if(falsTok.classList.contains('showing-ph')){falsTok.textContent='';falsTok.classList.remove('showing-ph','empty');}});
+updStruct();
+
+/* ---------- approach 2: dump & reflect ---------- */
+document.getElementById('relisten').addEventListener('click',()=>{
+  const b=document.getElementById('relisten');
+  b.textContent='…listening';
+  setTimeout(()=>{b.textContent='Re-listen ▸';},650);
+});
+const gapBtn=document.getElementById('gapBtn');
+gapBtn.addEventListener('click',()=>{
+  const v=document.getElementById('gapInput').value.trim();
+  const card=document.getElementById('gapCard');
+  if(!v){card.style.outline='1.5px solid var(--terra)';setTimeout(()=>card.style.outline='',400);return;}
+  card.className='heard filled';
+  card.innerHTML='<div class="hk">what would change your mind ✓</div><div class="hv">'+v+'</div><div class="hk" style="margin-top:8px;color:var(--green)">now it\u2019s a bet — it can lose.</div>';
+});
+
+/* ---------- approach 3: triage grid ---------- */
+const grid=document.getElementById('grid2'), dot=document.getElementById('dot');
+const triageQ=document.getElementById('triageQ'), triageMsg=document.getElementById('triageMsg'), dialReadout=document.getElementById('dialReadout');
+function triageUpdate(){
+  const x=parseFloat(dot.style.left)/100;          // confidence 0..1
+  const y=1-parseFloat(dot.style.top)/100;         // reversibility-difficulty 0..1 (top = hard)
+  const sure=x>=0.5, hard=y>=0.5;
+  let q,m,reg,rigor,crit;
+  if(hard&&!sure){q='The dangerous corner';m='Low confidence, hard to undo. This is where discipline earns its keep — full falsifier, strict criteria, and the most rigorous instrument you can afford.';reg='Scaffolded';rigor='high';crit='strict';}
+  else if(hard&&sure){q='Pre-register hard';m='You\u2019re confident and it\u2019s costly to reverse — so pre-register tightly. Confidence is exactly when people skip the falsifier and rationalize later.';reg='Standard';rigor='high';crit='strict';}
+  else if(!hard&&!sure){q='Just try it';m='Cheap to be wrong and you\u2019re unsure — take the fastest read available and move on. Light criteria, low ceremony.';reg='Standard';rigor='low';crit='light';}
+  else{q='Log & go';m='Sure, and cheap to reverse — barely a bet. One line in the journal; revisit only if it surprises you.';reg='Ambient';rigor='minimal';crit='one-line';}
+  triageQ.textContent=q;triageMsg.textContent=m;
+  dialReadout.innerHTML=
+    `<span class="dchip">register: <b>${reg}</b></span>`+
+    `<span class="dchip">instrument rigor: <b>${rigor}</b></span>`+
+    `<span class="dchip">criteria: <b>${crit}</b></span>`;
+}
+let dragging=false;
+function place(clientX,clientY){
+  const r=grid.getBoundingClientRect();
+  let lx=(clientX-r.left)/r.width, ly=(clientY-r.top)/r.height;
+  lx=Math.max(0.04,Math.min(0.96,lx));ly=Math.max(0.04,Math.min(0.96,ly));
+  dot.style.left=(lx*100)+'%';dot.style.top=(ly*100)+'%';triageUpdate();
+}
+grid.addEventListener('pointerdown',e=>{dragging=true;dot.setPointerCapture&&dot.setPointerCapture(e.pointerId);place(e.clientX,e.clientY);});
+grid.addEventListener('pointermove',e=>{if(dragging)place(e.clientX,e.clientY);});
+window.addEventListener('pointerup',()=>{dragging=false;});
+triageUpdate();
+
+/* restore tab */
+setApproach(sessionStorage.getItem('ab_bet_tab')||'sentence');
+</script>
+</body>
+</html>

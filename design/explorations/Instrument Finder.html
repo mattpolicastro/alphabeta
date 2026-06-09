@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⍺lphaβeta — Instrument Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:rgba(166,77,59,.07);--terra-line:rgba(166,77,59,.45);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1150px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:20px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:20px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:1px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:800px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+  .lead .g{color:var(--green);font-weight:500;}
+
+  .cols{display:grid;grid-template-columns:1fr 1.25fr;gap:22px;align-items:start;margin-top:22px;}
+  .col{min-width:0;}
+
+  .panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:18px;}
+  .panel.green{border:1.5px solid var(--green-line);background:rgba(58,107,74,.035);}
+  .panel-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:baseline;}
+  .panel-eyebrow .badge{font-size:9px;letter-spacing:1px;color:var(--green);border:1px solid var(--green-line);padding:1px 6px;}
+  .panel-title{font-size:16px;font-weight:700;margin:5px 0 14px;}
+
+  /* decision (primary, compact) */
+  .field-label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px;}
+  .field{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);padding:10px 12px;color:var(--ink);font-size:12.5px;line-height:1.5;}
+  .field+.field-label{margin-top:13px;}
+
+  .declared{margin-top:18px;border-top:1px dashed var(--rule-faint);padding-top:15px;}
+  .declared .dl{font-size:11px;color:var(--ink-soft);margin-bottom:9px;}
+  .declared .dl b{color:var(--ink);}
+  .seg{display:flex;flex-wrap:wrap;border:1.5px solid var(--rule);}
+  .seg button{flex:1 1 auto;font-family:inherit;font-size:11px;padding:8px 10px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--rule);cursor:pointer;white-space:nowrap;}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--terra);color:var(--paper);}
+  .seg button:not(.on):hover{background:var(--terra-soft);}
+
+  /* constraints */
+  .constraint{margin-bottom:18px;}
+  .constraint:last-child{margin-bottom:0;}
+  .c-label{font-size:11px;color:var(--ink);font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;}
+  .c-label .cv{color:var(--terra);font-weight:700;font-size:11px;}
+  .seg.small button{font-size:10.5px;padding:7px 8px;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--rule);margin:6px 0 5px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  .scale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink-faint);}
+
+  /* instrument finder */
+  .fit-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--terra);margin-bottom:3px;}
+  .fit-sub{font-size:11.5px;color:var(--ink-soft);font-style:italic;margin-bottom:16px;line-height:1.5;}
+  .fitcards{display:flex;flex-direction:column;gap:10px;}
+  .fitcard{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.34);padding:13px 14px;position:relative;transition:border-color .12s,background .12s;}
+  .fitcard.best{border:1.5px solid var(--green-line);background:var(--green-soft);}
+  .fitcard.ruled{opacity:.5;}
+  .fc-head{display:flex;align-items:center;gap:10px;}
+  .fc-name{font-size:13.5px;font-weight:700;}
+  .fc-kind{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);}
+  .fc-pill{margin-left:auto;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1.5px solid;}
+  .fc-pill.fits{color:var(--green);border-color:var(--green-line);}
+  .fc-pill.costly{color:var(--terra);border-color:var(--terra-line);}
+  .fc-pill.ruled{color:var(--ink-faint);border-color:var(--rule-faint);}
+  .fc-body{display:flex;gap:12px;align-items:baseline;margin-top:8px;}
+  .fc-metric{font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .fc-metric.dim{color:var(--ink-faint);font-weight:400;}
+  .fc-reason{font-size:11.5px;color:var(--ink-soft);line-height:1.45;}
+  .fc-tags{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+  .fc-tag{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px dashed;}
+  .fc-tag.def{color:var(--ink-soft);border-color:var(--rule-faint);}
+  .fc-tag.best{color:var(--green);border-color:var(--green-line);}
+
+  /* the nudge */
+  .nudge{margin-top:16px;border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:15px 16px;position:relative;}
+  .nudge::before{content:"DISCIPLINE NUDGE";position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);}
+  .nudge.calm{border-color:var(--green-line);background:var(--green-soft);}
+  .nudge.calm::before{content:"FITS";color:var(--green);}
+  .nudge p{font-size:12.5px;line-height:1.6;margin:0 0 12px;font-style:italic;}
+  .nudge p em{color:var(--terra);font-style:italic;font-weight:500;}
+  .nudge.calm p em{color:var(--green);}
+  .nudge-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:11.5px;padding:9px 14px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.3px;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.go{border-style:solid;border-color:var(--green-line);background:var(--green);color:var(--paper);}
+  .btn.go:hover{background:#2f5a3d;}
+
+  /* override-with-reason */
+  .override{margin-top:13px;border-top:1px dashed var(--terra-line);padding-top:13px;display:none;}
+  .override.show{display:block;}
+  .override .ov-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);margin-bottom:7px;}
+  .override textarea{width:100%;font-family:inherit;font-size:12px;color:var(--ink);background:rgba(255,255,255,.5);border:1.5px dashed var(--terra-line);padding:9px 11px;resize:vertical;min-height:48px;line-height:1.5;}
+  .override .ov-note{font-size:10.5px;color:var(--ink-soft);font-style:italic;margin-top:8px;line-height:1.5;}
+  .override .ov-note b{color:var(--terra);font-style:normal;}
+
+  .annot{margin-top:18px;border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:16px 18px;}
+  .annot .moment{font-size:12px;font-weight:700;color:var(--terra);margin-bottom:9px;}
+  .annot p{font-size:12px;line-height:1.6;margin:0 0 10px;font-style:italic;}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:14px 0 0;}
+
+  footer.foot{margin-top:30px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+  footer.foot a{color:var(--terra);}
+  .crosslink{margin-top:8px;}
+
+  @media(max-width:860px){.cols{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark"><span class="a">⍺</span>lph<span class="b">aβ</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">instrument finder</span><span class="crumb">·</span>
+          <span class="crumb">method settles at feasibility</span><span class="crumb">·</span>
+          <span class="crumb">nudge, don't gate</span>
+        </div>
+      </div>
+      <div class="stamp">you brought a hammer — is it a nail?</div>
+    </div>
+    <p class="lead"><span class="g">The decision leads; the method is found.</span> You arrive planning an instrument — almost everyone defaults to "I'll A/B test it." As you state the decision and its <em>constraints</em>, the feasibility panel argues back. Method is secondary in <em>sequence</em>, frozen at commit. The nudge is the product's whole thesis aimed at one choice: <em>surface the cost of the default so "should I?" has somewhere to land.</em></p>
+  </header>
+
+  <div class="cols">
+    <!-- LEFT: decision + constraints -->
+    <div class="col">
+      <div class="panel green">
+        <div class="panel-eyebrow">the decision <span class="badge">leads</span></div>
+        <div class="panel-title">What I'm deciding</div>
+        <div class="field">Whether to keep the redesigned /pricing plan-picker, or revert.</div>
+        <div class="field-label">What I expect, and why</div>
+        <div class="field">Plans above the fold lifts checkout-start ~8%. Replays show scroll drop-off at the testimonial band.</div>
+
+        <div class="declared">
+          <div class="dl">I came in planning to use: <b id="declaredName">A/B test</b></div>
+          <div class="seg" id="declaredSeg">
+            <button data-m="ab" class="on">A/B</button>
+            <button data-m="quasi">Quasi</button>
+            <button data-m="obs">Observational</button>
+            <button data-m="hold">Holdback</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-eyebrow">constraints <span style="font-size:10px;color:var(--ink-faint);letter-spacing:0;text-transform:none;font-style:italic">where intent meets reality</span></div>
+        <div class="panel-title" style="margin-bottom:18px">What the world allows</div>
+
+        <div class="constraint">
+          <div class="c-label">Can you randomly assign?</div>
+          <div class="seg small" id="randSeg">
+            <button data-v="yes">Yes, split traffic</button>
+            <button data-v="no">No</button>
+            <button data-v="shipped" class="on">Already shipped</button>
+          </div>
+        </div>
+
+        <div class="constraint">
+          <div class="c-label">Traffic available <span class="cv" id="trafficV">moderate</span></div>
+          <input type="range" min="1" max="5" step="1" value="3" id="traffic">
+          <div class="scale"><span>a trickle</span><span>abundant</span></div>
+        </div>
+
+        <div class="constraint">
+          <div class="c-label">How soon do you need an answer? <span class="cv" id="urgencyV">fairly soon</span></div>
+          <input type="range" min="1" max="5" step="1" value="4" id="urgency">
+          <div class="scale"><span>can wait</span><span>need it now</span></div>
+        </div>
+
+        <div class="constraint">
+          <div class="c-label">How defensible must the claim be? <span class="cv" id="claimV">solid</span></div>
+          <input type="range" min="1" max="5" step="1" value="3" id="claim">
+          <div class="scale"><span>directional</span><span>bulletproof</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: instrument finder -->
+    <div class="col">
+      <div class="panel">
+        <div class="fit-eyebrow">instrument finder</div>
+        <div class="fit-sub">Live fit against your constraints. The method settles here — not before you've thought, not from a neutral menu.</div>
+        <div class="fitcards" id="fitcards"></div>
+
+        <div class="nudge" id="nudge">
+          <p id="nudgeText"></p>
+          <div class="nudge-actions" id="nudgeActions"></div>
+          <div class="override" id="override">
+            <div class="ov-lbl">Why keep <span id="ovMethod">A/B</span> against the recommendation?</div>
+            <textarea placeholder="e.g. leadership only trusts a randomized result; the slower read is worth it here."></textarea>
+            <div class="ov-note">↳ <b>Logged, not blocked.</b> This override becomes part of your committed record — visible alongside the recommendation it went against. Accountability through visibility, not a gate you'd route around.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="annot">
+        <div class="moment">Insertion moment: method selection</div>
+        <p>This is arguably the <em>first</em> discipline intervention — and the one existing tools skip entirely. They assume you've already decided to run an experiment. ⍺lphaβeta asks whether you should, and <em>which kind</em>.</p>
+        <p>For the diagonal user it's load-bearing: they may not know holdback or quasi-experiments exist. The finder surfaces options their stats background wouldn't — without making them author the choice cold.</p>
+        <p class="margin-note">↖ method is downstream of the decision — but frozen with it at commit.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>the shift:</b> the method picker stopped leading. The decision leads; constraints settle the instrument at the feasibility step; the nudge challenges your default; an override is recorded, never gated. Method is secondary in sequence, co-equal in the committed record.</div>
+    <div class="crosslink"><b>react / next:</b> should "keep anyway" force a reason before it'll let you proceed, or stay optional? · does the finder belong <em>before</em> the decision journal or folded <em>into</em> its feasibility step? · ready to leave setup for the <b>Running phase</b>? &nbsp;—&nbsp; related: <a href="Decision-Method.html">Decision × Method</a> · <a href="Setup Register Dial.html">Register Dial</a></div>
+  </footer>
+
+</div>
+
+<script>
+const NAMES={ab:'A/B test',quasi:'Quasi-experiment',obs:'Observational',hold:'Holdback'};
+const KINDS={ab:'randomized',quasi:'natural exp.',obs:'no intervention',hold:'post-launch'};
+const ORDER=['ab','quasi','obs','hold'];
+
+const state={declared:'ab',randomize:'shipped',traffic:3,urgency:4,claim:3};
+
+function fit(s){
+  const M={};
+  // A/B
+  if(s.randomize!=='yes'){
+    M.ab={v:'ruled',reason:s.randomize==='shipped'?'Already shipped — nothing left to split.':"Can't randomly assign here.",metric:'—'};
+  }else{
+    let weeks=Math.max(1,Math.round((s.claim*6)/s.traffic));
+    if(s.urgency>=4&&weeks>3) M.ab={v:'costly',reason:`Clean read, but ~${weeks} wks — and you need an answer now.`,metric:`~${weeks} wks`};
+    else M.ab={v:'fits',reason:`Clean causal read in ~${weeks} wks.`,metric:`~${weeks} wks`};
+  }
+  // Quasi
+  if(s.randomize==='yes') M.quasi={v:'costly',reason:'You can randomize — why settle for an assumption?',metric:'2nd-best'};
+  else if(s.claim>=5) M.quasi={v:'costly',reason:'Rests on parallel-trends — fragile for a bulletproof call.',metric:'~1–2 wks'};
+  else M.quasi={v:'fits',reason:'A clean comparison group + break point can carry this.',metric:'~1–2 wks'};
+  // Observational
+  if(s.claim>=4) M.obs={v:'costly',reason:'Confounding makes this too weak for a high-stakes call.',metric:'~days'};
+  else M.obs={v:'fits',reason:s.urgency>=4?'Fastest read — directional, available today.':'Cheap directional read from existing data.',metric:'~days'};
+  // Holdback
+  if(s.randomize==='shipped') M.hold={v:'fits',reason:'Hold a slice of the launch back — reads sustained lift.',metric:`~${Math.max(2,7-s.traffic)} wks`};
+  else if(s.randomize==='yes') M.hold={v:'costly',reason:"Nothing shipped yet to hold back from — that's just an A/B.",metric:'post-launch'};
+  else M.hold={v:'ruled',reason:'No launch and no way to withhold.',metric:'—'};
+  return M;
+}
+
+const STRENGTH={ab:4,hold:3,quasi:2,obs:1};
+const SPEED={obs:4,hold:2,quasi:2,ab:1};
+function suggest(M,s){
+  const fits=ORDER.filter(k=>M[k].v==='fits');
+  if(!fits.length) return null;
+  return fits.map(k=>({k,score:STRENGTH[k]*s.claim+SPEED[k]*s.urgency}))
+             .sort((a,b)=>b.score-a.score)[0].k;
+}
+
+const fitcards=document.getElementById('fitcards');
+const nudge=document.getElementById('nudge');
+const nudgeText=document.getElementById('nudgeText');
+const nudgeActions=document.getElementById('nudgeActions');
+const override=document.getElementById('override');
+const ovMethod=document.getElementById('ovMethod');
+
+function render(){
+  const M=fit(state);
+  const best=suggest(M,state);
+  // cards
+  fitcards.innerHTML=ORDER.map(k=>{
+    const m=M[k];
+    const isDef=state.declared===k, isBest=best===k;
+    let tags='';
+    if(isDef) tags+='<span class="fc-tag def">your default</span>';
+    if(isBest) tags+='<span class="fc-tag best">best fit</span>';
+    return `<div class="fitcard ${m.v==='ruled'?'ruled':''} ${isBest?'best':''}">
+      <div class="fc-head"><span class="fc-name">${NAMES[k]}</span><span class="fc-kind">${KINDS[k]}</span>
+        <span class="fc-pill ${m.v}">${m.v}</span></div>
+      <div class="fc-body"><span class="fc-metric ${m.metric==='—'?'dim':''}">${m.metric}</span><span class="fc-reason">${m.reason}</span></div>
+      ${tags?`<div class="fc-tags">${tags}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // nudge logic
+  const defFit=M[state.declared].v;
+  override.classList.remove('show');
+  if(defFit==='fits' && (best===state.declared || !best)){
+    nudge.className='nudge calm';
+    let aside='';
+    if(best && best!==state.declared) aside=` <em>${NAMES[best]}</em> would also work if your priorities shift.`;
+    nudgeText.innerHTML=`Your pick holds. <em>${NAMES[state.declared]}</em> fits these constraints — ${M[state.declared].reason.toLowerCase()}${aside}`;
+    nudgeActions.innerHTML=`<button class="btn go">Carry ${NAMES[state.declared]} into the journal ▸</button>`;
+  } else if(best){
+    nudge.className='nudge';
+    const why=M[state.declared].reason;
+    nudgeText.innerHTML=`You planned <em>${NAMES[state.declared]}</em>, but ${why.toLowerCase().replace(/\.$/,'')}. Given your constraints, <em>${NAMES[best]}</em> fits better — ${M[best].reason.toLowerCase()}`;
+    ovMethod.textContent=NAMES[state.declared];
+    nudgeActions.innerHTML=`<button class="btn go" data-act="switch">Switch to ${NAMES[best]} ▸</button>
+      <button class="btn" data-act="keep">Keep ${NAMES[state.declared]} anyway</button>`;
+    nudgeActions.querySelector('[data-act="switch"]').addEventListener('click',()=>{setDeclared(best);});
+    nudgeActions.querySelector('[data-act="keep"]').addEventListener('click',()=>{override.classList.add('show');});
+  } else {
+    nudge.className='nudge';
+    nudgeText.innerHTML=`No instrument fits cleanly under these constraints. <em>That itself is a finding</em> — loosen the deadline, lower the claim bar, or reconsider whether this needs a study at all.`;
+    nudgeActions.innerHTML='';
+  }
+}
+
+function setDeclared(m){
+  state.declared=m;
+  document.getElementById('declaredName').textContent=NAMES[m];
+  [...document.getElementById('declaredSeg').children].forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  render();
+}
+document.getElementById('declaredSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setDeclared(b.dataset.m);});
+
+document.getElementById('randSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  state.randomize=b.dataset.v;
+  [...document.getElementById('randSeg').children].forEach(x=>x.classList.toggle('on',x===b));
+  render();
+});
+
+const TRAFFIC=['','a trickle','thin','moderate','healthy','abundant'];
+const URGENCY=['','no rush','relaxed','fairly soon','soon','need it now'];
+const CLAIM=['','directional','loose','solid','strong','bulletproof'];
+function bindSlider(id,vid,words){
+  const el=document.getElementById(id);
+  el.addEventListener('input',()=>{state[id]=+el.value;document.getElementById(vid).textContent=words[+el.value];render();});
+}
+bindSlider('traffic','trafficV',TRAFFIC);
+bindSlider('urgency','urgencyV',URGENCY);
+bindSlider('claim','claimV',CLAIM);
+
+render();
+</script>
+</body>
+</html>

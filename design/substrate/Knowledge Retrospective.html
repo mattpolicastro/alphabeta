@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Knowledge Retrospective</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --amber:#b8860b;--amber-soft:rgba(184,134,11,.08);--amber-line:rgba(184,134,11,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:24px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12.5px;line-height:1.6;margin-bottom:18px;}
+  .narrator::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;display:block;margin-bottom:6px;}
+  .narrator em{color:#eeb9a4;} .narrator b{color:#b8d4b0;}
+
+  .period{border:1.5px dashed var(--plinth-line);background:var(--plinth-soft);padding:10px 14px;margin-bottom:16px;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;}
+  .period .plbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--plinth);font-weight:700;}
+  .period .pval{font-size:13px;font-weight:700;}
+  .period .pstat{font-size:11px;color:var(--ink-soft);}
+
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+  .seg{display:flex;border:1.5px solid var(--terra-line);}
+  .seg button{font-family:inherit;font-size:11.5px;padding:7px 14px;background:transparent;color:var(--ink-soft);border:none;border-right:1.5px dashed var(--terra-line);cursor:pointer;}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--terra);color:var(--paper);font-weight:700;}
+  .seg button:not(.on):hover{background:var(--terra-soft);}
+
+  #view{min-height:300px;}
+
+  /* MODE A: mechanism clusters */
+  .cluster{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);margin-bottom:14px;}
+  .cl-head{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;border-bottom:1.5px dashed var(--rule-faint);cursor:pointer;}
+  .cl-head:hover{background:var(--paper-2);}
+  .cl-name{font-size:14px;font-weight:700;}
+  .cl-stats{display:flex;gap:14px;font-size:11px;}
+  .cl-stat{display:flex;align-items:center;gap:5px;}
+  .cl-dot{width:10px;height:10px;border-radius:50%;}
+  .cl-dot.w{background:var(--green);} .cl-dot.l{background:var(--terra);} .cl-dot.i{background:var(--amber);}
+  .cl-bar{display:flex;height:8px;border-radius:0;overflow:hidden;width:80px;border:1px solid var(--rule-faint);}
+  .cl-bar .seg-w{background:var(--green);} .cl-bar .seg-l{background:var(--terra);} .cl-bar .seg-i{background:var(--amber);}
+  .cl-body{padding:0;}
+  .cl-body.collapsed{display:none;}
+  .cl-bet{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:10px 15px;border-bottom:1px dashed var(--rule-faint);}
+  .cl-bet:last-child{border-bottom:none;}
+  .cl-bet .cbn{font-size:12px;font-weight:500;} .cl-bet .cbm{font-size:10px;color:var(--ink-soft);margin-top:2px;}
+  .cl-bet .cbe{font-size:11px;color:var(--ink-soft);text-align:right;} .cl-bet .cbe b{color:var(--ink);}
+  .st{font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border:1.5px solid;}
+  .st.won{color:var(--paper);background:var(--green);border-color:var(--green);}
+  .st.lost{color:var(--paper);background:var(--terra);border-color:var(--terra);}
+  .st.incon{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft);}
+  .cl-insight{padding:10px 15px;border-top:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.15);font-size:11px;font-style:italic;color:var(--ink-soft);line-height:1.5;}
+  .cl-insight b{color:var(--terra);font-style:normal;}
+
+  /* MODE B: surface × mechanism matrix */
+  .matrix{border:1.5px dashed var(--rule);overflow-x:auto;}
+  .mx-grid{display:grid;gap:1px;background:var(--rule-faint);}
+  .mx-cell{background:var(--paper);padding:8px 10px;min-width:120px;}
+  .mx-cell.hdr{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);background:rgba(255,255,255,.5);}
+  .mx-cell.rhdr{font-size:11px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.5);}
+  .mx-cell.empty{color:var(--ink-faint);font-size:10px;font-style:italic;}
+  .mx-pip{display:inline-flex;align-items:center;gap:4px;font-size:10px;margin-bottom:3px;}
+  .mx-pip .dot{width:8px;height:8px;border-radius:50%;}
+  .mx-pip .dot.w{background:var(--green);} .mx-pip .dot.l{background:var(--terra);} .mx-pip .dot.i{background:var(--amber);}
+
+  /* MODE C: theory evolution */
+  .evo-surface{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);margin-bottom:14px;padding:14px 16px;}
+  .evo-head{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;}
+  .evo-head .es{font-size:10px;color:var(--ink-soft);letter-spacing:.5px;text-transform:uppercase;}
+  .evo-tl{position:relative;padding-left:22px;border-left:2px solid var(--rule-faint);}
+  .evo-node{position:relative;margin-bottom:16px;padding-left:14px;}
+  .evo-node:last-child{margin-bottom:0;}
+  .evo-node::before{content:"";position:absolute;left:-28px;top:6px;width:12px;height:12px;border-radius:50%;border:2px solid;}
+  .evo-node.won::before{border-color:var(--green);background:var(--green-soft);}
+  .evo-node.lost::before{border-color:var(--terra);background:var(--terra-soft);}
+  .evo-node.incon::before{border-color:var(--amber);background:var(--amber-soft);}
+  .evo-q{font-size:12px;font-weight:600;line-height:1.4;}
+  .evo-mech{font-size:11px;color:var(--ink-soft);margin-top:3px;font-style:italic;}
+  .evo-mech b{color:var(--terra);font-style:normal;}
+  .evo-out{font-size:10.5px;margin-top:4px;display:flex;gap:8px;align-items:baseline;}
+  .evo-out .exp{color:var(--ink-faint);} .evo-out .act{font-weight:500;}
+  .evo-out .act.w{color:var(--green);} .evo-out .act.l{color:var(--terra);} .evo-out .act.i{color:var(--amber);}
+  .evo-learn{font-size:10px;color:var(--ink-soft);border-left:2px solid var(--terra-line);padding-left:10px;margin-top:6px;line-height:1.45;}
+
+  .summary{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:14px 16px;margin-top:18px;}
+  .summary .sh{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:8px;}
+  .summary .sd{font-size:12px;line-height:1.6;} .summary b{color:var(--terra);}
+  .summary ul{margin:8px 0 0;padding-left:18px;} .summary li{margin-bottom:4px;font-size:11.5px;line-height:1.5;}
+
+  footer.foot{margin-top:22px;border-top:1.5px dashed var(--rule);padding-top:12px;font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot a{color:var(--terra);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">layer 5 · knowledge retrospective</div>
+  </header>
+
+  <div class="narrator">
+    After a cycle, you review which of your <em>"because"</em> clauses actually predicted outcomes. Three ways to slice the same data — switch modes to see which organizing principle surfaces the most useful patterns for you.
+    <div style="margin-top:6px"><b>Mechanism clusters</b> — group by theory type, see which hold up. <b>Surface × mechanism</b> — cross-tab to find what works where. <b>Theory evolution</b> — how your understanding of a surface deepened over time.</div>
+  </div>
+
+  <div class="period">
+    <span class="plbl">reviewing</span>
+    <span class="pval">Q4 2025</span>
+    <span class="pstat">8 bets resolved · 4 won · 2 lost · 2 inconclusive</span>
+  </div>
+
+  <div class="controls">
+    <div class="seg" id="modeSeg">
+      <button data-m="cluster" class="on">Mechanism clusters</button>
+      <button data-m="matrix">Surface × mechanism</button>
+      <button data-m="evo">Theory evolution</button>
+    </div>
+  </div>
+
+  <div id="view"></div>
+
+  <div class="summary" id="summary"></div>
+
+  <footer class="foot">Layer 5 — Knowledge Management. Individual-only, retrospective entry. The "because" field is the key — no mechanism, no pattern to learn from. &nbsp;—&nbsp; <a href="substrate/Layer Model.md">layer model</a></footer>
+</div>
+
+<script>
+const BETS=[
+  {id:1,q:'Subject-line A/B',surface:'email',mech:'layout',mechText:'Shorter subject lines reduce cognitive load',exp:'+3%',act:'+4.2%',out:'won',learn:'Subject-line length matters more than personalization.'},
+  {id:2,q:'Email body CTA',surface:'email',mech:'layout',mechText:'Button above the fold reduces scroll friction',exp:'+8%',act:'+2.5%',out:'incon',learn:'Layout helped but the real lever was the CTA copy, not position.'},
+  {id:3,q:'Plan-picker above fold',surface:'pricing',mech:'layout',mechText:'Plans visible without scrolling lifts checkout-start',exp:'+8%',act:'+2.5%',out:'lost',learn:'Users scroll past the picker regardless — the testimonial band is the real blocker.'},
+  {id:4,q:'CTA color test',surface:'pricing',mech:'visual',mechText:'High-contrast CTA draws attention from the testimonial band',exp:'+5%',act:'+6.1%',out:'won',learn:'Color contrast works on pricing; try it on signup.'},
+  {id:5,q:'Onboarding step reduction',surface:'onboarding',mech:'friction',mechText:'Fewer steps = higher completion',exp:'+12%',act:'+14%',out:'won',learn:'Confirmed — every removed step lifted completion ~3pp.'},
+  {id:6,q:'Retention email copy',surface:'email',mech:'copy',mechText:'Urgency framing increases re-engagement',exp:'+5%',act:'+1.2%',out:'lost',learn:'Urgency backfired — felt spammy. Empathy framing to test next.'},
+  {id:7,q:'Simplified pricing tiers',surface:'pricing',mech:'friction',mechText:'3 tiers instead of 5 reduces decision paralysis',exp:'+4%',act:'+4.8%',out:'won',learn:'Confirmed. But need to watch upsell — fewer tiers means less upsell surface.'},
+  {id:8,q:'Onboarding progress bar',surface:'onboarding',mech:'visual',mechText:'Progress indicator reduces perceived effort',exp:'+6%',act:'+3%',out:'incon',learn:'Directionally positive but under the fold-if. The step count matters more than the indicator.'},
+];
+
+const MECHS={layout:'Layout / position',copy:'Copy / messaging',visual:'Visual / attention',friction:'Friction reduction'};
+const SURFACES={email:'Email',pricing:'Pricing page',onboarding:'Onboarding flow'};
+
+function group(arr,key){const m={};arr.forEach(b=>{(m[b[key]]=m[b[key]]||[]).push(b);});return m;}
+function oc(bets){return{w:bets.filter(b=>b.out==='won').length,l:bets.filter(b=>b.out==='lost').length,i:bets.filter(b=>b.out==='incon').length};}
+function barHtml(o,total){const wp=o.w/total*100,lp=o.l/total*100;return `<div class="cl-bar"><div class="seg-w" style="width:${wp}%"></div><div class="seg-l" style="width:${lp}%"></div><div class="seg-i" style="width:${100-wp-lp}%"></div></div>`;}
+
+function renderCluster(){
+  const byMech=group(BETS,'mech');
+  let h='';
+  Object.keys(byMech).sort((a,b)=>oc(byMech[b]).w-oc(byMech[a]).w).forEach(m=>{
+    const bets=byMech[m],o=oc(bets),total=bets.length;
+    const insight=o.w>o.l
+      ? `<b>${MECHS[m]}</b> theories held up ${o.w}/${total} times this cycle. Your strongest "because" category.`
+      : o.l>o.w
+      ? `<b>${MECHS[m]}</b> theories failed ${o.l}/${total} times. Worth interrogating — are you over-indexing on this mechanism?`
+      : `<b>${MECHS[m]}</b> — mixed results (${o.w}W/${o.l}L/${o.i}I). The mechanism works somewhere but not everywhere; check which surfaces.`;
+    h+=`<div class="cluster" data-mech="${m}">
+      <div class="cl-head"><div><span class="cl-name">${MECHS[m]}</span></div>
+        <div class="cl-stats">
+          <span class="cl-stat"><span class="cl-dot w"></span>${o.w}W</span>
+          <span class="cl-stat"><span class="cl-dot l"></span>${o.l}L</span>
+          <span class="cl-stat"><span class="cl-dot i"></span>${o.i}I</span>
+          ${barHtml(o,total)}
+        </div>
+      </div>
+      <div class="cl-body">`;
+    bets.forEach(b=>{
+      const sc=b.out==='won'?'won':(b.out==='lost'?'lost':'incon');
+      h+=`<div class="cl-bet"><div><div class="cbn">${b.q}</div><div class="cbm">${SURFACES[b.surface]} · "${b.mechText}"</div></div>
+        <div class="cbe">exp <b>${b.exp}</b> → act <b>${b.act}</b></div><span class="st ${sc}">${b.out}</span></div>`;
+    });
+    h+=`</div><div class="cl-insight">${insight}</div></div>`;
+  });
+  return h;
+}
+
+function renderMatrix(){
+  const surfs=Object.keys(SURFACES),mechs=Object.keys(MECHS);
+  const cols=mechs.length+1;
+  let h=`<div class="matrix"><div class="mx-grid" style="grid-template-columns:140px repeat(${mechs.length},1fr)">`;
+  h+=`<div class="mx-cell hdr"></div>`;
+  mechs.forEach(m=>h+=`<div class="mx-cell hdr">${MECHS[m]}</div>`);
+  surfs.forEach(s=>{
+    h+=`<div class="mx-cell rhdr">${SURFACES[s]}</div>`;
+    mechs.forEach(m=>{
+      const bets=BETS.filter(b=>b.surface===s&&b.mech===m);
+      if(!bets.length){h+=`<div class="mx-cell empty">—</div>`;return;}
+      let pips='';
+      bets.forEach(b=>{
+        const dc=b.out==='won'?'w':(b.out==='lost'?'l':'i');
+        pips+=`<div class="mx-pip"><span class="dot ${dc}"></span>${b.q.slice(0,18)}${b.q.length>18?'…':''}</div>`;
+      });
+      h+=`<div class="mx-cell">${pips}</div>`;
+    });
+  });
+  h+=`</div></div>`;
+  return h;
+}
+
+function renderEvo(){
+  const bySurf=group(BETS,'surface');
+  let h='';
+  Object.keys(bySurf).forEach(s=>{
+    const bets=bySurf[s].sort((a,b)=>a.id-b.id);
+    h+=`<div class="evo-surface"><div class="evo-head"><span>${SURFACES[s]}</span><span class="es">${bets.length} bets this cycle</span></div>
+      <div class="evo-tl">`;
+    bets.forEach(b=>{
+      const sc=b.out==='won'?'won':(b.out==='lost'?'lost':'incon');
+      const ac=b.out==='won'?'w':(b.out==='lost'?'l':'i');
+      h+=`<div class="evo-node ${sc}">
+        <div class="evo-q">${b.q}</div>
+        <div class="evo-mech"><b>because:</b> ${b.mechText}</div>
+        <div class="evo-out"><span class="exp">expected ${b.exp}</span><span class="act ${ac}">→ actual ${b.act} (${b.out})</span></div>
+        <div class="evo-learn">${b.learn}</div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });
+  return h;
+}
+
+const SUMMARIES={
+  cluster:`<div class="sh">cycle summary · by mechanism</div><div class="sd">Across 8 bets this quarter:</div><ul>
+    <li><b>Friction reduction</b> is your most reliable theory — 2/2 wins. Keep betting here.</li>
+    <li><b>Layout/position</b> is mixed (1W/1I/1L) — works on email, not on pricing. The surface matters.</li>
+    <li><b>Copy/messaging</b> failed — urgency framing backfired. Your learning says empathy next.</li>
+    <li><b>Visual/attention</b> split — worked on pricing (color contrast), didn't on onboarding (progress bar).</li></ul>`,
+  matrix:`<div class="sh">cycle summary · surface × mechanism</div><div class="sd">The cross-tab reveals where mechanisms work and where they don't:</div><ul>
+    <li><b>Pricing page</b> responds to visual + friction interventions but not layout alone.</li>
+    <li><b>Email</b> responds to layout but not copy — your copy theories need rethinking.</li>
+    <li><b>Onboarding</b> rewards friction reduction more than visual polish.</li>
+    <li>No bets tested <b>copy on pricing</b> or <b>friction on email</b> — blind spots for next cycle.</li></ul>`,
+  evo:`<div class="sh">cycle summary · theory evolution</div><div class="sd">How your understanding deepened per surface:</div><ul>
+    <li><b>Pricing:</b> started with layout → failed. Pivoted to visual + friction → both won. The testimonial band was the blocker, not plan visibility.</li>
+    <li><b>Email:</b> layout works for structure; copy failed for tone. Next cycle: empathy over urgency.</li>
+    <li><b>Onboarding:</b> step reduction > visual polish. Indicator was nice but step count is the real lever.</li></ul>`
+};
+
+let mode='cluster';
+function render(){
+  document.getElementById('view').innerHTML=mode==='cluster'?renderCluster():mode==='matrix'?renderMatrix():renderEvo();
+  document.getElementById('summary').innerHTML=SUMMARIES[mode];
+  if(mode==='cluster'){
+    document.querySelectorAll('.cl-head').forEach(h=>h.addEventListener('click',()=>{
+      h.nextElementSibling.classList.toggle('collapsed');
+    }));
+  }
+}
+document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));render();});
+render();
+</script>
+</body>
+</html>

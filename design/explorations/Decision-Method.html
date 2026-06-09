@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⍺lphaβeta — Decision × Method</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:rgba(166,77,59,.07);--terra-line:rgba(166,77,59,.45);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.06);--green-line:rgba(58,107,74,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:28px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:20px;}
+  .topflex{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{font-family:"Caveat",cursive;font-size:20px;color:var(--terra);transform:rotate(-3deg);border:1.5px dashed var(--terra-line);padding:1px 12px;display:inline-block;line-height:1.2;}
+  .lead{max-width:800px;margin-top:14px;font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+  .lead .g{color:var(--green);font-style:normal;font-weight:500;}
+
+  /* method selector */
+  .method-strip{margin:22px 0 0;}
+  .ms-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+  .ms-head .lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  .ms-head .note{font-size:11px;color:var(--terra);font-style:italic;}
+  .methods{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .method{cursor:pointer;background:transparent;border:1.5px dashed var(--rule);padding:12px 14px;text-align:left;font-family:inherit;color:var(--ink);display:flex;flex-direction:column;gap:5px;transition:background .12s,border-color .12s;}
+  .method:hover{background:var(--paper-2);}
+  .method.on{border-color:var(--terra);border-style:solid;background:var(--terra-soft);}
+  .method .mk{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);}
+  .method.on .mk{color:var(--terra);}
+  .method .mn{font-size:14px;font-weight:700;}
+  .method .md{font-size:11px;color:var(--ink-soft);line-height:1.4;}
+
+  .controls{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin:14px 0 18px;}
+  .toggle{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:11.5px;color:var(--ink-soft);}
+  .toggle .box{width:15px;height:15px;border:1.5px dashed var(--rule);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--terra);}
+  .toggle.on .box::after{content:"\u2715";}
+
+  /* diagonal banner */
+  .diag-banner{border:1.5px solid var(--green);background:var(--green-soft);padding:11px 16px;margin-bottom:22px;font-size:11.5px;line-height:1.55;display:flex;gap:10px;align-items:baseline;}
+  .diag-banner .tag{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);font-weight:700;white-space:nowrap;}
+  .diag-banner b{color:var(--green);}
+  .diag-banner .t{color:var(--terra);font-weight:500;}
+
+  .cols{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;align-items:start;}
+  .col{min-width:0;}
+
+  /* DECISION SPINE (constant) */
+  .spine-panel{border:1.5px solid var(--green-line);background:rgba(58,107,74,.035);padding:20px;}
+  .spine-panel.flat{border-color:var(--rule);background:rgba(255,255,255,.28);border-style:dashed;}
+  .panel-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:baseline;}
+  .panel-eyebrow .badge{font-size:9px;letter-spacing:1px;color:var(--green);border:1px solid var(--green-line);padding:1px 6px;}
+  .panel-title{font-size:18px;font-weight:700;margin:5px 0 16px;}
+
+  .block{margin-bottom:20px;}
+  .block:last-child{margin-bottom:0;}
+  .block-head{display:flex;align-items:baseline;gap:9px;margin-bottom:9px;}
+  .block-num{font-size:11px;color:var(--terra);font-weight:700;}
+  .block-name{font-size:12.5px;font-weight:700;}
+  .block-name .opt{font-weight:400;color:var(--ink-faint);font-size:10px;margin-left:5px;}
+  .field-label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin:11px 0 6px;}
+  .field{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);padding:10px 12px;color:var(--ink);font-size:12.5px;min-height:38px;line-height:1.5;}
+  .field.tall{min-height:56px;}
+  .field.ghost{color:var(--ink-faint);font-style:italic;}
+
+  .crit{display:flex;gap:10px;align-items:stretch;margin-bottom:8px;}
+  .crit .ctag{flex:0 0 84px;border:1.5px dashed var(--rule-faint);display:flex;align-items:center;justify-content:center;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);background:rgba(255,255,255,.3);}
+  .crit.win .ctag{color:var(--green);border-color:var(--green-line);}
+  .crit.loss .ctag{color:var(--terra);border-color:var(--terra-line);}
+  .crit .field{flex:1;}
+
+  /* the method-supplied seam inside the spine */
+  .evidence-bar{border:1.5px dashed var(--terra-line);background:var(--terra-soft);padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.5;}
+  .evidence-bar .eb-lbl{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);display:block;margin-bottom:4px;}
+  .evidence-bar .eb-lbl .src{color:var(--ink-faint);text-transform:none;letter-spacing:0;float:right;font-style:italic;}
+  .evidence-bar em{font-style:italic;color:var(--ink);}
+
+  .commit{display:flex;gap:11px;margin-top:13px;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:12px;padding:10px 16px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.5px;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.lock{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .btn.lock:hover{background:#8f3f30;}
+
+  /* METHOD MODULE (swaps) */
+  .method-panel{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:20px;}
+  .mp-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:3px;flex-wrap:wrap;}
+  .mp-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--terra);}
+  .mp-badge{font-size:9px;letter-spacing:1px;color:var(--terra);border:1px solid var(--terra-line);padding:1px 6px;}
+  .mp-title{font-size:17px;font-weight:700;margin:3px 0 3px;}
+  .mp-instrument{font-size:11.5px;font-style:italic;color:var(--ink-soft);line-height:1.5;margin-bottom:16px;border-bottom:1px dashed var(--terra-line);padding-bottom:14px;}
+
+  .cs-label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;}
+  .cs-label .q{color:var(--ink-faint);text-transform:none;letter-spacing:0;font-style:italic;font-size:10.5px;}
+  .cs-block{margin-bottom:18px;}
+  .m-help{font-size:11px;font-style:italic;color:var(--ink-soft);line-height:1.5;margin:0 0 9px;display:none;}
+  .show-stats .m-help{display:block;}
+
+  .readout{display:grid;gap:1px;background:var(--rule-faint);border:1.5px dashed var(--rule-faint);}
+  .readout.c4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .readout.c3{grid-template-columns:1fr 1fr 1fr;}
+  .readout.c2{grid-template-columns:1fr 1fr;}
+  .readout .cell{background:var(--paper);padding:10px 11px;}
+  .readout .cell .k{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);}
+  .readout .cell .v{font-size:17px;font-weight:700;margin-top:2px;}
+  .readout .cell .v small{font-size:10px;font-weight:400;color:var(--ink-soft);}
+  .readout .cell.hot .v{color:var(--terra);}
+  .slider-row{margin-top:13px;}
+  .slider-head{display:flex;justify-content:space-between;font-size:11.5px;align-items:baseline;}
+  .slider-head b{color:var(--terra);font-size:14px;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--rule);margin:12px 0 4px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  .slider-scale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink-faint);}
+  .assume{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);padding:10px 12px;font-size:12px;color:var(--ink);line-height:1.5;}
+  .assume .akey{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:4px;}
+  .trend-ph{height:46px;border:1.5px dashed var(--rule-faint);background:repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(42,42,42,.05) 6px,rgba(42,42,42,.05) 7px);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-faint);margin-top:8px;letter-spacing:.5px;}
+  .sens-note{font-size:11px;font-style:italic;color:var(--ink-soft);margin-top:10px;line-height:1.5;}
+  .sens-note b{color:var(--terra);font-style:normal;}
+
+  .disc-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+  .disc-chip{font-size:10.5px;border:1.5px dashed var(--terra-line);color:var(--terra);padding:4px 9px;background:rgba(255,255,255,.3);}
+  .disc-note{font-size:10px;color:var(--ink-faint);font-style:italic;margin-top:7px;}
+
+  /* outline-supply toggle visuals */
+  .show-supply .spine-mark{outline:1.5px solid var(--green-line);outline-offset:3px;position:relative;}
+  .show-supply .spine-mark::after{content:"decision · constant";position:absolute;top:-8px;left:6px;background:var(--paper);font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--green);padding:0 5px;}
+  .show-supply .supply-mark{outline:1.5px dashed var(--terra-line);outline-offset:3px;position:relative;}
+  .show-supply .supply-mark::after{content:"method supplies this";position:absolute;top:-8px;right:6px;background:var(--paper);font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);padding:0 5px;}
+
+  /* annotation */
+  .annot{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:16px 18px;margin-top:18px;}
+  .annot .moment{font-size:12px;font-weight:700;color:var(--terra);margin-bottom:9px;}
+  .annot p{font-size:12px;line-height:1.6;margin:0 0 10px;font-style:italic;color:var(--ink);}
+  .annot p:last-child{margin-bottom:0;}
+  .annot p em{color:var(--terra);font-style:italic;}
+  .margin-note{font-family:"Caveat",cursive;font-size:16px;color:var(--terra);line-height:1.25;transform:rotate(-1.2deg);margin:12px 0 0;}
+
+  footer.foot{margin-top:30px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+  footer.foot a{color:var(--terra);}
+  .crosslink{margin-top:8px;}
+
+  @media(max-width:880px){.cols{grid-template-columns:1fr;}.methods{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="topflex">
+      <div>
+        <div class="wordmark"><span class="a">⍺</span>lph<span class="b">aβ</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">decision support</span><span class="crumb">·</span>
+          <span class="crumb">method is a module</span><span class="crumb">·</span>
+          <span class="crumb">decision journal</span>
+        </div>
+      </div>
+      <div class="stamp">swap the method — the decision holds</div>
+    </div>
+    <p class="lead"><span class="g">The decision is the spine.</span> The method is a module that plugs into it. Switch instrument below — A/B, quasi-experiment, observational, holdback — and watch: the <span class="g">decision journal</span> (your question, expectation, the actions you'll take) never moves. Only the <em>feasibility surface and the running discipline</em> swap. This is how the diagonal user gets served: keep the decision in your own voice, lean on the method for the statistics.</p>
+  </header>
+
+  <!-- METHOD SELECTOR -->
+  <div class="method-strip">
+    <div class="ms-head">
+      <span class="lbl">instrument</span>
+      <span class="note">↳ choosing this is itself a discipline moment — not a neutral dropdown</span>
+    </div>
+    <div class="methods" id="methods">
+      <button class="method on" data-m="ab"><span class="mk">randomized</span><span class="mn">A/B test</span><span class="md">Clean causal read; pay in traffic & time.</span></button>
+      <button class="method" data-m="quasi"><span class="mk">natural exp.</span><span class="mn">Quasi-experiment</span><span class="md">No randomization; lean on a comparison group.</span></button>
+      <button class="method" data-m="obs"><span class="mk">no intervention</span><span class="mn">Observational</span><span class="md">Read existing data; cheapest, weakest claim.</span></button>
+      <button class="method" data-m="hold"><span class="mk">post-launch</span><span class="mn">Holdback</span><span class="md">Ship to most, hold a slice; measures sustained lift.</span></button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label class="toggle" id="supplyToggle"><span class="box"></span> outline what the method supplies</label>
+    <label class="toggle" id="statsToggle"><span class="box"></span> explain the stats <span style="color:var(--ink-faint)">(the register dial — now scoped to the method)</span></label>
+  </div>
+
+  <div class="diag-banner">
+    <span class="tag">the diagonal user</span>
+    <span>Deep <b>domain knowledge</b>, shaky <span class="t">statistics</span>. The two fluencies stop being one slider — they split across two layers. <b>You author the decision</b> (left, your voice). <span class="t">The method carries the math</span> (right, scaffolded). A wrong method is swappable; a committed decision is not.</span>
+  </div>
+
+  <div class="cols">
+    <!-- DECISION SPINE -->
+    <div class="col">
+      <div class="spine-panel">
+        <div class="panel-eyebrow">the decision <span class="badge">method-agnostic</span></div>
+        <div class="panel-title">Decision journal entry</div>
+
+        <div class="block spine-mark">
+          <div class="block-head"><span class="block-num">01</span><span class="block-name">What I'm deciding</span></div>
+          <div class="field">Whether to keep the redesigned /pricing plan-picker, or revert.</div>
+          <div class="field-label">What I expect, and why <span class="opt">domain reasoning</span></div>
+          <div class="field tall">Plans above the fold lifts checkout-start ~8%. Replays show scroll drop-off at the testimonial band.</div>
+        </div>
+
+        <div class="block spine-mark">
+          <div class="block-head"><span class="block-num">02</span><span class="block-name">What I'll do about it</span><span class="block-name opt" style="font-weight:400">— the actions are mine, whatever the method</span></div>
+          <div class="crit win"><div class="ctag">win</div><div class="field ghost">Keep it — roll to 100%.</div></div>
+          <div class="crit"><div class="ctag">incon.</div><div class="field ghost">Hold — sharpen and re-test.</div></div>
+          <div class="crit loss"><div class="ctag">loss</div><div class="field ghost">Revert — log why in the journal.</div></div>
+
+          <div class="evidence-bar supply-mark">
+            <span class="eb-lbl">how I'll know <span class="src" id="ebSrc">supplied by: A/B test</span></span>
+            <span id="ebText"><em>A +4% lift on checkout-start, two-sided at the locked threshold — and no peeking before runtime completes.</em></span>
+          </div>
+
+          <div class="field-label">Minimum mind-changer <span class="opt">smallest effect that flips my call</span></div>
+          <div class="field" style="max-width:240px">+4% relative on checkout-start</div>
+        </div>
+
+        <div class="block spine-mark">
+          <div class="block-head"><span class="block-num">03</span><span class="block-name">Commit</span></div>
+          <div class="commit">
+            <button class="btn">Save as draft</button>
+            <button class="btn lock">Commit & lock ▸</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD MODULE -->
+    <div class="col">
+      <div class="method-panel" id="methodPanel">
+        <div class="mp-head">
+          <span class="mp-eyebrow" id="mpEyebrow">feasibility — A/B</span>
+          <span class="mp-badge">method-supplied</span>
+        </div>
+        <div class="mp-title" id="mpTitle">A/B test</div>
+        <div class="mp-instrument" id="mpInstrument"></div>
+        <div id="mpBody"></div>
+        <div class="cs-label" style="margin-top:18px">running discipline <span class="q">what this method makes you watch</span></div>
+        <div class="disc-chips" id="mpChips"></div>
+        <div class="disc-note" id="mpDiscNote"></div>
+      </div>
+
+      <div class="annot">
+        <div class="moment" id="anMoment"></div>
+        <div id="anBody"></div>
+        <p class="margin-note" id="anNote"></p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div><b>the architecture:</b> the decision journal is the constant — question, expectation, actions, commit, (later) revisit. The method is a pluggable module that supplies the feasibility surface, the running discipline, and the one seam that crosses into the decision: <em>how you'll know</em>. Same entry generalises across A/B, quasi-experiment, observational, holdback.</div>
+    <div class="crosslink"><b>react / next:</b> is "how you'll know" the <em>only</em> seam that crosses, or are there others? · should method-selection get its own guided moment (the "you don't need an experiment for this" intervention)? · does the running discipline per method point at the <b>Running phase</b> design? &nbsp;—&nbsp; earlier: <a href="Setup Register Dial.html">Register Dial</a> · <a href="Setup Phase - Decompositions.html">Structural cuts</a>.</div>
+  </footer>
+
+</div>
+
+<script>
+/* live model for methods that have a continuous knob */
+function abFeas(v){const mde=v/10,p=0.042,d=12000,abs=p*(mde/100),n=16*p*(1-p)/(abs*abs),days=Math.max(1,Math.ceil(n/d));return{mde,days,wks:days/7,deferred:Math.max(1,Math.ceil(days/14))};}
+function holdFeas(v){/* v = holdback % 2..30 */const pct=v,exposedLoss=pct,weeks=Math.max(1,Math.round(6 - (pct/30)*3));return{pct,exposedLoss,weeks};}
+function fmtWks(w){return w>=1?w.toFixed(1).replace(/\.0$/,'')+' wks':Math.round(w*7)+' d';}
+
+const METHODS={
+  ab:{
+    eyebrow:'feasibility — A/B', title:'A/B test',
+    instrument:'Randomized split between variants. The cleanest causal claim available — but you pay for it in traffic held under test and weeks of runtime.',
+    body:`
+      <div class="cs-block">
+        <div class="cs-label">Can <span class="q">what the data permits</span></div>
+        <p class="m-help">Pure mechanics: with this traffic and baseline, the smallest lift you could reliably detect, and how long it takes.</p>
+        <div class="readout c4">
+          <div class="cell"><div class="k">traffic</div><div class="v">12k<small>/d·arm</small></div></div>
+          <div class="cell"><div class="k">baseline</div><div class="v">4.2<small>%</small></div></div>
+          <div class="cell hot"><div class="k">runtime</div><div class="v" data-runtime>25<small>d</small></div></div>
+          <div class="cell hot"><div class="k">opp. cost</div><div class="v" data-opp>≈2<small> deferred</small></div></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>min. detectable effect</span><b data-mde>5.0%</b></div>
+          <input type="range" min="10" max="150" value="50" data-slider="ab">
+          <div class="slider-scale"><span>1%</span><span>tighter = longer</span><span>15%</span></div>
+        </div>
+      </div>
+      <div class="cs-block">
+        <div class="cs-label">Should <span class="q">what it costs to run</span></div>
+        <p class="m-help">Same numbers as a tradeoff: every week under test is traffic you can't spend on the next idea.</p>
+        <div class="sens-note" data-sens></div>
+      </div>`,
+    chips:['SRM check','peek discipline','guardrail metrics'],
+    discNote:'Randomization is only as good as its integrity — these watch for it breaking mid-run.',
+    evSrc:'supplied by: A/B test',
+    ev:'A <em>+4% lift on checkout-start</em>, two-sided at the locked threshold — and <em>no peeking</em> before runtime completes.',
+    anMoment:'Method: randomized experiment',
+    an:`<p>The feasibility question is <em>power</em>: can the traffic detect the effect you care about before you run out of patience? The slider is the whole "can vs should" tension in one control.</p>
+        <p>This module owns SRM and peek discipline because they're failure modes <em>unique to randomization</em> — they make no sense for observational data.</p>`,
+    note:'the decision didn\u2019t move. only the math under it did.'
+  },
+  quasi:{
+    eyebrow:'feasibility — quasi-experiment', title:'Quasi-experiment',
+    instrument:'No randomization. You compare a treated group against a comparison group and lean on an identifying assumption (e.g. parallel trends) to claim the difference is causal.',
+    body:`
+      <div class="cs-block">
+        <div class="cs-label">Can <span class="q">is the comparison credible?</span></div>
+        <p class="m-help">No power calc here — feasibility is about whether you have a clean comparison group and a pre-period to validate against.</p>
+        <div class="readout c2">
+          <div class="cell"><div class="k">treated units</div><div class="v">1<small> (new /pricing)</small></div></div>
+          <div class="cell"><div class="k">comparison</div><div class="v">/plans<small> (untouched)</small></div></div>
+        </div>
+        <div class="trend-ph">pre-period parallel-trends check · drop chart here</div>
+      </div>
+      <div class="cs-block">
+        <div class="cs-label">Should <span class="q">how much rests on the assumption?</span></div>
+        <p class="m-help">The estimate is only as good as "these two would have moved together absent the change." If that's shaky, so is everything downstream.</p>
+        <div class="assume"><span class="akey">identifying assumption — commit to it now</span>/pricing and /plans would have tracked together without the redesign. Pre-period supports this for 8 weeks back.</div>
+      </div>`,
+    chips:['pre-trend validation','placebo periods','alt. control group'],
+    discNote:'These stress-test the assumption instead of the randomization — a different failure surface entirely.',
+    evSrc:'supplied by: quasi-experiment',
+    ev:'A <em>+4% gap</em> opening at the change date that <em>survives a placebo test</em> and holds under an alternative comparison group.',
+    anMoment:'Method: natural experiment',
+    an:`<p>Notice what vanished: no MDE slider, no runtime, no SRM. Feasibility became <em>"is my comparison credible?"</em> — a question about assumptions, not sample size.</p>
+        <p>For the diagonal user this is the payoff: they state the same decision, and the tool quietly swaps in the discipline that <em>this</em> method demands without making them know it cold.</p>`,
+    note:'same decision, completely different feasibility question.'
+  },
+  obs:{
+    eyebrow:'feasibility — observational', title:'Observational',
+    instrument:'No experiment at all. You read data that already exists. Cheapest and fastest — and the weakest causal claim, because anything you didn\u2019t control for can be driving the result.',
+    body:`
+      <div class="cs-block">
+        <div class="cs-label">Can <span class="q">do you have identification?</span></div>
+        <p class="m-help">The real feasibility question isn't sample size — it's whether you can isolate the effect from everything correlated with it.</p>
+        <div class="assume"><span class="akey">confounders to control — pre-specify, don't hunt</span>traffic source · returning vs new · device · seasonality. Anything left out can flip the sign.</div>
+      </div>
+      <div class="cs-block">
+        <div class="cs-label">Should <span class="q">how fragile is the conclusion?</span></div>
+        <p class="m-help">Because you can't randomize, the honest move is to commit upfront to how hard you'll try to break your own finding.</p>
+        <div class="readout c2">
+          <div class="cell hot"><div class="k">sensitivity</div><div class="v">E-val<small> committed</small></div></div>
+          <div class="cell"><div class="k">spec</div><div class="v">1<small> pre-set</small></div></div>
+        </div>
+        <div class="sens-note">An unobserved confounder ~<b>1.8×</b> as strong as your controls would erase the effect. <b>Commit to that bar now</b> — before you've seen which spec is flattering.</div>
+      </div>`,
+    chips:['pre-specified model','no spec-hunting','sensitivity / E-value'],
+    discNote:'There\u2019s no "run" to police — the discipline moves to the analysis: lock the spec before you look.',
+    evSrc:'supplied by: observational',
+    ev:'An <em>association of +4%</em> net of your pre-specified controls that <em>survives the committed sensitivity analysis</em> — not the prettiest of many specs.',
+    anMoment:'Method: observational read',
+    an:`<p>Here the "running" phase doesn't exist — there's nothing to monitor. The discipline relocates entirely to <em>analysis</em>: pre-specify the model so you can't spec-hunt your way to the answer you wanted.</p>
+        <p>This is exactly the bad-faith failure mode your mandate targets — and the method module is where the guardrail belongs, not the decision.</p>`,
+    note:'no run to watch — discipline moved to the analysis.'
+  },
+  hold:{
+    eyebrow:'feasibility — holdback', title:'Holdback',
+    instrument:'Ship to almost everyone, hold a small slice back as a control. Measures whether the lift <em>persists</em> past launch-day novelty — but every held-back user is someone not getting the change.',
+    body:`
+      <div class="cs-block">
+        <div class="cs-label">Can <span class="q">what size, for how long?</span></div>
+        <p class="m-help">Feasibility trades the size of the held-back slice against how quickly you can read a durable effect.</p>
+        <div class="readout c3">
+          <div class="cell hot"><div class="k">holdback</div><div class="v" data-hpct>10<small>%</small></div></div>
+          <div class="cell hot"><div class="k">read-out in</div><div class="v" data-hwk>4<small> wks</small></div></div>
+          <div class="cell"><div class="k">withheld</div><div class="v" data-hexp>10<small>% users</small></div></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>holdback size</span><b data-hb>10%</b></div>
+          <input type="range" min="2" max="30" value="10" data-slider="hold">
+          <div class="slider-scale"><span>2%</span><span>bigger = faster read</span><span>30%</span></div>
+        </div>
+      </div>
+      <div class="cs-block">
+        <div class="cs-label">Should <span class="q">how long is withholding fair?</span></div>
+        <p class="m-help">The cost isn't traffic spent — it's users deliberately kept from a thing you believe is better.</p>
+        <div class="sens-note">Reading sustained lift in <b><span data-hwk2>4 wks</span></b> means <b><span data-hexp2>10%</span> of users</b> wait that long. Past the novelty window, is the certainty worth the withholding?</div>
+      </div>`,
+    chips:['holdback integrity','novelty-decay window','exposure cap'],
+    discNote:'Watches that the held-back cohort stays clean and that you read <em>after</em> novelty fades, not before.',
+    evSrc:'supplied by: holdback',
+    ev:'A <em>+4% lift in the held-back cohort that persists past the novelty window</em> — not a launch-day spike that decays.',
+    anMoment:'Method: post-launch holdback',
+    an:`<p>Holdback inverts the cost: you're not spending traffic on a test, you're <em>withholding a launch</em>. So "should" becomes an ethics-of-waiting question the other methods never raise.</p>
+        <p>Same decision, same actions — but the prudence surface is shaped by what <em>this</em> instrument actually costs.</p>`,
+    note:'the cost changed shape: withholding, not spending.'
+  }
+};
+
+const panel=document.getElementById('methodPanel');
+const surfaceRoot=document.querySelector('.wrap');
+
+function bindSliders(){
+  const ab=panel.querySelector('[data-slider="ab"]');
+  if(ab){
+    const upd=()=>{const f=abFeas(+ab.value);
+      const s=(q,v)=>{const e=panel.querySelector(q);if(e)e.innerHTML=v;};
+      s('[data-mde]',f.mde.toFixed(1)+'%');s('[data-runtime]',f.days+'<small>d</small>');
+      s('[data-opp]','≈'+f.deferred+'<small> deferred</small>');
+      const loose=abFeas(80);
+      s('[data-sens]','Detecting <b>'+f.mde.toFixed(1)+'%</b> commits ~<b>'+fmtWks(f.wks)+'</b> of traffic. Loosen to 8% and it\u2019s ~'+fmtWks(loose.wks)+' — but you\u2019d miss a real '+f.mde.toFixed(1)+'% lift.');
+    };
+    ab.addEventListener('input',upd);upd();
+  }
+  const hb=panel.querySelector('[data-slider="hold"]');
+  if(hb){
+    const upd=()=>{const f=holdFeas(+hb.value);
+      const s=(q,v)=>{panel.querySelectorAll(q).forEach(e=>e.innerHTML=v);};
+      s('[data-hb]',f.pct+'%');s('[data-hpct]',f.pct+'<small>%</small>');
+      s('[data-hwk]',f.weeks+'<small> wks</small>');s('[data-hwk2]',f.weeks+' wks');
+      s('[data-hexp]',f.exposedLoss+'<small>% users</small>');s('[data-hexp2]',f.exposedLoss+'%');
+    };
+    hb.addEventListener('input',upd);upd();
+  }
+}
+
+function renderMethod(m){
+  const d=METHODS[m];
+  document.getElementById('mpEyebrow').textContent=d.eyebrow;
+  document.getElementById('mpTitle').textContent=d.title;
+  document.getElementById('mpInstrument').innerHTML=d.instrument;
+  document.getElementById('mpBody').innerHTML=d.body;
+  document.getElementById('mpChips').innerHTML=d.chips.map(c=>'<span class="disc-chip">'+c+'</span>').join('');
+  document.getElementById('mpDiscNote').innerHTML=d.discNote;
+  document.getElementById('ebSrc').textContent=d.evSrc;
+  document.getElementById('ebText').innerHTML='<em>'+d.ev+'</em>';
+  document.getElementById('anMoment').textContent=d.anMoment;
+  document.getElementById('anBody').innerHTML=d.an;
+  document.getElementById('anNote').textContent='↖ '+d.note;
+  bindSliders();
+  [...document.getElementById('methods').children].forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  sessionStorage.setItem('ab_method',m);
+}
+
+document.getElementById('methods').addEventListener('click',e=>{const b=e.target.closest('.method');if(b)renderMethod(b.dataset.m);});
+
+/* toggles */
+function wireToggle(id,cls,key){
+  const t=document.getElementById(id);
+  const apply=on=>{surfaceRoot.classList.toggle(cls,on);t.classList.toggle('on',on);sessionStorage.setItem(key,on?'1':'0');};
+  t.addEventListener('click',()=>apply(!surfaceRoot.classList.contains(cls)));
+  apply(sessionStorage.getItem(key)==='1');
+}
+wireToggle('supplyToggle','show-supply','ab_supply');
+wireToggle('statsToggle','show-stats','ab_stats');
+
+renderMethod(sessionStorage.getItem('ab_method')||'ab');
+</script>
+</body>
+</html>

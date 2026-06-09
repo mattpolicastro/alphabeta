@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Decomposition Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --amber:#b8860b;--amber-soft:rgba(184,134,11,.08);--amber-line:rgba(184,134,11,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:24px 28px 80px;}
+
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12px;line-height:1.6;margin-bottom:18px;}
+  .narrator::before{content:"▶ decomposition";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;display:block;margin-bottom:6px;}
+  .narrator em{color:#eeb9a4;} .narrator b{color:#b8d4b0;}
+
+  .examples{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .examples .lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);align-self:center;}
+  .ex-btn{font-family:inherit;font-size:10.5px;padding:6px 12px;border:1.5px dashed var(--rule-faint);background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .ex-btn:hover{background:var(--paper-2);border-color:var(--terra-line);}
+  .ex-btn.on{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+
+  /* input */
+  .input-panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:16px;}
+  .ip-head{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;}
+  .ip-head .mode{font-size:9px;color:var(--ink-faint);letter-spacing:0;text-transform:none;font-style:italic;}
+  .raw{width:100%;min-height:120px;font-family:inherit;font-size:13px;color:var(--ink);background:rgba(255,255,255,.5);border:1.5px dashed var(--rule-faint);padding:12px;line-height:1.6;resize:vertical;outline:none;}
+  .raw:focus{border-color:var(--terra-line);}
+  .parse-btn{font-family:inherit;font-size:12px;padding:10px 18px;border:1.5px solid var(--terra);background:var(--terra);color:var(--paper);cursor:pointer;margin-top:10px;width:100%;text-align:center;letter-spacing:.5px;}
+  .parse-btn:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+  .parse-btn:disabled{opacity:.4;cursor:default;}
+
+  /* annotated source */
+  .annotated{margin-top:14px;display:none;font-size:13px;line-height:1.7;border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.5);padding:12px;position:relative;}
+  .annotated.show{display:block;}
+  .annotated .ah{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px;}
+  .hl{padding:1px 3px;border-bottom:2px solid;transition:background .3s,border-color .3s;}
+  .hl.change{border-color:var(--terra);background:color-mix(in srgb, var(--terra) 12%, transparent);}
+  .hl.metric{border-color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent);}
+  .hl.mechanism{border-color:var(--plinth);background:color-mix(in srgb, var(--plinth) 12%, transparent);}
+  .hl.fold{border-color:var(--amber);background:color-mix(in srgb, var(--amber) 12%, transparent);}
+  .hl.confidence{border-color:var(--ink-soft);background:rgba(42,42,42,.08);}
+  .hl.sub-bet{border-color:#8b5cf6;background:rgba(139,92,246,.1);}
+
+  .hl-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:9px;color:var(--ink-soft);}
+  .hl-legend .hli{display:flex;align-items:center;gap:4px;}
+  .hl-legend .hls{width:14px;height:3px;}
+  .hl-legend .hls.change{background:var(--terra);} .hl-legend .hls.metric{background:var(--green);}
+  .hl-legend .hls.mechanism{background:var(--plinth);} .hl-legend .hls.fold{background:var(--amber);}
+  .hl-legend .hls.confidence{background:var(--ink-soft);} .hl-legend .hls.sub-bet{background:#8b5cf6;}
+
+  /* output */
+  .output-panel{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:16px;min-height:200px;}
+  .op-head{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;}
+
+  /* classification */
+  .classify{border:1.5px solid var(--rule);background:rgba(255,255,255,.4);padding:12px 14px;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s;}
+  .classify.show{opacity:1;transform:translateY(0);}
+  .cl-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .cl-icon{font-size:16px;}
+  .cl-label{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .cl-label.single{color:var(--terra);} .cl-label.sequence{color:#8b5cf6;} .cl-label.strategy{color:var(--plinth);}
+  .cl-conf{font-size:10px;color:var(--ink-faint);font-style:italic;margin-left:auto;}
+  .cl-reason{font-size:11px;color:var(--ink-soft);line-height:1.5;}
+
+  /* extracted slots */
+  .slots{display:flex;flex-direction:column;gap:8px;}
+  .slot{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);padding:10px 12px;opacity:0;transform:translateX(12px);transition:opacity .35s,transform .35s;}
+  .slot.show{opacity:1;transform:translateX(0);}
+  .slot .sk{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+  .slot .sk .dot{width:8px;height:3px;}
+  .slot .sv{font-size:12px;line-height:1.45;}
+  .slot .sv .extracted{font-weight:600;}
+  .slot .sv .inferred{color:var(--ink-soft);font-style:italic;}
+  .slot.missing{border-style:dashed;border-color:var(--terra-line);background:var(--terra-soft);}
+  .slot.missing .sk{color:var(--terra);}
+  .slot.missing .sv{color:var(--terra);font-style:italic;}
+
+  /* sub-bets */
+  .sub-bets{margin-top:10px;}
+  .sb-head{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#8b5cf6;font-weight:700;margin-bottom:8px;}
+  .sb-card{border:1.5px solid rgba(139,92,246,.4);background:rgba(139,92,246,.05);padding:10px 12px;margin-bottom:8px;opacity:0;transform:translateX(12px);transition:opacity .35s,transform .35s;}
+  .sb-card.show{opacity:1;transform:translateX(0);}
+  .sb-card .sbn{font-size:11px;font-weight:700;color:#8b5cf6;}
+  .sb-card .sbq{font-size:12px;margin-top:4px;line-height:1.4;}
+  .sb-card .sbr{font-size:10px;color:var(--ink-soft);margin-top:4px;font-style:italic;}
+
+  /* next-step CTA */
+  .next-cta{border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:12px 14px;margin-top:12px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s;}
+  .next-cta.show{opacity:1;transform:translateY(0);}
+  .next-cta .nh{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:6px;}
+  .next-cta .nd{font-size:11.5px;line-height:1.5;margin-bottom:10px;}
+  .next-cta .nd b{color:var(--terra);}
+  .cta-btn{font-family:inherit;font-size:11.5px;padding:9px 14px;border:1.5px solid var(--terra);background:var(--terra);color:var(--paper);cursor:pointer;text-decoration:none;display:inline-block;}
+
+  .scanning{font-size:11px;color:var(--ink-soft);font-style:italic;display:none;margin-bottom:10px;}
+  .scanning.show{display:flex;align-items:center;gap:8px;}
+  .scanning .spinner{width:14px;height:14px;border:2px solid var(--rule-faint);border-top-color:var(--terra);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  footer.foot{margin-top:22px;border-top:1.5px dashed var(--rule);padding-top:12px;font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot a{color:var(--terra);}
+  @media(max-width:800px){.cols{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">front door · decomposition visualizer</div>
+  </header>
+
+  <div class="narrator">
+    Type or paste anything — a tight hypothesis, a messy initiative, a vague strategic goal. Watch the parser <em>highlight what it finds</em> in your text, classify the altitude, extract the bet components, and route you to the right layer. You see the reasoning, not just the result.
+  </div>
+
+  <div class="examples">
+    <span class="lbl">try:</span>
+    <button class="ex-btn" data-ex="single">single bet</button>
+    <button class="ex-btn" data-ex="sequence">sequence</button>
+    <button class="ex-btn" data-ex="strategy">strategy-level</button>
+    <button class="ex-btn" data-ex="vague">vague idea</button>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="input-panel">
+        <div class="ip-head">raw input <span class="mode">say it however it comes out</span></div>
+        <textarea class="raw" id="raw" placeholder="e.g. &quot;I think moving the pricing table above the fold will lift checkout starts by about 8%, because session replays show people bouncing at the testimonial section. If it's under 4% I'd drop it.&quot;"></textarea>
+        <button class="parse-btn" id="parseBtn">parse & decompose ▸</button>
+      </div>
+      <div class="annotated" id="annotated">
+        <div class="ah">source · annotated</div>
+        <div id="annoText"></div>
+        <div class="hl-legend">
+          <div class="hli"><span class="hls change"></span> change</div>
+          <div class="hli"><span class="hls metric"></span> metric</div>
+          <div class="hli"><span class="hls mechanism"></span> mechanism</div>
+          <div class="hli"><span class="hls fold"></span> fold condition</div>
+          <div class="hli"><span class="hls confidence"></span> confidence</div>
+          <div class="hli"><span class="hls sub-bet"></span> sub-bet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="output-panel">
+      <div class="op-head">decomposition</div>
+      <div class="scanning" id="scanning"><span class="spinner"></span><span>parsing…</span></div>
+      <div class="classify" id="classify"></div>
+      <div class="slots" id="slots"></div>
+      <div class="sub-bets" id="subBets"></div>
+      <div class="next-cta" id="nextCta"></div>
+    </div>
+  </div>
+
+  <footer class="foot">Decomposition visualizer — the open front door's parsing step, made visible. &nbsp;—&nbsp; <a href="substrate/Open Front Door.html">open front door</a> · <a href="Bet Front Door.html">bet lifecycle</a></footer>
+</div>
+
+<script>
+const EXAMPLES={
+  single:{
+    text:`I think moving the pricing table above the fold will lift checkout starts by about 8%, because session replays show people bouncing at the testimonial section before they ever see the plans. I'm fairly sure about this. If it comes in under +4% I'd drop it.`,
+    type:'single',typeLabel:'Single atomic bet',typeConf:'high',
+    reason:'One intervention, one metric, one mechanism. Contains a fold condition. This is a testable claim.',
+    highlights:[
+      {phrase:'moving the pricing table above the fold',cls:'change'},
+      {phrase:'checkout starts',cls:'metric'},
+      {phrase:'by about 8%',cls:'metric'},
+      {phrase:'session replays show people bouncing at the testimonial section before they ever see the plans',cls:'mechanism'},
+      {phrase:'fairly sure',cls:'confidence'},
+      {phrase:'under +4% I\'d drop it',cls:'fold'},
+    ],
+    slots:[
+      {k:'change',dot:'change',v:'<span class="extracted">Moving the pricing table above the fold</span>'},
+      {k:'metric',dot:'metric',v:'<span class="extracted">Checkout starts</span> · expected <span class="extracted">+8%</span>'},
+      {k:'mechanism',dot:'mechanism',v:'<span class="extracted">Bounce at testimonial section before seeing plans</span> — evidence: session replays'},
+      {k:'confidence',dot:'confidence',v:'<span class="extracted">Fairly confident</span> — moderate hedging'},
+      {k:'fold condition',dot:'fold',v:'<span class="extracted">Under +4% → drop it</span>'},
+    ],
+    missing:[],
+    cta:{label:'Proceed as a single bet',desc:'All components found. The bet is <b>ready to articulate</b> — these extractions pre-fill the wager.',href:'Bet Front Door.html'}
+  },
+  sequence:{
+    text:`We want to redesign the PDP pricing display. First we need to figure out if the current layout is actually the problem — maybe it's the copy, not the position. Then test 2-3 layout variants. Then take the winner and test it with different price anchoring. Each step depends on the last. Should lift conversion 10-15% overall. Drop any step that doesn't clear +3%.`,
+    type:'sequence',typeLabel:'Sequence of dependent bets',typeConf:'high',
+    reason:'Multiple distinct interventions with explicit dependencies ("each step depends on the last"). Three testable claims chained together.',
+    highlights:[
+      {phrase:'redesign the PDP pricing display',cls:'change'},
+      {phrase:'if the current layout is actually the problem — maybe it\'s the copy, not the position',cls:'sub-bet'},
+      {phrase:'test 2-3 layout variants',cls:'sub-bet'},
+      {phrase:'test it with different price anchoring',cls:'sub-bet'},
+      {phrase:'Each step depends on the last',cls:'fold'},
+      {phrase:'conversion',cls:'metric'},
+      {phrase:'10-15% overall',cls:'metric'},
+      {phrase:'+3%',cls:'fold'},
+    ],
+    slots:[
+      {k:'overarching goal',dot:'change',v:'<span class="extracted">Redesign the PDP pricing display</span> — this is the initiative, not a single bet'},
+      {k:'shared metric',dot:'metric',v:'<span class="extracted">Conversion</span> · overall target <span class="extracted">+10–15%</span>'},
+      {k:'shared fold-if',dot:'fold',v:'<span class="extracted">+3% per step</span> — each bet has the same minimum threshold'},
+    ],
+    missing:[],
+    subBets:[
+      {n:'A',q:'Is it the layout or the copy? (diagnostic)',r:'Must resolve first — determines whether layout variants are even the right intervention.'},
+      {n:'B',q:'Which of 2–3 layout variants lifts conversion?',r:'Depends on A winning (layout IS the problem). If A says it\'s copy → this bet never runs.'},
+      {n:'C',q:'Does price anchoring on the winning layout add lift?',r:'Depends on B — uses the winning layout as the base. Incremental.'},
+    ],
+    cta:{label:'Set up as a sequence (A → B → C)',desc:'Three dependent bets extracted. <b>Decompose into a chain</b> — each resolved before the next runs.',href:'substrate/Bet Sequencing.html'}
+  },
+  strategy:{
+    text:`We need to increase adoption of our investment products among loan-only customers. Right now only 5% cross-sell and we want to get to 15% by end of year. Not sure what the right approach is yet — could be email, could be in-app nudges, could be a redesign of the dashboard. Need to figure out where to start.`,
+    type:'strategy',typeLabel:'Strategy-level — needs decomposition',typeConf:'medium',
+    reason:'A goal with a target metric but no specific intervention. Multiple possible approaches mentioned without commitment. This belongs in the strategy layer first.',
+    highlights:[
+      {phrase:'increase adoption of our investment products among loan-only customers',cls:'change'},
+      {phrase:'5% cross-sell',cls:'metric'},
+      {phrase:'15% by end of year',cls:'metric'},
+      {phrase:'could be email, could be in-app nudges, could be a redesign of the dashboard',cls:'sub-bet'},
+      {phrase:'Not sure what the right approach is yet',cls:'confidence'},
+      {phrase:'Need to figure out where to start',cls:'confidence'},
+    ],
+    slots:[
+      {k:'goal',dot:'change',v:'<span class="extracted">Increase investment adoption among loan-only customers</span>'},
+      {k:'target metric',dot:'metric',v:'<span class="extracted">Cross-sell rate: 5% → 15%</span> by end of year'},
+      {k:'possible approaches',dot:'sub-bet',v:'<span class="extracted">Email · in-app nudges · dashboard redesign</span> — none committed'},
+    ],
+    missing:[
+      {k:'intervention',v:'No specific change proposed — this is a goal, not a bet.'},
+      {k:'mechanism',v:'No causal reasoning yet — "not sure what the right approach is."'},
+      {k:'fold condition',v:'No fold-if — can\'t be articulated until an intervention is chosen.'},
+    ],
+    cta:{label:'Start in the strategy layer',desc:'This is a <b>goal, not a bet</b>. Route to the strategy board to decompose into work items, then identify which are bets.',href:'substrate/Full Flow.html'}
+  },
+  vague:{
+    text:`I have a feeling the onboarding is too long and we're losing people. Should probably test something.`,
+    type:'single',typeLabel:'Vague — needs sharpening',typeConf:'low',
+    reason:'A directional intuition with no specifics. Contains a testable kernel ("onboarding is too long → losing people") but needs a specific change, metric, and threshold.',
+    highlights:[
+      {phrase:'the onboarding is too long',cls:'change'},
+      {phrase:'losing people',cls:'metric'},
+      {phrase:'I have a feeling',cls:'confidence'},
+    ],
+    slots:[
+      {k:'change (vague)',dot:'change',v:'<span class="extracted">Onboarding is too long</span> — <span class="inferred">but what specifically would you change?</span>'},
+      {k:'metric (vague)',dot:'metric',v:'<span class="extracted">Losing people</span> — <span class="inferred">which metric? Completion rate? Time-to-first-value? Drop-off at which step?</span>'},
+      {k:'confidence',dot:'confidence',v:'<span class="extracted">A feeling</span> — hunch-level. That\'s fine, but name it.'},
+    ],
+    missing:[
+      {k:'specific intervention',v:'What would you actually change about the onboarding? Fewer steps? Different order? Cut a section?'},
+      {k:'mechanism',v:'Why do you think it\'s the length? Data, or intuition? (Both are valid — just say which.)'},
+      {k:'fold condition',v:'What result would make you say "nope, length wasn\'t the issue"?'},
+    ],
+    cta:{label:'Sharpen into a bet',desc:'The kernel is there — <b>"onboarding too long → losing people"</b> — but it needs a specific change, a metric, and a fold-if before it\'s testable.',href:'Bet Front Door.html'}
+  }
+};
+
+const raw=document.getElementById('raw');
+const parseBtn=document.getElementById('parseBtn');
+const annotated=document.getElementById('annotated');
+const annoText=document.getElementById('annoText');
+const scanning=document.getElementById('scanning');
+const classify=document.getElementById('classify');
+const slots=document.getElementById('slots');
+const subBets=document.getElementById('subBets');
+const nextCta=document.getElementById('nextCta');
+
+function reset(){
+  annotated.classList.remove('show');
+  scanning.classList.remove('show');
+  classify.classList.remove('show');classify.innerHTML='';
+  slots.innerHTML='';subBets.innerHTML='';
+  nextCta.classList.remove('show');nextCta.innerHTML='';
+  document.querySelectorAll('.ex-btn').forEach(b=>b.classList.remove('on'));
+}
+
+function highlightText(text,highlights){
+  // sort by position in text (longest match first for overlaps)
+  const sorted=[...highlights].map(h=>({...h,idx:text.toLowerCase().indexOf(h.phrase.toLowerCase())})).filter(h=>h.idx>=0).sort((a,b)=>a.idx-b.idx);
+  let result='',last=0;
+  sorted.forEach(h=>{
+    if(h.idx<last)return; // skip overlaps
+    result+=escHtml(text.slice(last,h.idx));
+    result+=`<span class="hl ${h.cls}">${escHtml(text.slice(h.idx,h.idx+h.phrase.length))}</span>`;
+    last=h.idx+h.phrase.length;
+  });
+  result+=escHtml(text.slice(last));
+  return result;
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function animate(ex){
+  const d=EXAMPLES[ex];if(!d)return;
+  reset();
+  raw.value=d.text;
+  parseBtn.disabled=true;
+  scanning.classList.add('show');
+
+  let step=0;
+  const steps=[];
+  // step 0: show annotated source
+  steps.push(()=>{
+    scanning.querySelector('span:last-child').textContent='highlighting components…';
+    annotated.classList.add('show');
+    annoText.innerHTML=highlightText(d.text,d.highlights);
+  });
+  // step 1: classification
+  steps.push(()=>{
+    scanning.querySelector('span:last-child').textContent='classifying altitude…';
+    const icon=d.type==='single'?'⍺':d.type==='sequence'?'⛓':'▤';
+    classify.innerHTML=`<div class="cl-head"><span class="cl-icon">${icon}</span><span class="cl-label ${d.type}">${d.typeLabel}</span><span class="cl-conf">confidence: ${d.typeConf}</span></div><div class="cl-reason">${d.reason}</div>`;
+    classify.classList.add('show');
+  });
+  // step 2+: slots
+  d.slots.forEach((s,i)=>{
+    steps.push(()=>{
+      scanning.querySelector('span:last-child').textContent=`extracting ${s.k}…`;
+      slots.innerHTML+=`<div class="slot" id="slot${i}"><div class="sk"><span class="dot" style="background:var(--${s.dot==='sub-bet'?'':''}${s.dot==='change'?'terra':s.dot==='metric'?'green':s.dot==='mechanism'?'plinth':s.dot==='fold'?'amber':s.dot==='confidence'?'ink-soft':s.dot==='sub-bet'?'':'ink-faint'})${s.dot==='sub-bet'?';background:#8b5cf6':''}"></span>${s.k}</div><div class="sv">${s.v}</div></div>`;
+      requestAnimationFrame(()=>document.getElementById('slot'+i).classList.add('show'));
+    });
+  });
+  // missing slots
+  (d.missing||[]).forEach((m,i)=>{
+    steps.push(()=>{
+      const id='miss'+i;
+      slots.innerHTML+=`<div class="slot missing" id="${id}"><div class="sk">⚠ ${m.k} — not found</div><div class="sv">${m.v}</div></div>`;
+      requestAnimationFrame(()=>document.getElementById(id).classList.add('show'));
+    });
+  });
+  // sub-bets
+  if(d.subBets){
+    steps.push(()=>{
+      scanning.querySelector('span:last-child').textContent='decomposing into sub-bets…';
+      subBets.innerHTML='<div class="sb-head">extracted sequence</div>';
+    });
+    d.subBets.forEach((sb,i)=>{
+      steps.push(()=>{
+        const id='sb'+i;
+        subBets.innerHTML+=`<div class="sb-card" id="${id}"><div class="sbn">${sb.n}</div><div class="sbq">${sb.q}</div><div class="sbr">${sb.r}</div></div>`;
+        requestAnimationFrame(()=>document.getElementById(id).classList.add('show'));
+      });
+    });
+  }
+  // final: CTA
+  steps.push(()=>{
+    scanning.classList.remove('show');
+    nextCta.innerHTML=`<div class="nh">recommended next step</div><div class="nd">${d.cta.desc}</div><a class="cta-btn" href="${d.cta.href}">${d.cta.label} ▸</a>`;
+    nextCta.classList.add('show');
+    parseBtn.disabled=false;
+  });
+
+  function run(){
+    if(step>=steps.length)return;
+    steps[step]();step++;
+    setTimeout(run,step===steps.length?0:550);
+  }
+  setTimeout(run,400);
+}
+
+document.querySelectorAll('.ex-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.ex-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    animate(btn.dataset.ex);
+  });
+});
+parseBtn.addEventListener('click',()=>{
+  // for custom input, run the "vague" flow as a fallback demo
+  if(!raw.value.trim())return;
+  animate('vague');
+});
+</script>
+</body>
+</html>

@@ -56,7 +56,15 @@
   .art-title{font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);}
   .art-status{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);}
   .art-status.draft{color:var(--ink-soft);}
+  .art-status.ready{color:var(--green);font-weight:700;}
   .art-status.locked{color:var(--terra);font-weight:700;}
+  .artifact.ready{border-color:var(--green-line);}
+  .artifact.ready .seal{display:flex;border-color:var(--green);color:var(--green);background:var(--green-soft);}
+  .readymeta{display:none;padding:13px 18px;border-top:1.5px solid var(--green-line);background:var(--green-soft);font-size:11px;color:var(--ink);line-height:1.7;}
+  .artifact.ready .readymeta{display:block;}
+  .readymeta .rm-k{color:var(--green);text-transform:uppercase;letter-spacing:1px;font-size:9.5px;}
+  .btn.ready{border-style:solid;border-color:var(--green-line);background:var(--green);color:var(--paper);}
+  .btn.ready:hover{background:color-mix(in srgb, var(--green) 82%, #000);}
   .art-body{padding:6px 18px 18px;}
   .art-sec{padding:14px 0;border-bottom:1px dashed var(--rule-faint);}
   .art-sec:last-child{border-bottom:none;}
@@ -159,7 +167,7 @@
       </div>
       <div class="stamp">freeze it before the data lands</div>
     </div>
-    <p class="lead"><span class="g">Everything's carried here — the bet, the instrument, the criteria.</span> Two steps: keep it a <em>draft</em> and stay editable, or <em>commit &amp; lock</em> — timestamp the whole pre-registration and freeze every field. Once locked, it's measured against later results, <em>never edited to match them.</em> That's the line between a decision journal and a story told after the fact.</p>
+    <p class="lead"><span class="g">Everything's carried here — the bet, the instrument, the criteria.</span> Three states: <em>draft</em> (still being shaped), <em>ready</em> (structured and reviewable, still editable), and <em>lock</em> — which fires when the experiment actually launches. The lock timestamps and freezes every field. Once locked, it's measured against later results, <em>never edited to match them.</em></p>
   </header>
 
   <nav class="spine-rail">
@@ -176,7 +184,7 @@
     <div class="col">
       <!-- THE ARTIFACT -->
       <div class="artifact" id="artifact">
-        <div class="seal">pre-<br>registered</div>
+        <div class="seal" id="sealText">pre-<br>registered</div>
         <div class="art-head">
           <div class="art-title">Pre-registration — decision journal entry</div>
           <div class="art-status draft" id="artStatus">● draft · editable</div>
@@ -205,6 +213,10 @@
             <div class="ev" id="ebText"></div>
           </div>
         </div>
+        <div class="readymeta">
+          <div class="rm-k">ready — structured &amp; reviewable</div>
+          <div>Still editable. Peer review or team sign-off can happen here. Lock when the experiment actually launches.</div>
+        </div>
         <div class="lockmeta" id="lockmeta">
           <div class="lm-row"><span class="lm-k">locked at</span><span class="lm-v" id="lmTime"></span></div>
           <div class="lm-row"><span class="lm-k">fingerprint</span><span class="lm-v fp" id="lmFp"></span></div>
@@ -222,24 +234,36 @@
     <!-- RIGHT: commit controls + annotation -->
     <div class="col">
       <div class="commit-panel" id="commitPanel">
-        <div class="cp-title">Commit</div>
-        <div class="cp-sub">Review the record on the left. When it's right, lock it.</div>
-        <button class="btn full" id="draftBtn">Save as draft</button>
-        <button class="btn lock full" id="lockBtn">Commit &amp; lock ▸</button>
-        <div class="two-step"><b>Draft</b> stays editable — go back through the spine to change anything. <b>Lock</b> timestamps and freezes it.</div>
+        <div class="cp-title" id="cpTitle">Commit</div>
+        <div class="cp-sub" id="cpSub">Review the record on the left. Three states: draft, ready, locked.</div>
+
+        <!-- draft state controls -->
+        <div id="draftControls">
+          <button class="btn full" id="draftBtn">Save as draft</button>
+          <button class="btn ready full" id="readyBtn">Mark ready ✓</button>
+          <div class="two-step"><b>Draft</b> — still being shaped; go back to change anything.<br><b>Ready</b> — structured and reviewable; still editable, but signals "this is what I intend to run."</div>
+        </div>
+
+        <!-- ready state controls -->
+        <div id="readyControls" style="display:none">
+          <button class="btn lock full" id="lockBtn">Lock at launch ▸</button>
+          <button class="btn full" id="backToDraft">◂ back to draft</button>
+          <div class="two-step"><b>Ready</b> means reviewable — peer feedback, final check. Still editable.<br><b>Lock</b> fires when the experiment launches. Timestamps and freezes everything.</div>
+        </div>
+
         <div class="toast" id="toast"></div>
 
         <div class="confirm" id="confirm">
-          <p>Locking freezes every field above and timestamps it. You <b>won't be able to edit it to match a result</b> later — that's the feature, not a bug. Lock the pre-registration?</p>
+          <p>Is the experiment actually launching? Locking freezes every field and timestamps it. You <b>won't be able to edit it to match a result</b> later — that's the feature, not a bug.</p>
           <div class="confirm-actions">
-            <button class="btn lock" id="confirmLock">Lock it ▸</button>
-            <button class="btn" id="cancelLock">Cancel</button>
+            <button class="btn lock" id="confirmLock">Lock — it's launching ▸</button>
+            <button class="btn" id="cancelLock">Not yet</button>
           </div>
         </div>
 
         <div class="locked-state" id="lockedState">
           <div class="ls-h">🔒 Pre-registration locked</div>
-          <p>Timestamped and frozen. From here the lifecycle <em>reports against</em> this record — it can't be quietly rewritten to fit the outcome.</p>
+          <p>Timestamped and frozen at launch. From here the lifecycle <em>reports against</em> this record — it can't be quietly rewritten to fit the outcome.</p>
           <p style="color:var(--ink-soft);font-style:italic">Need a change? It becomes a new, separately-timestamped version. The original stays on the record.</p>
           <button class="btn" id="resetBtn" style="font-size:10.5px;opacity:.7">⟲ start a new draft (demo reset)</button>
         </div>
@@ -304,46 +328,79 @@ function fingerprint(){
   return (hex.slice(0,4)+'-'+hex.slice(4,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)).toUpperCase();
 }
 
-/* commit flow */
+/* three-state commit flow: draft → ready → locked */
 const artifact=document.getElementById('artifact');
-const lockBtn=document.getElementById('lockBtn');
+const draftControls=document.getElementById('draftControls');
+const readyControls=document.getElementById('readyControls');
 const draftBtn=document.getElementById('draftBtn');
+const readyBtn=document.getElementById('readyBtn');
+const lockBtn=document.getElementById('lockBtn');
 const confirm=document.getElementById('confirm');
 const lockedState=document.getElementById('lockedState');
 const toast=document.getElementById('toast');
+const sealText=document.getElementById('sealText');
+let state='draft';
+
+function showToast(msg){toast.textContent=msg;clearTimeout(toast._t);toast._t=setTimeout(()=>{toast.textContent='';},3000);}
+
+function setState(s){
+  state=s;
+  artifact.classList.remove('ready','locked');
+  draftControls.style.display='none';
+  readyControls.style.display='none';
+  confirm.classList.remove('show');
+  lockedState.classList.remove('show');
+  document.getElementById('cpSub').style.display='';
+  if(s==='draft'){
+    document.getElementById('artStatus').className='art-status draft';
+    document.getElementById('artStatus').textContent='● draft · editable';
+    document.getElementById('cpTitle').textContent='Commit';
+    draftControls.style.display='block';
+    sealText.innerHTML='pre-<br>registered';
+  }else if(s==='ready'){
+    artifact.classList.add('ready');
+    document.getElementById('artStatus').className='art-status ready';
+    document.getElementById('artStatus').textContent='✓ ready · reviewable';
+    document.getElementById('cpTitle').textContent='Ready';
+    readyControls.style.display='block';
+    sealText.innerHTML='ready';
+  }else if(s==='locked'){
+    artifact.classList.add('locked');
+    document.getElementById('artStatus').className='art-status locked';
+    document.getElementById('artStatus').textContent='🔒 locked · immutable';
+    document.getElementById('cpTitle').textContent='Locked';
+    document.getElementById('cpSub').style.display='none';
+    lockedState.classList.add('show');
+    sealText.innerHTML='pre-<br>registered';
+  }
+}
 
 draftBtn.addEventListener('click',()=>{
-  try{localStorage.setItem('ab_committed',JSON.stringify({BET,INSTR,CRIT,FOLD,locked:false}));}catch(e){}
-  toast.textContent='Saved as draft — still editable. Revise anywhere in the spine.';
-  setTimeout(()=>{toast.textContent='';},3000);
+  try{localStorage.setItem('ab_committed',JSON.stringify({BET,INSTR,CRIT,FOLD,locked:false,state:'draft'}));}catch(e){}
+  showToast('Saved as draft — still being shaped.');
 });
-lockBtn.addEventListener('click',()=>{confirm.classList.add('show');lockBtn.style.display='none';draftBtn.style.display='none';});
-document.getElementById('cancelLock').addEventListener('click',()=>{confirm.classList.remove('show');lockBtn.style.display='';draftBtn.style.display='';});
+readyBtn.addEventListener('click',()=>{
+  setState('ready');
+  try{localStorage.setItem('ab_committed',JSON.stringify({BET,INSTR,CRIT,FOLD,locked:false,state:'ready'}));}catch(e){}
+  showToast('Marked ready — reviewable, still editable. Lock when the experiment launches.');
+});
+document.getElementById('backToDraft').addEventListener('click',()=>{
+  setState('draft');
+  showToast('Back to draft.');
+});
+lockBtn.addEventListener('click',()=>{confirm.classList.add('show');lockBtn.style.display='none';document.getElementById('backToDraft').style.display='none';});
+document.getElementById('cancelLock').addEventListener('click',()=>{confirm.classList.remove('show');lockBtn.style.display='';document.getElementById('backToDraft').style.display='';});
 document.getElementById('confirmLock').addEventListener('click',()=>{
   const fp=fingerprint();
   const now=new Date();
   const iso=now.toISOString().slice(0,19).replace('T',' ')+' UTC';
   document.getElementById('lmTime').textContent=iso;
   document.getElementById('lmFp').textContent=fp;
-  artifact.classList.add('locked');
-  document.getElementById('artStatus').className='art-status locked';
-  document.getElementById('artStatus').textContent='🔒 locked · immutable';
-  confirm.classList.remove('show');
-  document.getElementById('commitPanel').querySelector('.cp-title').textContent='Locked';
-  document.getElementById('commitPanel').querySelector('.cp-sub').style.display='none';
-  document.querySelector('.two-step').style.display='none';
-  lockedState.classList.add('show');
-  try{localStorage.setItem('ab_committed',JSON.stringify({BET,INSTR,CRIT,FOLD,locked:true,lockedAt:iso,fingerprint:fp}));}catch(e){}
+  setState('locked');
+  try{localStorage.setItem('ab_committed',JSON.stringify({BET,INSTR,CRIT,FOLD,locked:true,state:'locked',lockedAt:iso,fingerprint:fp}));}catch(e){}
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  artifact.classList.remove('locked');
-  document.getElementById('artStatus').className='art-status draft';
-  document.getElementById('artStatus').textContent='● draft · editable';
-  lockedState.classList.remove('show');
-  document.getElementById('commitPanel').querySelector('.cp-title').textContent='Commit';
-  document.getElementById('commitPanel').querySelector('.cp-sub').style.display='';
-  document.querySelector('.two-step').style.display='';
-  lockBtn.style.display='';draftBtn.style.display='';
+  setState('draft');
   try{localStorage.removeItem('ab_committed');}catch(e){}
 });
 

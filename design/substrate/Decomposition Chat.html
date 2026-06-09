@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Front Door</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --amber:#b8860b;--amber-soft:rgba(184,134,11,.08);--amber-line:rgba(184,134,11,.5);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+    --font-hand:"Caveat",cursive;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;height:100%;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--font-mono);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+
+  .shell{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;max-width:720px;margin:0 auto;width:100%;}
+
+  header.top{padding:16px 20px 12px;border-bottom:1.5px dashed var(--rule);display:flex;justify-content:space-between;align-items:baseline;flex-shrink:0;}
+  .wordmark{font-size:20px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .sub{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1.5px;}
+
+  .presets{display:flex;gap:6px;padding:8px 20px;border-bottom:1px dashed var(--rule-faint);flex-shrink:0;flex-wrap:wrap;align-items:center;}
+  .presets .plbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);}
+  .preset{font-family:var(--font-mono);font-size:10px;padding:4px 10px;border:1.5px dashed var(--rule-faint);background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .preset:hover{background:var(--paper-2);border-color:var(--terra-line);}
+
+  .thread{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;}
+
+  /* messages */
+  .msg{max-width:92%;animation:fadeUp .3s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .msg.user{align-self:flex-end;}
+  .msg.sys{align-self:flex-start;}
+  .msg-body{padding:12px 14px;font-size:12.5px;line-height:1.6;}
+  .msg.user .msg-body{background:var(--ink);color:#e6dfce;box-shadow:3px 3px 0 rgba(42,42,42,.15);}
+  .msg.user .msg-body em{color:#eeb9a4;}
+  .msg.sys .msg-body{border:1.5px dashed var(--rule);background:rgba(255,255,255,.4);}
+  .msg-who{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px;}
+  .msg.sys .msg-who{color:var(--terra);}
+
+  /* inline extractions in system messages */
+  .ext{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .ext-slot{border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.5);padding:7px 10px;}
+  .ext-slot .ek{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px;display:flex;align-items:center;gap:5px;}
+  .ext-slot .ek .dot{width:8px;height:3px;display:inline-block;}
+  .ext-slot .ev{font-size:11.5px;line-height:1.45;}
+  .ext-slot .ev b{font-weight:600;}
+  .ext-slot .ev .inf{color:var(--ink-soft);font-style:italic;}
+  .ext-slot.miss{border-color:var(--terra-line);background:var(--terra-soft);}
+  .ext-slot.miss .ek{color:var(--terra);}
+  .ext-slot.miss .ev{color:var(--terra);font-style:italic;}
+
+  .hl{padding:1px 2px;border-bottom:2px solid;}
+  .hl.change{border-color:var(--terra);background:color-mix(in srgb, var(--terra) 10%, transparent);}
+  .hl.metric{border-color:var(--green);background:color-mix(in srgb, var(--green) 10%, transparent);}
+  .hl.mechanism{border-color:var(--plinth);background:color-mix(in srgb, var(--plinth) 10%, transparent);}
+  .hl.fold{border-color:var(--amber);background:color-mix(in srgb, var(--amber) 10%, transparent);}
+
+  .classify{border:1.5px solid var(--rule);background:rgba(255,255,255,.5);padding:9px 12px;margin-top:10px;display:flex;align-items:center;gap:8px;}
+  .cl-icon{font-size:14px;}
+  .cl-label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .cl-label.single{color:var(--terra);} .cl-label.sequence{color:#8b5cf6;} .cl-label.strategy{color:var(--plinth);}
+
+  /* quick-reply chips */
+  .replies{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .reply{font-family:var(--font-mono);font-size:10.5px;padding:6px 12px;border:1.5px solid var(--terra-line);background:var(--terra-soft);color:var(--terra);cursor:pointer;transition:background .1s;}
+  .reply:hover{background:var(--terra);color:var(--paper);}
+
+  .route-cta{margin-top:10px;display:inline-block;font-family:var(--font-mono);font-size:11.5px;padding:10px 16px;border:1.5px solid var(--terra);background:var(--terra);color:var(--paper);cursor:pointer;text-decoration:none;letter-spacing:.3px;}
+  .route-cta:hover{background:color-mix(in srgb, var(--terra) 82%, #000);}
+
+  /* input bar */
+  .input-bar{flex-shrink:0;border-top:1.5px dashed var(--rule);padding:12px 20px;display:flex;gap:8px;background:var(--paper);}
+  .input-bar textarea{flex:1;font-family:var(--font-mono);font-size:13px;color:var(--ink);background:rgba(255,255,255,.5);border:1.5px dashed var(--rule-faint);padding:10px 12px;resize:none;line-height:1.5;outline:none;min-height:44px;max-height:120px;}
+  .input-bar textarea:focus{border-color:var(--terra-line);}
+  .input-bar textarea::placeholder{color:var(--ink-faint);font-style:italic;}
+  .send{font-family:var(--font-mono);font-size:12px;padding:0 16px;border:1.5px solid var(--terra);background:var(--terra);color:var(--paper);cursor:pointer;align-self:flex-end;height:44px;}
+  .send:hover{background:color-mix(in srgb, var(--terra) 82%, #000);}
+  .send:disabled{opacity:.35;cursor:default;}
+
+  .typing{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-faint);font-style:italic;padding:4px 0;}
+  .typing .dots{display:flex;gap:3px;}
+  .typing .dots span{width:5px;height:5px;border-radius:50%;background:var(--terra);animation:blink 1.2s infinite;}
+  .typing .dots span:nth-child(2){animation-delay:.2s;}
+  .typing .dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%{opacity:.2}40%{opacity:1}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="sub">front door</div>
+  </header>
+
+  <div class="presets">
+    <span class="plbl">try:</span>
+    <button class="preset" data-ex="single">single bet</button>
+    <button class="preset" data-ex="sequence">sequence</button>
+    <button class="preset" data-ex="strategy">strategy-level</button>
+    <button class="preset" data-ex="vague">vague idea</button>
+  </div>
+
+  <div class="thread" id="thread">
+    <div class="msg sys">
+      <div class="msg-who">⍺β</div>
+      <div class="msg-body">What are you thinking about testing, changing, or figuring out? Say it however it comes out — I'll help structure it.</div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <textarea id="input" rows="1" placeholder="e.g. &quot;I think the onboarding is too long and we're losing people…&quot;"></textarea>
+    <button class="send" id="sendBtn">▸</button>
+  </div>
+</div>
+
+<script>
+const thread=document.getElementById('thread');
+const input=document.getElementById('input');
+const sendBtn=document.getElementById('sendBtn');
+
+function addMsg(who,html,delay){
+  return new Promise(r=>{
+    setTimeout(()=>{
+      const d=document.createElement('div');
+      d.className='msg '+who;
+      d.innerHTML=`<div class="msg-who">${who==='user'?'you':'⍺β'}</div><div class="msg-body">${html}</div>`;
+      thread.appendChild(d);
+      thread.scrollTop=thread.scrollHeight;
+      r(d);
+    },delay||0);
+  });
+}
+function addTyping(){
+  const d=document.createElement('div');
+  d.className='typing';d.id='typing';
+  d.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';
+  thread.appendChild(d);thread.scrollTop=thread.scrollHeight;
+}
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+
+function slot(k,v,cls,dotColor){
+  return `<div class="ext-slot ${cls||''}"><div class="ek"><span class="dot" style="background:${dotColor||'var(--ink-faint)'}"></span>${k}</div><div class="ev">${v}</div></div>`;
+}
+function classify(icon,label,cls){
+  return `<div class="classify"><span class="cl-icon">${icon}</span><span class="cl-label ${cls}">${label}</span></div>`;
+}
+function replies(opts){
+  return `<div class="replies">${opts.map(o=>`<button class="reply" data-reply="${o.id}">${o.text}</button>`).join('')}</div>`;
+}
+function routeCta(text,href){
+  return `<a class="route-cta" href="${href||'#'}">${text} ▸</a>`;
+}
+
+let busy=false;
+async function runConvo(steps){
+  busy=true;sendBtn.disabled=true;input.disabled=true;
+  for(const s of steps){
+    if(s.type==='user'){
+      await addMsg('user',s.html,s.delay||200);
+    }else if(s.type==='sys'){
+      addTyping();
+      await new Promise(r=>setTimeout(r,s.delay||900));
+      removeTyping();
+      const m=await addMsg('sys',s.html,0);
+      if(s.replies){
+        const reps=m.querySelector('.replies');
+        if(reps){
+          reps.querySelectorAll('.reply').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+              reps.remove();
+              if(s.onReply) s.onReply(btn.dataset.reply);
+            });
+          });
+        }
+      }
+    }else if(s.type==='wait'){
+      await new Promise(r=>setTimeout(r,s.ms||600));
+    }
+  }
+  busy=false;sendBtn.disabled=false;input.disabled=false;
+}
+
+/* ===== CONVERSATIONS ===== */
+
+const SINGLE=[
+  {type:'user',html:`I think moving the pricing table above the fold will lift checkout starts by about 8%, because session replays show people bouncing at the testimonial section before they ever see the plans. If it comes in under +4% I'd drop it.`},
+  {type:'sys',delay:1100,html:`That's pretty specific — let me pull it apart.
+    <div class="ext">
+      ${slot('change','<b>Move the pricing table above the fold</b> on /pricing','','var(--terra)')}
+      ${slot('metric','<b>Checkout starts</b> · you expect <b>+8%</b>','','var(--green)')}
+      ${slot('mechanism','<b>Session replays show bounce at testimonials before plans are visible</b> — evidence-backed','','var(--plinth)')}
+      ${slot('fold condition','<b>Under +4% → drop it</b>','','var(--amber)')}
+    </div>
+    ${classify('⍺','Single atomic bet','single')}
+    One change, one metric, one mechanism, and you already named the fold condition. This is ready to articulate as a bet.
+    ${replies([{id:'confirm',text:'looks right — proceed'},{id:'adjust',text:'need to adjust something'},{id:'actually-multi',text:'actually this might be multiple bets'}])}`
+  ,replies:true,onReply:id=>{
+    if(id==='confirm') runConvo(SINGLE_CONFIRM);
+    else if(id==='adjust') runConvo(SINGLE_ADJUST);
+    else runConvo(SINGLE_MULTI);
+  }},
+];
+const SINGLE_CONFIRM=[
+  {type:'user',html:'looks right — proceed'},
+  {type:'sys',delay:700,html:`All five components extracted. I'll pre-fill the wager with these.
+    ${routeCta('Articulate this bet','Bet Front Door.html')}`}
+];
+const SINGLE_ADJUST=[
+  {type:'user',html:'need to adjust something'},
+  {type:'sys',delay:700,html:`Sure — what should I change? You can say something like "the metric should be conversion rate, not checkout starts" or "I'm less sure than I sounded — more like a hunch."
+    ${replies([{id:'metric',text:'change the metric'},{id:'conf',text:'lower my confidence'},{id:'fold',text:'change the fold-if'}])}`
+  ,replies:true,onReply:id=>{
+    const fixes={metric:'Got it — I\'ll update the metric. What should it be instead?',conf:'Noted — I\'ll mark this as a hunch, not a conviction. That\'s honest, and it changes how aggressively we\'d scope the test.',fold:'What threshold would actually change your mind?'};
+    runConvo([{type:'user',html:id==='metric'?'change the metric':id==='conf'?'lower my confidence':'change the fold-if'},{type:'sys',delay:700,html:fixes[id]}]);
+  }},
+];
+const SINGLE_MULTI=[
+  {type:'user',html:'actually this might be multiple bets'},
+  {type:'sys',delay:900,html:`Interesting — tell me more. What makes you think there's more than one claim in here?
+    ${replies([{id:'layout-vs-copy',text:'it could be the layout OR the copy'},{id:'steps',text:'there are prerequisite steps'}])}`
+  ,replies:true,onReply:id=>{
+    if(id==='layout-vs-copy') runConvo([
+      {type:'user',html:'it could be the layout OR the copy — not sure which to test'},
+      {type:'sys',delay:1000,html:`That's a diagnostic question hiding inside a bet. Two claims:<br><br>
+        <b>A:</b> "Is it the layout (position) or the copy (testimonials)?" — a diagnostic.<br>
+        <b>B:</b> "Does moving the table lift checkouts?" — the intervention.<br><br>
+        A should resolve before B runs — if it's the copy, moving the table won't help.
+        ${classify('⛓','Sequence — A resolves before B','sequence')}
+        ${routeCta('Set up as a sequence','substrate/Bet Sequencing.html')}`}
+    ]);
+    else runConvo([
+      {type:'user',html:'there are prerequisite steps'},
+      {type:'sys',delay:900,html:`Makes sense. What needs to be true before this bet is worth running? I'll build the chain.`}
+    ]);
+  }}
+];
+
+const SEQUENCE=[
+  {type:'user',html:`We want to redesign the PDP pricing display. First figure out if the current layout is the problem — maybe it's the copy, not the position. Then test 2-3 layout variants. Then take the winner and test price anchoring. Each step depends on the last.`},
+  {type:'sys',delay:1200,html:`I'm hearing three distinct claims chained together — each one depends on the prior resolving. Let me break them out:
+    <div class="ext">
+      ${slot('bet A','<b>Is it the layout or the copy?</b> — diagnostic. Must resolve first.','','#8b5cf6')}
+      ${slot('bet B','<b>Which of 2–3 layout variants lifts conversion?</b> — depends on A saying "it\'s the layout."','','#8b5cf6')}
+      ${slot('bet C','<b>Does price anchoring on the winning layout add lift?</b> — depends on B picking a winner.','','#8b5cf6')}
+    </div>
+    ${classify('⛓','Sequence of dependent bets · A → B → C','sequence')}
+    If A says it's the <em>copy</em>, B never runs — and that's the value. You don't spend weeks testing layouts on a premise that didn't hold.
+    ${replies([{id:'right',text:'that\'s the right decomposition'},{id:'parallel',text:'B and C could run in parallel'},{id:'missing',text:'there\'s a step before A'}])}`
+  ,replies:true,onReply:id=>{
+    if(id==='right') runConvo([
+      {type:'user',html:'that\'s the right decomposition'},
+      {type:'sys',delay:700,html:`Good. Any shared threshold across the chain? (e.g. "drop any step that doesn't clear +3%")`},
+      {type:'wait',ms:500},
+      {type:'sys',delay:200,html:`I'll set up the sequence. Each bet runs the full lifecycle independently; the chain records which verdicts gate what.
+        ${routeCta('Set up the sequence','substrate/Bet Sequencing.html')}`}
+    ]);
+    else if(id==='parallel') runConvo([
+      {type:'user',html:'B and C could actually run in parallel'},
+      {type:'sys',delay:900,html:`That changes the shape — B and C both depend on A, but not on each other. A fan-in rather than a chain:
+        <br><br><b>A</b> → (<b>B</b> + <b>C</b> in parallel) → rollout<br><br>
+        Both B and C need to clear before you'd ship. I'll set the join as AND by default — either one losing prunes the rollout.
+        ${classify('⛓','Fan-in · A → (B ∥ C) → rollout','sequence')}
+        ${routeCta('Set up with fan-in','substrate/Bet Sequencing.html')}`}
+    ]);
+    else runConvo([
+      {type:'user',html:'there\'s actually a step before A'},
+      {type:'sys',delay:800,html:`What needs to happen first? Describe it and I'll prepend it to the chain.`}
+    ]);
+  }}
+];
+
+const STRATEGY=[
+  {type:'user',html:`We need to increase adoption of investment products among loan-only customers. Currently only 5% cross-sell, want to get to 15% by end of year. Not sure what approach to take — could be email, in-app nudges, or a dashboard redesign.`},
+  {type:'sys',delay:1200,html:`This is a goal with a target, not a bet yet. I can see the metric and the ambition, but there's no specific change to test.
+    <div class="ext">
+      ${slot('goal','<b>Increase investment adoption among loan-only customers</b>','','var(--green)')}
+      ${slot('target','<b>Cross-sell rate: 5% → 15%</b> by end of year','','var(--green)')}
+      ${slot('possible approaches','Email · in-app nudges · dashboard redesign — <b>none committed</b>','','#8b5cf6')}
+      ${slot('intervention','Not specified yet — this is a goal, not a testable change','miss','var(--terra)')}
+      ${slot('mechanism','No causal reasoning — "not sure what approach to take"','miss','var(--terra)')}
+    </div>
+    ${classify('▤','Strategy-level — needs decomposition first','strategy')}
+    Before this becomes a bet (or bets), you need to pick an approach. Want to:
+    ${replies([{id:'narrow',text:'narrow to one approach now'},{id:'test-approaches',text:'test which approach works'},{id:'strategy',text:'keep it in the strategy layer for now'}])}`
+  ,replies:true,onReply:id=>{
+    if(id==='narrow') runConvo([
+      {type:'user',html:'let me narrow to one — email campaigns'},
+      {type:'sys',delay:900,html:`Good. Now it's scoped: <b>"Does an email campaign to loan-only customers lift cross-sell?"</b><br><br>That's getting close to a bet. Next question: what specifically would you email, and what does "work" look like?
+        ${replies([{id:'single',text:'one email test'},{id:'multi',text:'a sequence — subject line, then body, then targeting'}])}`
+      ,replies:true,onReply:id2=>{
+        if(id2==='single') runConvo([{type:'sys',delay:700,html:`Alright — single bet. Let's articulate it.
+          ${routeCta('Articulate this bet','Bet Front Door.html')}`}]);
+        else runConvo([{type:'sys',delay:800,html:`Three steps chained: subject line → body → targeting. Each depends on the prior. I'll set it up as a sequence.
+          ${routeCta('Set up the sequence','substrate/Bet Sequencing.html')}`}]);
+      }}
+    ]);
+    else if(id==='test-approaches') runConvo([
+      {type:'user',html:'I want to test which approach works best'},
+      {type:'sys',delay:1000,html:`That's a <b>parallel exploration</b> — three independent bets, each testing a different approach against the same goal metric (cross-sell rate):
+        <div class="ext">
+          ${slot('bet A','<b>Email campaign</b> → does it lift cross-sell?','','#8b5cf6')}
+          ${slot('bet B','<b>In-app nudges</b> → does it lift cross-sell?','','#8b5cf6')}
+          ${slot('bet C','<b>Dashboard redesign</b> → does it lift cross-sell?','','#8b5cf6')}
+        </div>
+        These are independent (no dependencies between them) but they share a surface — be careful about running them simultaneously on the same users.
+        ${routeCta('Set up as parallel bets','substrate/Bet Sequencing.html')}`}
+    ]);
+    else runConvo([
+      {type:'user',html:'keep it in the strategy layer for now'},
+      {type:'sys',delay:700,html:`Makes sense — it's a goal, not ready to be a bet. When you've narrowed to a specific approach, come back and we'll structure it.
+        ${routeCta('Go to strategy board','substrate/Full Flow.html')}`}
+    ]);
+  }}
+];
+
+const VAGUE=[
+  {type:'user',html:`I have a feeling the onboarding is too long and we're losing people. Should probably test something.`},
+  {type:'sys',delay:1000,html:`I hear a hunch: <span class="hl change">onboarding too long</span> → <span class="hl metric">losing people</span>. There's a testable kernel here, but it needs sharpening before it's a bet.
+    <div class="ext">
+      ${slot('change (vague)','<b>Onboarding is too long</b> — but what specifically would you change?','miss','var(--terra)')}
+      ${slot('metric (vague)','<b>Losing people</b> — which metric? Completion rate? Time-to-first-value? Drop-off at which step?','miss','var(--terra)')}
+      ${slot('confidence','<b>"I have a feeling"</b> — hunch-level. That\'s fine, but name it.','','var(--ink-soft)')}
+    </div>
+    Let's sharpen it. What would you <em>actually change</em> about the onboarding?
+    ${replies([{id:'cut',text:'cut the tutorial steps'},{id:'shorten',text:'shorten the form'},{id:'skip',text:'let people skip to the app'},{id:'dunno',text:'not sure yet'}])}`
+  ,replies:true,onReply:id=>{
+    const changes={cut:'cutting the tutorial steps',shorten:'shortening the signup form',skip:'adding a "skip to the app" option',dunno:null};
+    if(!changes[id]) return runConvo([
+      {type:'user',html:'not sure yet'},
+      {type:'sys',delay:800,html:`That's honest. Before it's a bet, you need a specific change — "the onboarding is too long" is a diagnosis, not an intervention. A couple ways to get there:<br><br>• Look at the funnel: where exactly do people drop? That tells you <em>what</em> to change.<br>• Talk to 3 churned users: what was the last thing they saw?<br><br>Come back when you've got a "what if we…" and I'll structure it.`}
+    ]);
+    const change=changes[id];
+    const capChange=change.charAt(0).toUpperCase()+change.slice(1);
+    runConvo([
+      {type:'user',html:change},
+      {type:'sys',delay:1000,html:'Good — now I have a change. Let me reparse:'
+        +'<div class="ext">'
+        +slot('change','<b>'+capChange+'</b> in the onboarding flow','','var(--terra)')
+        +slot('metric','Still vague — <b>what specifically would you measure?</b>','miss','var(--terra)')
+        +'</div>'
+        +'What does "losing people" mean in numbers? Completion rate? Time-to-first-value?'
+        +replies([{id:'completion',text:'completion rate'},{id:'ttv',text:'time to first value'},{id:'both',text:'both'}])
+      ,replies:true,onReply:mid=>{
+        const m=mid==='completion'?'onboarding completion rate':mid==='ttv'?'time-to-first-value':'completion rate + time-to-first-value';
+        runConvo([
+          {type:'user',html:m},
+          {type:'sys',delay:900,html:'Now it\'s a bet: <b>"'+change+'"</b> lifts <b>'+m+'</b>. One more thing — what result would make you say "nope, that wasn\'t it"?'
+            +replies([{id:'threshold',text:'under +5% I\'d drop it'},{id:'any',text:'any positive signal is enough'},{id:'guard',text:'only if nothing else breaks'}])
+          ,replies:true,onReply:fid=>{
+            const fold=fid==='threshold'?'under +5% \u2192 drop it':fid==='any'?'any positive lift (you might want a harder line later)':'no regression on key guardrails';
+            runConvo([
+              {type:'user',html:fid==='threshold'?'under +5% I\'d drop it':fid==='any'?'any positive signal is enough':'only if nothing else breaks'},
+              {type:'sys',delay:800,html:'Now it\'s fully structured:'
+                +'<div class="ext">'
+                +slot('change','<b>'+capChange+'</b>','','var(--terra)')
+                +slot('metric','<b>'+m+'</b>','','var(--green)')
+                +slot('fold condition','<b>'+fold+'</b>','','var(--amber)')
+                +slot('confidence','Hunch-level \u2014 and that\'s fine.','','var(--ink-soft)')
+                +'</div>'
+                +'From a feeling to a falsifiable bet in four messages. Ready to articulate it.'
+                +routeCta('Articulate this bet','Bet Front Door.html')}
+            ]);
+          }}
+        ]);
+      }}
+    ]);
+  }}
+];
+
+const CONVOS={single:SINGLE,sequence:SEQUENCE,strategy:STRATEGY,vague:VAGUE};
+
+function clearThread(){
+  thread.innerHTML='';
+  addMsg('sys','What are you thinking about testing, changing, or figuring out? Say it however it comes out — I\'ll help structure it.',0);
+}
+
+document.querySelectorAll('.preset').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(busy)return;
+    clearThread();
+    const ex=btn.dataset.ex;
+    input.value='';
+    runConvo(CONVOS[ex]||[]);
+  });
+});
+
+// free-text submit (runs vague flow as demo)
+function submit(){
+  if(busy||!input.value.trim())return;
+  const text=input.value.trim();
+  input.value='';
+  clearThread();
+  runConvo([{type:'user',html:text},...VAGUE.slice(1).map(s=>({...s}))]);
+}
+sendBtn.addEventListener('click',submit);
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit();}});
+
+// auto-resize textarea
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px';});
+</script>
+</body>
+</html>

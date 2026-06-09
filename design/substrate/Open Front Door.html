@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Open Front Door</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --amber:#b8860b;--amber-soft:rgba(184,134,11,.08);--amber-line:rgba(184,134,11,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .wrap{position:relative;z-index:1;max-width:740px;margin:0 auto;padding:40px 28px 80px;}
+
+  .wordmark{font-size:28px;font-weight:700;letter-spacing:-.5px;text-align:center;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .tagline{text-align:center;font-size:12px;color:var(--ink-soft);margin:8px 0 32px;line-height:1.6;}
+
+  /* input */
+  .input-area{border:2px dashed var(--rule);background:rgba(255,255,255,.4);padding:20px;margin-bottom:16px;transition:border-color .2s;}
+  .input-area:focus-within{border-color:var(--terra);}
+  .input-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;}
+  .input-area textarea{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:transparent;border:none;outline:none;resize:vertical;min-height:80px;line-height:1.6;}
+  .input-area textarea::placeholder{color:var(--ink-faint);}
+
+  .examples{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
+  .examples .elbl{font-size:10px;color:var(--ink-faint);letter-spacing:1px;text-transform:uppercase;align-self:center;margin-right:4px;}
+  .ex{font-family:inherit;font-size:10px;padding:5px 10px;border:1.5px dashed var(--rule-faint);background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .ex:hover{background:var(--paper-2);border-color:var(--terra-line);color:var(--terra);}
+  .ex.on{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+
+  .go{display:flex;justify-content:center;margin-bottom:24px;}
+  .gobtn{font-family:inherit;font-size:14px;padding:12px 28px;border:2px solid var(--terra);background:var(--terra);color:var(--paper);cursor:pointer;font-weight:700;letter-spacing:.5px;}
+  .gobtn:hover{background:color-mix(in srgb,var(--terra) 82%,#000);}
+  .gobtn:disabled{opacity:.4;cursor:default;}
+
+  /* triage result */
+  .result{display:none;}
+  .result.show{display:block;}
+
+  .thinking{text-align:center;color:var(--ink-faint);font-style:italic;font-size:12px;padding:20px 0;display:none;}
+  .thinking.show{display:block;}
+
+  /* altitude badge */
+  .altitude{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .alt-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;padding:5px 12px;border:2px solid;}
+  .alt-badge.vague{color:var(--ink-faint);border-color:var(--rule);background:rgba(255,255,255,.4);}
+  .alt-badge.goal{color:var(--plinth);border-color:var(--plinth-line);background:var(--plinth-soft);}
+  .alt-badge.bet{color:var(--terra);border-color:var(--terra);background:var(--terra-soft);}
+  .alt-badge.ready{color:var(--green);border-color:var(--green);background:var(--green-soft);}
+  .alt-sub{font-size:12px;color:var(--ink-soft);}
+
+  /* extracted card */
+  .extract{border:1.5px dashed var(--rule);background:rgba(255,255,255,.35);padding:16px;margin-bottom:16px;}
+  .ext-h{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px;}
+  .ext-row{display:flex;gap:10px;margin-bottom:9px;align-items:baseline;}
+  .ext-row:last-child{margin-bottom:0;}
+  .ext-key{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);flex:0 0 90px;text-align:right;}
+  .ext-val{font-size:12.5px;line-height:1.5;}
+  .ext-val.present{color:var(--ink);}
+  .ext-val.missing{color:var(--terra);font-style:italic;}
+  .ext-val.missing::before{content:"⚠ ";}
+  .ext-val.found{color:var(--green);}
+  .ext-val.found::before{content:"✓ ";}
+
+  /* paths */
+  .paths-h{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;}
+  .paths{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+  .path{border:1.5px solid var(--rule-faint);background:rgba(255,255,255,.4);padding:14px 16px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;gap:14px;align-items:flex-start;}
+  .path:hover{border-color:var(--terra);background:var(--terra-soft);}
+  .path.recommended{border-color:var(--terra);border-width:2px;}
+  .path .picon{font-size:18px;flex:0 0 auto;margin-top:2px;}
+  .path .pbody{flex:1;min-width:0;}
+  .path .ptitle{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .path .ptitle .rec{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--paper);background:var(--terra);padding:2px 7px;font-weight:700;}
+  .path .pdesc{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:4px;}
+  .path .player{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);margin-top:6px;}
+
+  .pushback{border:1.5px dashed var(--terra-line);background:var(--terra-soft);padding:12px 14px;margin-bottom:16px;font-size:12px;line-height:1.6;}
+  .pushback .ph{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:6px;}
+  .pushback em{color:var(--terra);}
+
+  .reset{text-align:center;margin-top:12px;}
+  .reset button{font-family:inherit;font-size:11px;padding:7px 16px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .reset button:hover{background:var(--paper-2);}
+
+  .narrator{background:var(--ink);color:#e6dfce;box-shadow:4px 4px 0 rgba(42,42,42,.16);padding:13px 16px;font-size:12px;line-height:1.6;margin-top:24px;}
+  .narrator::before{content:"▶ walkthrough";font-family:"Caveat",cursive;font-size:15px;color:#e3a487;display:block;margin-bottom:6px;}
+  .narrator em{color:#eeb9a4;} .narrator b{color:#b8d4b0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="wordmark">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+  <div class="tagline">What are you thinking about?</div>
+
+  <div class="input-area">
+    <div class="input-label">dump it here — any altitude, any granularity</div>
+    <textarea id="input" placeholder="A hunch, a hypothesis, a goal, a vague worry, a fully-formed test plan — just say what you're thinking and we'll figure out where it goes."></textarea>
+  </div>
+
+  <div class="examples">
+    <span class="elbl">try:</span>
+    <button class="ex" data-ex="vague">vague strategic</button>
+    <button class="ex" data-ex="goal">goal-level</button>
+    <button class="ex" data-ex="bet">testable bet</button>
+    <button class="ex" data-ex="ready">lock-ready</button>
+  </div>
+
+  <div class="go"><button class="gobtn" id="goBtn" disabled>reflect ▸</button></div>
+
+  <div class="thinking" id="thinking">reading…</div>
+
+  <div class="result" id="result"></div>
+
+  <div class="narrator">
+    <b>One front door, any altitude.</b> The LLM reads what you wrote and returns a <em>structured triage</em> — not a chat reply. It extracts what's present, flags what's missing, reads the altitude, and offers 2–3 paths forward, each routing to the right layer. The practiced experimenter who types a tight claim gets an express-lock option; the person with a vague goal gets decomposition. The interface complexity matches the input complexity — <em>inferred, not configured.</em>
+  </div>
+
+</div>
+
+<script>
+const EXAMPLES={
+  vague:{
+    text:"Our conversion funnel needs work. We're losing people somewhere between landing and checkout but I'm not sure where or why.",
+    altitude:'vague',altLabel:'Strategic / vague',altSub:'This is a problem space, not a bet yet.',
+    extractions:[
+      {k:'domain',v:'Conversion funnel — landing to checkout',cls:'present'},
+      {k:'claim',v:'No specific claim made',cls:'missing'},
+      {k:'metric',v:'Implied: conversion rate, but not specified',cls:'missing'},
+      {k:'mechanism',v:'No theory — "not sure where or why"',cls:'missing'},
+      {k:'falsifier',v:'Nothing to falsify yet',cls:'missing'},
+    ],
+    pushback:{
+      h:'honest read',
+      text:'This is a real problem but it\'s not something you can test yet. You\'re describing <em>a space to investigate</em>, not a claim about the world. Before you can bet, you need to narrow: where in the funnel, why you think it\'s happening, and what you\'d try. That\'s not a failure — it\'s where most good ideas start.',
+    },
+    paths:[
+      {icon:'🔍',title:'Investigate first',rec:true,desc:'Break this into specific questions. "Where are we losing them?" is investigable — run a funnel analysis, watch session replays, or talk to 5 churned users. The output is one or more testable bets.',layer:'pre-layer 3 · sharpening'},
+      {icon:'🎯',title:'Pick a hypothesis and bet on it',desc:'If you already suspect a specific cause ("the pricing page is confusing"), skip the investigation and articulate that as a bet. You can always investigate later if the bet loses.',layer:'layer 3 · refinement'},
+      {icon:'📋',title:'Add to your strategy board',desc:'If this is a real priority but you\'re not ready to act, park it as a goal in the strategy layer. It\'ll be here when you\'re ready to decompose it.',layer:'layer 1 · strategy'},
+    ]
+  },
+  goal:{
+    text:"We need to reduce checkout drop-off on the pricing page. I think the plan comparison is confusing and the CTA isn't prominent enough, but I'm not sure which matters more.",
+    altitude:'goal',altLabel:'Goal-level',altSub:'You named a goal and two possible bets inside it.',
+    extractions:[
+      {k:'goal',v:'Reduce checkout drop-off on pricing page',cls:'found'},
+      {k:'claim 1',v:'"The plan comparison is confusing" — testable',cls:'present'},
+      {k:'claim 2',v:'"The CTA isn\'t prominent enough" — testable',cls:'present'},
+      {k:'metric',v:'Checkout drop-off (implied: checkout-start rate)',cls:'present'},
+      {k:'mechanism',v:'Two competing theories — comparison confusion vs. CTA visibility',cls:'present'},
+      {k:'falsifier',v:'Not stated for either claim',cls:'missing'},
+      {k:'priority',v:'"Not sure which matters more" — that\'s the sequencing question',cls:'present'},
+    ],
+    pushback:{
+      h:'honest read',
+      text:'You actually have <em>two bets</em> inside this goal, and you named the uncertainty yourself: "not sure which matters more." That\'s a sequencing question, not a refinement question. Test the one you think matters more first — its result tells you whether the second one is even worth running.',
+    },
+    paths:[
+      {icon:'⛓',title:'Decompose into a sequence',rec:true,desc:'Two bets, sequenced: test plan-comparison clarity first (if that\'s your stronger conviction), then CTA prominence. The first result informs whether the second runs. This is a layer-2 job.',layer:'layer 2 · planning'},
+      {icon:'🎯',title:'Pick one and bet on it',desc:'If you\'re fairly sure which matters more, skip the sequencing and go straight to refining that one as a bet. You can always come back for the other.',layer:'layer 3 · refinement'},
+      {icon:'⚡',title:'Run them in parallel',desc:'If the two tests don\'t interfere (different surfaces, different traffic), run both simultaneously. Faster but no information flows between them.',layer:'layer 2 · planning'},
+    ]
+  },
+  bet:{
+    text:"I think moving the plan-picker above the fold on /pricing will lift checkout-start by about 8%. Session replays show people bouncing at the testimonial band before they even see the plans. Pretty confident but I'd fold if it comes in under 4%.",
+    altitude:'bet',altLabel:'Testable bet',altSub:'This is a fully-formed claim with a mechanism and a fold condition.',
+    extractions:[
+      {k:'change',v:'Move plan-picker above the fold on /pricing',cls:'found'},
+      {k:'direction',v:'Lift',cls:'found'},
+      {k:'metric',v:'Checkout-start rate',cls:'found'},
+      {k:'magnitude',v:'~8%',cls:'found'},
+      {k:'mechanism',v:'Scroll drop-off at testimonial band — people bounce before seeing plans',cls:'found'},
+      {k:'confidence',v:'Pretty confident — but note the hedge',cls:'present'},
+      {k:'falsifier',v:'"Fold if under 4%" — explicit, with a number',cls:'found'},
+    ],
+    pushback:{
+      h:'honest read',
+      text:'This is already a real bet — you named the change, the mechanism, the magnitude, <em>and</em> the fold condition. The only question is whether "pretty confident" is earned by the replay evidence (it seems like it is). You\'re ready to refine and lock.',
+    },
+    paths:[
+      {icon:'🎯',title:'Refine and lock this bet',rec:true,desc:'You\'re ready for the full lifecycle: sharpen the wager sentence, check feasibility (can you detect +4% with your traffic?), pre-register your criteria, and lock it.',layer:'layer 3 · refinement'},
+      {icon:'⚡',title:'Express lock',desc:'This is tight enough to commit now. Wager + fold-if → lock in one step. Skip the scaffolding. You can always revisit the feasibility later.',layer:'layer 3 · express'},
+      {icon:'🔍',title:'Check the mechanism first',desc:'If you\'re not sure the replays tell the real story, run a quick investigation (more replays, a survey, 3 user interviews) before committing traffic to the test.',layer:'pre-layer 3 · sharpening'},
+    ]
+  },
+  ready:{
+    text:"A/B test: plan-picker above fold vs. current layout on /pricing. Primary metric: checkout-start. MDE 4%, expect +8%. 2 weeks, 12k/day per arm. Fold if under +4% or any guardrail breach. Win → ship. Loss → revert. Inconclusive → hold and re-test with sharper variant.",
+    altitude:'ready',altLabel:'Lock-ready',altSub:'This is a complete pre-registration. You\'ve already done the thinking.',
+    extractions:[
+      {k:'change',v:'Plan-picker above fold vs. current',cls:'found'},
+      {k:'metric',v:'Checkout-start',cls:'found'},
+      {k:'magnitude',v:'+8% expected',cls:'found'},
+      {k:'instrument',v:'A/B test, 12k/day/arm, 2 weeks',cls:'found'},
+      {k:'fold-if',v:'Under +4% or guardrail breach',cls:'found'},
+      {k:'win action',v:'Ship',cls:'found'},
+      {k:'loss action',v:'Revert',cls:'found'},
+      {k:'incon. action',v:'Hold, re-test with sharper variant',cls:'found'},
+      {k:'mechanism',v:'Not stated — but at this granularity, you probably know it',cls:'present'},
+    ],
+    pushback:{
+      h:'honest read',
+      text:'You\'ve already done the thinking. Everything a pre-registration needs is here: the claim, the instrument, the fold-if, and the actions. The only thing left is to <em>lock it</em> so the record is timestamped before any data exists.',
+    },
+    paths:[
+      {icon:'🔒',title:'Lock it now',rec:true,desc:'Straight to commit. Review → lock → timestamp + fingerprint. Done in 30 seconds. This is the practiced experimenter\'s path — minimum friction, maximum integrity.',layer:'layer 3 · express lock'},
+      {icon:'🎯',title:'Walk the full lifecycle anyway',desc:'If you want the feasibility surface to double-check the math, or want the reflection to pressure-test the wager, you can walk the full flow. No shame in it — even experts benefit from the pushback occasionally.',layer:'layer 3 · full refinement'},
+    ]
+  }
+};
+
+const input=document.getElementById('input');
+const goBtn=document.getElementById('goBtn');
+const thinking=document.getElementById('thinking');
+const result=document.getElementById('result');
+
+input.addEventListener('input',()=>{goBtn.disabled=!input.value.trim();});
+
+document.querySelector('.examples').addEventListener('click',e=>{
+  const ex=e.target.closest('.ex');if(!ex)return;
+  const key=ex.dataset.ex;
+  input.value=EXAMPLES[key].text;
+  goBtn.disabled=false;
+  document.querySelectorAll('.ex').forEach(x=>x.classList.toggle('on',x===ex));
+  result.className='result';
+});
+
+goBtn.addEventListener('click',()=>{
+  const text=input.value.trim();if(!text)return;
+  // find matching example or default to bet
+  let key='bet';
+  for(const [k,v] of Object.entries(EXAMPLES)){if(v.text===text){key=k;break;}}
+  const d=EXAMPLES[key];
+  thinking.classList.add('show');
+  result.className='result';
+  goBtn.disabled=true;
+
+  setTimeout(()=>{
+    thinking.classList.remove('show');
+    goBtn.disabled=false;
+
+    let html=`<div class="altitude"><span class="alt-badge ${d.altitude}">${d.altLabel}</span><span class="alt-sub">${d.altSub}</span></div>`;
+
+    html+=`<div class="extract"><div class="ext-h">what I heard</div>`;
+    d.extractions.forEach(e=>{
+      html+=`<div class="ext-row"><span class="ext-key">${e.k}</span><span class="ext-val ${e.cls}">${e.v}</span></div>`;
+    });
+    html+=`</div>`;
+
+    html+=`<div class="pushback"><div class="ph">${d.pushback.h}</div>${d.pushback.text}</div>`;
+
+    html+=`<div class="paths-h">where to take this</div><div class="paths">`;
+    d.paths.forEach(p=>{
+      html+=`<div class="path${p.rec?' recommended':''}"><span class="picon">${p.icon}</span><div class="pbody"><div class="ptitle">${p.title}${p.rec?'<span class="rec">recommended</span>':''}</div><div class="pdesc">${p.desc}</div><div class="player">${p.layer}</div></div></div>`;
+    });
+    html+=`</div>`;
+
+    html+=`<div class="reset"><button id="resetBtn">↻ start over</button></div>`;
+
+    result.innerHTML=html;
+    result.className='result show';
+
+    document.getElementById('resetBtn').addEventListener('click',()=>{
+      result.className='result';
+      input.value='';
+      goBtn.disabled=true;
+      document.querySelectorAll('.ex').forEach(x=>x.classList.remove('on'));
+    });
+  },800);
+});
+</script>
+</body>
+</html>

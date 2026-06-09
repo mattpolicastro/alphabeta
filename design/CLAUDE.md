@@ -47,13 +47,25 @@ journey-mapping commentary* (explaining the design) goes dark-narrator. Test: wo
 toggle this, or is it me explaining? Promote something to on-canvas only once it's a decided
 product element.
 
+## Bet lifecycle states (updated)
+The lock timing shifted per the rewrite architecture doc:
+**draft → ready → locked → running → resolved**
+- **draft** — being structured; fully editable.
+- **ready** — structured and reviewed; still editable but signaled as complete. Peer review
+  / team sign-off can happen here (Tier 3+).
+- **locked** — immutable. Fires at experiment *launch*, not at structuring completion.
+  Timestamped + fingerprinted. Edits create a new version, never overwrite.
+- **running** — experiment is live (method-specific monitoring surfaces apply).
+- **resolved** — revisit complete; verdict + call + learning captured.
+
 ## File organization
 - **Project root** — the canonical decision-substrate lifecycle (Bet Front Door, Feasibility
   and Instrument, Decision Criteria, Commit and Lock, Revisit) + `alphaBeta - Index.html` hub
   + `tweaks-panel.jsx`.
 - **`/explorations`** — superseded explorations, each with a companion `.md`, narrated in
   `ITERATION-LOG.md`.
-- **`/substrate`** — the next-altitude exploration (the seam, and the journal index to come).
+- **`/substrate`** — the next-altitude exploration (the seam, journal index, plan view,
+  journey maps, open front door, architecture reconciliation docs).
 - Convention: distinct surfaces = separate files (one linked prototype); refinements edit in
   place; a superseded exploration moves to an archive folder with its companion doc (not a
   silent `vN`).

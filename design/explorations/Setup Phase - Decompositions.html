@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⍺lphaβeta — Setup Phase Decompositions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;
+    --paper-2:#efe9da;
+    --ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);
+    --ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;
+    --terra-soft:rgba(166,77,59,.07);
+    --terra-line:rgba(166,77,59,.45);
+    --rule:rgba(42,42,42,.42);
+    --rule-faint:rgba(42,42,42,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"JetBrains Mono",ui-monospace,monospace;
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* faint blueprint grid */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);
+    background-size:28px 28px;
+  }
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
+
+  /* ---------- header ---------- */
+  header.top{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:22px;}
+  .wordmark{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .wordmark .a,.wordmark .b{color:var(--terra);}
+  .subhead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-top:6px;}
+  .subhead .crumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .stamp{
+    font-family:"Caveat",cursive;font-size:21px;color:var(--terra);
+    transform:rotate(-3deg);border:1.5px dashed var(--terra-line);
+    padding:1px 12px;display:inline-block;line-height:1.2;
+  }
+  .lead{max-width:760px;margin-top:14px;color:var(--ink);font-size:13.5px;line-height:1.65;}
+  .lead em{color:var(--terra);font-style:italic;}
+
+  /* ---------- tab selector ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:14px;margin:24px 0 6px;}
+  .tab{
+    flex:1 1 240px;min-width:230px;cursor:pointer;background:transparent;
+    border:1.5px dashed var(--rule);padding:14px 16px;text-align:left;
+    font-family:inherit;color:var(--ink);transition:background .12s,border-color .12s;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .tab:hover{background:var(--paper-2);}
+  .tab.active{border-color:var(--terra);border-style:solid;background:var(--terra-soft);}
+  .tab .tkey{font-size:11px;letter-spacing:2px;color:var(--ink-soft);text-transform:uppercase;}
+  .tab.active .tkey{color:var(--terra);}
+  .tab .tname{font-size:15px;font-weight:700;}
+  .tab .tbet{font-size:11.5px;color:var(--ink-soft);line-height:1.45;}
+  .pips{display:flex;align-items:flex-end;gap:5px;height:20px;}
+  .pips .pip{background:var(--ink-faint);}
+  .tab.active .pips .pip{background:var(--terra);}
+  .pip.bar{width:11px;height:20px;}
+  .pip.bar.half{height:11px;}
+  .pip.dot{width:7px;height:7px;border-radius:50%;align-self:center;}
+  .pip.arrow{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6px solid var(--ink-faint);align-self:center;}
+  .tab.active .pip.arrow{border-left-color:var(--terra);}
+
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:11px;color:var(--ink-soft);margin:2px 0 24px;}
+  .meta-row b{color:var(--terra);font-weight:500;}
+
+  /* ---------- panel ---------- */
+  .decomp{display:none;}
+  .decomp.active{display:block;}
+
+  /* step rail */
+  .rail{display:flex;align-items:stretch;gap:0;margin-bottom:20px;flex-wrap:wrap;}
+  .step-chip{
+    cursor:pointer;border:1.5px dashed var(--rule);padding:9px 14px;margin:0 8px 8px 0;
+    font-size:12px;color:var(--ink-soft);background:transparent;font-family:inherit;
+    display:flex;align-items:center;gap:9px;transition:background .12s,color .12s,border-color .12s;
+  }
+  .step-chip:hover{background:var(--paper-2);}
+  .step-chip.cur{border-color:var(--terra);border-style:solid;color:var(--ink);background:var(--terra-soft);}
+  .step-chip .n{font-weight:700;color:var(--terra);}
+  .step-chip.done{color:var(--ink-faint);}
+  .rail-arrow{align-self:center;color:var(--ink-faint);margin:0 4px 8px 0;}
+
+  /* two column */
+  .cols{display:grid;grid-template-columns:1.45fr 1fr;gap:22px;align-items:start;}
+  .form-col,.annot-col{min-width:0;}
+
+  .panelbox{
+    border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);padding:20px 20px 22px;
+  }
+  .step-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  .step-title{font-size:19px;font-weight:700;margin:5px 0 2px;}
+  .step-sub{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:18px;}
+
+  .field-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin:18px 0 7px;display:flex;justify-content:space-between;align-items:baseline;}
+  .field-label .opt{text-transform:none;letter-spacing:0;color:var(--ink-faint);font-size:10.5px;}
+  .field-label:first-child{margin-top:0;}
+  .field{
+    border:1.5px dashed var(--rule-faint);background:rgba(255,255,255,.4);
+    padding:11px 13px;color:var(--ink-faint);font-size:13px;min-height:42px;line-height:1.5;
+  }
+  .field.tall{min-height:74px;}
+  .field.ghost{color:var(--ink-faint);font-style:italic;}
+  .field.filled{color:var(--ink);font-style:normal;}
+
+  /* feasibility readout */
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule-faint);border:1.5px dashed var(--rule-faint);margin-top:4px;}
+  .readout .cell{background:var(--paper);padding:12px 13px;}
+  .readout .cell .k{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);}
+  .readout .cell .v{font-size:21px;font-weight:700;margin-top:3px;}
+  .readout .cell .v small{font-size:12px;font-weight:400;color:var(--ink-soft);}
+  .readout .cell.hot .v{color:var(--terra);}
+  .slider-row{margin-top:16px;}
+  .slider-head{display:flex;justify-content:space-between;font-size:12px;align-items:baseline;}
+  .slider-head b{color:var(--terra);font-size:15px;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--rule);margin:14px 0 4px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--terra);border:2px solid var(--paper);cursor:pointer;box-shadow:0 0 0 1.5px var(--terra);}
+  .slider-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--ink-faint);}
+  .sens-note{font-size:11.5px;font-style:italic;color:var(--ink-soft);margin-top:12px;line-height:1.5;border-top:1px dashed var(--rule-faint);padding-top:11px;}
+  .sens-note b{color:var(--terra);font-style:normal;}
+
+  /* criteria rows */
+  .crit{display:flex;gap:11px;align-items:stretch;margin-bottom:9px;}
+  .crit .tag{flex:0 0 96px;border:1.5px dashed var(--rule-faint);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);background:rgba(255,255,255,.3);}
+  .crit.win .tag{color:#3a6b4a;border-color:rgba(58,107,74,.5);}
+  .crit.incon .tag{color:var(--ink-soft);}
+  .crit.loss .tag{color:var(--terra);border-color:var(--terra-line);}
+  .crit .field{flex:1;}
+
+  .commit{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:12.5px;padding:11px 18px;border:1.5px dashed var(--rule);background:transparent;color:var(--ink);cursor:pointer;letter-spacing:.5px;}
+  .btn:hover{background:var(--paper-2);}
+  .btn.lock{border-style:solid;border-color:var(--terra);background:var(--terra);color:var(--paper);}
+  .btn.lock:hover{background:#8f3f30;}
+  .commit-note{font-size:11px;color:var(--ink-soft);margin-top:11px;line-height:1.5;font-style:italic;}
+
+  .navbtns{display:flex;justify-content:space-between;margin-top:18px;}
+  .navbtns .btn[disabled]{opacity:.35;cursor:default;}
+
+  /* annotation panel */
+  .annot{
+    border:1.5px solid var(--terra-line);background:var(--terra-soft);padding:18px 18px 20px;
+    position:relative;
+  }
+  .annot::before{
+    content:"INSERTION MOMENT";position:absolute;top:-9px;left:14px;background:var(--paper);
+    padding:0 8px;font-size:9.5px;letter-spacing:2px;color:var(--terra);
+  }
+  .annot .moment{font-size:13px;font-weight:700;color:var(--terra);margin-bottom:3px;}
+  .annot .phase{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:13px;}
+  .annot .why{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);margin:0 0 6px;}
+  .annot p{font-style:italic;font-size:12.5px;line-height:1.65;margin:0 0 12px;color:var(--ink);}
+  .annot p:last-child{margin-bottom:0;}
+  .annot .bet{border-top:1px dashed var(--terra-line);margin-top:14px;padding-top:13px;}
+  .annot .bet .lbl{font-style:normal;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--terra);display:block;margin-bottom:5px;}
+  .annot .cost{font-size:11.5px;color:var(--ink-soft);font-style:italic;}
+  .annot .cost b{color:var(--terra);font-style:normal;}
+
+  .margin-note{font-family:"Caveat",cursive;font-size:17px;color:var(--terra);line-height:1.2;transform:rotate(-1.5deg);margin:10px 0 0;}
+  .margin-note::before{content:"↖ ";font-family:"JetBrains Mono";font-size:12px;}
+
+  /* decomp A — single canvas */
+  .canvasA{display:grid;grid-template-columns:1.5fr 1fr;gap:0;border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);}
+  .canvasA .main{padding:22px;border-right:1.5px dashed var(--rule);}
+  .canvasA .side{padding:20px;background:var(--terra-soft);position:sticky;top:14px;align-self:start;}
+  .canvasA .side .sidehd{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--terra);margin-bottom:3px;}
+  .canvasA .side .sidesub{font-size:11px;color:var(--ink-soft);font-style:italic;margin-bottom:16px;line-height:1.5;}
+  .disclose{border-top:1.5px dashed var(--rule-faint);margin-top:20px;padding-top:18px;}
+  .disclose-hd{display:flex;align-items:center;gap:9px;cursor:pointer;}
+  .disclose-hd .tw{font-size:14px;color:var(--terra);width:14px;}
+  .disclose-hd .lbl{font-size:13px;font-weight:700;}
+  .disclose-hd .hint{font-size:10.5px;color:var(--ink-soft);margin-left:auto;font-style:italic;}
+  .disclose-body{margin-top:14px;display:none;}
+  .disclose.open .disclose-body{display:block;}
+  .disclose.open .disclose-hd .tw{transform:none;}
+  .sticky-commit{position:sticky;bottom:0;margin-top:22px;border-top:1.5px solid var(--terra-line);background:var(--paper);padding:14px 0 2px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .sticky-commit .auto{font-size:10.5px;color:var(--ink-soft);font-style:italic;margin-left:auto;}
+
+  footer.foot{margin-top:34px;border-top:1.5px dashed var(--rule);padding-top:18px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;}
+  footer.foot b{color:var(--terra);font-weight:500;}
+  footer.foot .next{margin-top:8px;}
+  .kbd{border:1px dashed var(--rule);padding:0 5px;font-size:10.5px;color:var(--ink-soft);}
+
+  @media(max-width:820px){
+    .cols{grid-template-columns:1fr;}
+    .canvasA{grid-template-columns:1fr;}
+    .canvasA .main{border-right:none;border-bottom:1.5px dashed var(--rule);}
+    .canvasA .side{position:static;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;">
+      <div>
+        <div class="wordmark"><span class="a">⍺</span>lph<span class="b">aβ</span>eta</div>
+        <div class="subhead">
+          <span class="crumb">setup phase</span>
+          <span class="crumb">·</span>
+          <span class="crumb">alternative decompositions</span>
+          <span class="crumb">·</span>
+          <span class="crumb">journey map v0</span>
+        </div>
+      </div>
+      <div class="stamp">draft — react to the shape</div>
+    </div>
+    <p class="lead">Three ways to cut the setup phase, against the current four-step wizard. The skeletons differ on purpose: where the <em>commit</em> sits, whether feasibility is a <em>gate or ambient</em>, and how many epistemic acts setup really is. The right panel is the journey-mapping artifact — it names the <em>insertion moment</em> and the structural bet each cut is making. <span style="color:var(--ink-soft)">Click the step chips to walk a flow. Move the MDE slider — feasibility is live.</span></p>
+  </header>
+
+  <!-- TAB SELECTOR -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="A">
+      <span class="tkey">cut A</span>
+      <span class="tname">Dissolve the wizard</span>
+      <span class="pips"><span class="pip bar"></span></span>
+      <span class="tbet">One canvas. Feasibility is an always-on sidebar, not a step. Commit is progressive.</span>
+    </button>
+    <button class="tab" data-tab="B">
+      <span class="tkey">cut B</span>
+      <span class="tname">Two epistemic acts</span>
+      <span class="pips"><span class="pip bar"></span><span class="pip arrow"></span><span class="pip bar"></span></span>
+      <span class="tbet">Should we? → Lock it. Feasibility fuses into the prudence judgment.</span>
+    </button>
+    <button class="tab" data-tab="C">
+      <span class="tkey">cut C</span>
+      <span class="tname">Twin surfaces: Can / Should</span>
+      <span class="pips"><span class="pip dot"></span><span class="pip dot"></span><span class="pip dot"></span><span class="pip dot"></span><span class="pip dot"></span></span>
+      <span class="tbet">Five sharp beats. Can (the math) and Should (the prudence) split into two literal surfaces.</span>
+    </button>
+  </div>
+  <div class="meta-row">
+    <span>baseline: <b>current wizard = 4 steps, all-or-nothing commit @ step 4</b></span>
+    <span>varying: <b>commit placement</b></span>
+    <span><b>feasibility framing</b></span>
+    <span><b>insertion-moment density</b></span>
+  </div>
+
+  <!-- ============ CUT A ============ -->
+  <section class="decomp active" data-decomp="A">
+    <div class="canvasA">
+      <div class="main">
+        <div class="step-eyebrow">single canvas · progressive disclosure</div>
+        <div class="step-title">Set up an experiment</div>
+        <div class="step-sub">No wizard. Everything is on one surface; feasibility watches from the right the whole time.</div>
+
+        <div class="field-label">The change I'm proposing <span class="opt">no required fields</span></div>
+        <div class="field filled">Move the plan-picker above the fold on /pricing</div>
+
+        <div class="field-label">What I expect to happen, and why</div>
+        <div class="field tall filled">Fewer people bounce before seeing plans → checkout starts +8%. Reasoning: session replays show scroll drop-off right at the testimonial band.</div>
+
+        <div class="field-label">The question underneath this <span class="opt">optional</span></div>
+        <div class="field ghost">Are we testing the layout, or whether anyone reads the testimonials at all?</div>
+
+        <div class="disclose open" id="discloseA">
+          <div class="disclose-hd" onclick="this.parentNode.classList.toggle('open')">
+            <span class="tw">▾</span><span class="lbl">Decision criteria</span>
+            <span class="hint">revealed inline — same surface, no step change</span>
+          </div>
+          <div class="disclose-body">
+            <div class="crit win"><div class="tag">win</div><div class="field ghost">Ship it. Roll to 100% within the week.</div></div>
+            <div class="crit incon"><div class="tag">incon.</div><div class="field ghost">Hold. Re-run with a sharper variant next quarter.</div></div>
+            <div class="crit loss"><div class="tag">loss</div><div class="field ghost">Drop the idea. Log why in the journal.</div></div>
+            <div class="field-label">Minimum mind-changer <span class="opt">smallest effect that would actually move my decision</span></div>
+            <div class="field filled" style="max-width:240px">+4% relative on checkout-start</div>
+          </div>
+        </div>
+
+        <div class="sticky-commit">
+          <button class="btn">Saved as draft</button>
+          <button class="btn lock">Lock pre-registration ▸</button>
+          <span class="auto">autosaves to IndexedDB · nothing locked until you say so</span>
+        </div>
+      </div>
+
+      <div class="side" id="sideA">
+        <div class="sidehd">Feasibility — live</div>
+        <div class="sidesub">Always visible. Never a gate. The numbers move while you write, so "can" is ambient context for "should".</div>
+
+        <div class="readout">
+          <div class="cell"><div class="k">avail. traffic</div><div class="v">12k<small>/day·arm</small></div></div>
+          <div class="cell"><div class="k">baseline conv</div><div class="v">4.2<small>%</small></div></div>
+          <div class="cell hot"><div class="k">runtime</div><div class="v" data-runtime>25<small>d</small></div></div>
+          <div class="cell"><div class="k">opp. cost</div><div class="v" data-opp>≈2<small> tests deferred</small></div></div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-head"><span>min. detectable effect</span><b data-mde>5.0%</b></div>
+          <input type="range" min="10" max="150" value="50" data-slider>
+          <div class="slider-scale"><span>1%</span><span>tighter = longer</span><span>15%</span></div>
+        </div>
+        <div class="sens-note" data-sens>Detecting <b>5.0%</b> commits ~<b>3.6 wks</b> of traffic. Loosen to 8% and it's ~1 wk — but you'd miss a real 5% lift.</div>
+
+        <p class="margin-note">is this even a "step"? or just the room the decision happens in?</p>
+      </div>
+    </div>
+
+    <div class="cols" style="margin-top:22px;">
+      <div class="form-col"></div>
+      <div class="annot-col">
+        <div class="annot">
+          <div class="moment">Ambient feasibility + low-friction intent</div>
+          <div class="phase">phase: idea / setup · moments 1–4 collapsed</div>
+          <div class="why">why now</div>
+          <p>The wizard's sin is implying setup is <em>sequential</em>. It isn't — you reason about expectation and feasibility together, glancing back and forth. Putting feasibility in a fixed sidebar matches how the judgment actually feels.</p>
+          <p>Discipline here is <em>ambient</em>: the cost of running is in your peripheral vision from the first keystroke, not behind a "Next" button.</p>
+          <div class="bet">
+            <span class="lbl">structural bet</span>
+            <p style="margin-bottom:8px">The wizard is the wrong container. Setup is one room, not four doors.</p>
+            <div class="cost"><b>cost:</b> no forced sequence means weaker pre-registration discipline — easy to lock with criteria half-thought-through. The progressive commit has to carry all the rigor.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CUT B ============ -->
+  <section class="decomp" data-decomp="B">
+    <div class="rail" id="railB"></div>
+    <div class="cols">
+      <div class="form-col"><div class="panelbox" id="formB"></div></div>
+      <div class="annot-col"><div id="annotB"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ CUT C ============ -->
+  <section class="decomp" data-decomp="C">
+    <div class="rail" id="railC"></div>
+    <div class="cols">
+      <div class="form-col"><div class="panelbox" id="formC"></div></div>
+      <div class="annot-col"><div id="annotC"></div></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div><b>where I landed:</b> B is the truest to "can vs should" — it makes prudence the primary seam and commits in two honest acts. C is the most diagnostic for the stats-gap persona, because it physically separates "the math says X" from "but consider Y". A is the riskiest bet (weakest pre-registration discipline) but the most honest about how setup actually feels.</div>
+    <div class="next"><b>react / next threads:</b> pick a cut to harden · or jump to a new phase — <b>Running</b> (guardrails / SRM / peek discipline) and <b>Decision</b> (actuals-vs-commitments + revisit) are the next-densest · or sketch a <b>seam</b> (leaving setup → entering running). <span class="kbd">←</span> <span class="kbd">→</span> walks steps.</div>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- live feasibility model ---------- */
+function feas(sliderVal){
+  // sliderVal 10..150  -> mde relative 1%..15%
+  const mde = sliderVal/10;                 // percent, relative
+  const p = 0.042, dailyPerArm = 12000;
+  const abs = p*(mde/100);
+  const n = 16*p*(1-p)/(abs*abs);           // per arm, rough
+  const days = Math.max(1, Math.ceil((n/dailyPerArm)));
+  const wks = (days/7);
+  const deferred = Math.max(1, Math.ceil(days/14));
+  return {mde, days, wks, deferred};
+}
+function fmtWks(w){ return w>=1 ? w.toFixed(1).replace(/\.0$/,'')+' wks' : Math.round(w*7)+' d'; }
+
+function bindFeas(scope){
+  const slider = scope.querySelector('[data-slider]');
+  if(!slider) return;
+  function upd(){
+    const f = feas(+slider.value);
+    const set=(sel,val)=>{const el=scope.querySelector(sel); if(el) el.innerHTML=val;};
+    set('[data-mde]', f.mde.toFixed(1)+'%');
+    set('[data-runtime]', f.days+'<small>d</small>');
+    set('[data-opp]', '≈'+f.deferred+'<small> tests deferred</small>');
+    const loose = feas(80);
+    set('[data-sens]', 'Detecting <b>'+f.mde.toFixed(1)+'%</b> commits ~<b>'+fmtWks(f.wks)+'</b> of traffic. Loosen to 8% and it\u2019s ~'+fmtWks(loose.wks)+' \u2014 but you\u2019d miss a real '+f.mde.toFixed(1)+'% lift.');
+  }
+  slider.addEventListener('input', upd);
+  upd();
+}
+
+/* ---------- shared field builders ---------- */
+function feasBlock(){
+  return `
+    <div class="readout">
+      <div class="cell"><div class="k">avail. traffic</div><div class="v">12k<small>/day\u00b7arm</small></div></div>
+      <div class="cell"><div class="k">baseline conv</div><div class="v">4.2<small>%</small></div></div>
+      <div class="cell hot"><div class="k">runtime</div><div class="v" data-runtime>25<small>d</small></div></div>
+      <div class="cell"><div class="k">opp. cost</div><div class="v" data-opp>\u22482<small> tests deferred</small></div></div>
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>min. detectable effect</span><b data-mde>5.0%</b></div>
+      <input type="range" min="10" max="150" value="50" data-slider>
+      <div class="slider-scale"><span>1%</span><span>tighter = longer</span><span>15%</span></div>
+    </div>
+    <div class="sens-note" data-sens>Detecting <b>5.0%</b> commits ~<b>3.6 wks</b> of traffic. Loosen to 8% and it\u2019s ~1 wk \u2014 but you\u2019d miss a real 5% lift.</div>`;
+}
+function intentFields(){
+  return `
+    <div class="field-label">The change I'm proposing <span class="opt">no required fields</span></div>
+    <div class="field filled">Move the plan-picker above the fold on /pricing</div>
+    <div class="field-label">What I expect, and why</div>
+    <div class="field tall filled">Checkout-start +8%. Session replays show scroll drop-off at the testimonial band.</div>`;
+}
+function critFields(){
+  return `
+    <div class="crit win"><div class="tag">win</div><div class="field ghost">Ship it \u2014 roll to 100% this week.</div></div>
+    <div class="crit incon"><div class="tag">incon.</div><div class="field ghost">Hold \u2014 re-run a sharper variant.</div></div>
+    <div class="crit loss"><div class="tag">loss</div><div class="field ghost">Drop it \u2014 log why in the journal.</div></div>
+    <div class="field-label">Minimum mind-changer</div>
+    <div class="field filled" style="max-width:240px">+4% relative on checkout-start</div>`;
+}
+function commitBlock(){
+  return `
+    <div class="commit">
+      <button class="btn">Save as draft</button>
+      <button class="btn lock">Commit & lock ▸</button>
+    </div>
+    <div class="commit-note">Draft stays editable. Lock timestamps the pre-registration and freezes every field above \u2014 measured against later, not edited to match it.</div>`;
+}
+
+/* ---------- CUT B : two epistemic acts ---------- */
+const B = [
+  {
+    n:'01', chip:'Should we?',
+    eyebrow:'act one of two · the prudence judgment',
+    title:'Should we run this?',
+    sub:'Intent and feasibility on one surface. The cost of running is part of the decision to run \u2014 not a neutral fact you collect afterward.',
+    body: intentFields() + `<div class="field-label">Can we \u2014 and should we?</div>` + feasBlock(),
+    moment:'Intent + feasibility, fused', phase:'phase: idea / setup · moments 1\u20132 merged',
+    why:'Existing tools answer "can I?" with a yes. \u23aflphaβeta\u2019s whole pitch is that "can" and "should" are the same breath of thought. Splitting them into separate steps re-creates the bug: feasibility reads as approval, not as cost.',
+    why2:'Nothing is committed here. This is deliberation \u2014 you can walk away with no record and no guilt.',
+    betText:'Setup is two epistemic acts, not four steps: decide whether to run, then commit to how you\u2019ll judge it.',
+    cost:'Dense surface. The stats-gap persona may feel the feasibility math and the intent prose competing for attention on one screen.'
+  },
+  {
+    n:'02', chip:'Lock it',
+    eyebrow:'act two of two · the commitment',
+    title:'Pre-register the call',
+    sub:'You\u2019ve decided it\u2019s worth running. Now declare what would change your mind \u2014 before you can see the result.',
+    body: critFields() + commitBlock(),
+    moment:'Pre-registration + two-step commit', phase:'phase: idea / setup · moments 3\u20134 merged',
+    why:'Criteria and commit belong together: declaring your decision rule <em>is</em> the act of committing. Pre-registration with a separate "review" step just adds a door without adding rigor.',
+    why2:'Lock is the seam out of setup. Everything frozen here is what "Running" and "Decision" will measure the actuals against.',
+    betText:'Commit lands at the end of act two \u2014 structurally halfway through the whole journey, not bolted on at the end.',
+    cost:'Two big acts means each is heavy. Less of the "small wins" momentum a four-step wizard gives.'
+  }
+];
+
+/* ---------- CUT C : twin surfaces can/should ---------- */
+const C = [
+  {
+    n:'01', chip:'Intent',
+    eyebrow:'beat 1 of 5',
+    title:'Capture the intent',
+    sub:'Low-friction. What you\u2019re changing, what you expect, the question underneath. No numbers yet.',
+    body: intentFields() + `<div class="field-label">The question underneath <span class="opt">optional</span></div><div class="field ghost">Layout, or whether anyone reads testimonials at all?</div>`,
+    moment:'Hypothesis capture', phase:'phase: idea / setup · moment 1',
+    why:'Intent stays clean and stats-free so the adjacent-expert persona can lead with what they know \u2014 the domain reasoning \u2014 before any math shows up to intimidate.',
+    why2:null,
+    betText:'Five beats, each doing exactly one job. The cost is more clicks; the payoff is no surface ever mixes two kinds of thinking.',
+    cost:'Five steps is the most friction of any cut. Risks feeling like a form to grind through.'
+  },
+  {
+    n:'02', chip:'Can',
+    eyebrow:'beat 2 of 5 · the math',
+    title:'Can we? \u2014 the feasibility math',
+    sub:'Pure mechanics. Traffic, baseline, MDE, runtime. What the data physically permits \u2014 nothing about whether it\u2019s wise.',
+    body: `<div class="field-label">What the data permits</div>` + feasBlock(),
+    moment:'Feasibility \u2014 capability only', phase:'phase: idea / setup · moment 2a',
+    why:'For the stats-gap persona, the most diagnostic move is to isolate the math on its own surface and label it plainly: <em>this is what\u2019s possible.</em> No prudence judgment smuggled in.',
+    why2:null,
+    betText:'"Can" gets its own literal surface, stripped of opinion. The slider lives here, and only here.',
+    cost:'Splitting can/should across two screens means you can\u2019t see both at a glance \u2014 the tradeoff conversation happens across a "Next".'
+  },
+  {
+    n:'03', chip:'Should',
+    eyebrow:'beat 3 of 5 · the prudence',
+    title:'Should we? \u2014 the cost of running',
+    sub:'Same numbers, different question. Opportunity cost, sensitivity tradeoffs, what you give up by holding this traffic.',
+    body: `
+      <div class="field-label">What it costs to run</div>
+      <div class="readout">
+        <div class="cell hot"><div class="k">runtime</div><div class="v" data-runtime>25<small>d</small></div></div>
+        <div class="cell hot"><div class="k">opp. cost</div><div class="v" data-opp>\u22482<small> tests deferred</small></div></div>
+      </div>
+      <div class="sens-note" data-sens>Detecting <b>5.0%</b> commits ~<b>3.6 wks</b> of traffic. Loosen to 8% and it\u2019s ~1 wk \u2014 but you\u2019d miss a real 5% lift.</div>
+      <input type="range" min="10" max="150" value="50" data-slider style="margin-top:18px">
+      <div class="slider-scale"><span>read against your minimum mind-changer \u2193</span></div>
+      <div class="field-label" style="margin-top:18px">Knowing the cost \u2014 is it still worth it?</div>
+      <div class="field ghost">e.g. "yes, but cap it at 3 weeks" / "no, the deferred roadmap test matters more"</div>`,
+    moment:'Prudence \u2014 the "should" surface', phase:'phase: idea / setup · moment 2b',
+    why:'This is the surface no existing tool has. The math from "Can" is re-presented as <em>tradeoff</em>, forcing the should-question to land somewhere instead of being implied by a green checkmark.',
+    why2:null,
+    betText:'"Should" is a destination, not a tooltip. Making it a full beat is the strongest statement of the product\u2019s thesis.',
+    cost:'Two feasibility surfaces risks feeling repetitive to the practitioner who already thinks can/should as one move.'
+  },
+  {
+    n:'04', chip:'Criteria',
+    eyebrow:'beat 4 of 5',
+    title:'Decision criteria',
+    sub:'Pre-register the actions: win / inconclusive / loss, plus the minimum effect that would actually change your mind.',
+    body: critFields(),
+    moment:'Decision criteria \u2014 pre-registered', phase:'phase: idea / setup · moment 3',
+    why:'Criteria get their own beat so the action ("ship / hold / drop") is committed <em>before</em> any result exists \u2014 the spine of evidentiary integrity.',
+    why2:null,
+    betText:'Criteria stay separate from commit, so you can pre-register the rule and still sit with it before locking.',
+    cost:'Another step between deciding and committing \u2014 more places to abandon the flow.'
+  },
+  {
+    n:'05', chip:'Commit',
+    eyebrow:'beat 5 of 5',
+    title:'Review & commit',
+    sub:'Two-step commit. Draft stays editable; lock timestamps and freezes everything.',
+    body: `
+      <div class="field-label">Pre-registration summary</div>
+      <div class="field filled" style="line-height:1.7">change: plan-picker above fold \u00b7 expect: +8% checkout-start<br>can: 25d @ MDE 5% \u00b7 should: capped 3 wks<br>win\u2192ship \u00b7 incon\u2192hold \u00b7 loss\u2192drop \u00b7 mind-changer: +4%</div>`
+      + commitBlock(),
+    moment:'Two-step commit \u2014 the seam out', phase:'phase: idea / setup · moment 4',
+    why:'All-or-nothing lock at the end, like the current wizard \u2014 but now it\u2019s reviewing five clean commitments instead of four blurred ones.',
+    why2:'Lock is the handoff into Running. The frozen fields are the contract the rest of the lifecycle reports against.',
+    betText:'Commit stays all-or-nothing at the end \u2014 the conservative choice, deliberately kept to contrast with cut A\u2019s progressive commit.',
+    cost:'Late commit means a long flow with no locked artifact until the very end \u2014 abandon at step 4 and nothing\u2019s preserved but a draft.'
+  }
+];
+
+function annotHTML(s){
+  let h = `<div class="annot">
+    <div class="moment">${s.moment}</div>
+    <div class="phase">${s.phase}</div>
+    <div class="why">why now</div>
+    <p>${s.why}</p>`;
+  if(s.why2) h += `<p>${s.why2}</p>`;
+  h += `<div class="bet"><span class="lbl">structural bet</span>
+    <p style="margin-bottom:8px">${s.betText}</p>
+    <div class="cost"><b>cost:</b> ${s.cost}</div></div></div>`;
+  return h;
+}
+
+function buildFlow(data, railId, formId, annotId, stateKey){
+  const rail = document.getElementById(railId);
+  const form = document.getElementById(formId);
+  const annot = document.getElementById(annotId);
+  let cur = 0;
+
+  // rail
+  data.forEach((s,i)=>{
+    if(i>0){ const a=document.createElement('span'); a.className='rail-arrow'; a.textContent='→'; rail.appendChild(a); }
+    const b=document.createElement('button');
+    b.className='step-chip'; b.innerHTML=`<span class="n">${s.n}</span> ${s.chip}`;
+    b.addEventListener('click',()=>go(i));
+    rail.appendChild(b);
+  });
+  const chips = [...rail.querySelectorAll('.step-chip')];
+
+  function go(i){
+    cur=Math.max(0,Math.min(data.length-1,i));
+    const s=data[cur];
+    chips.forEach((c,j)=>{c.classList.toggle('cur',j===cur);c.classList.toggle('done',j<cur);});
+    form.innerHTML = `
+      <div class="step-eyebrow">${s.eyebrow}</div>
+      <div class="step-title">${s.title}</div>
+      <div class="step-sub">${s.sub}</div>
+      ${s.body}
+      <div class="navbtns">
+        <button class="btn" data-back ${cur===0?'disabled':''}>◂ back</button>
+        <button class="btn" data-next ${cur===data.length-1?'disabled':''}>next ▸</button>
+      </div>`;
+    annot.innerHTML = annotHTML(s);
+    bindFeas(form);
+    const bk=form.querySelector('[data-back]'), nx=form.querySelector('[data-next]');
+    if(bk&&cur>0) bk.addEventListener('click',()=>go(cur-1));
+    if(nx&&cur<data.length-1) nx.addEventListener('click',()=>go(cur+1));
+    sessionStorage.setItem(stateKey, cur);
+  }
+  go(+(sessionStorage.getItem(stateKey)||0));
+  return {go:()=>go, next:()=>go(cur+1), prev:()=>go(cur-1), get cur(){return cur;}, len:data.length};
+}
+
+const flowB = buildFlow(B,'railB','formB','annotB','abq_B');
+const flowC = buildFlow(C,'railC','formC','annotC','abq_C');
+
+/* ---------- tab switching ---------- */
+let activeTab='A';
+const tabs=[...document.querySelectorAll('.tab')];
+const decomps=[...document.querySelectorAll('.decomp')];
+function setTab(t){
+  activeTab=t;
+  tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  decomps.forEach(d=>d.classList.toggle('active',d.dataset.decomp===t));
+  sessionStorage.setItem('abq_tab',t);
+}
+tabs.forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+setTab(sessionStorage.getItem('abq_tab')||'A');
+
+/* bind feasibility for cut A (static, in DOM) */
+bindFeas(document.getElementById('sideA'));
+
+/* keyboard step nav */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return;
+  if(activeTab==='B'){ e.key==='ArrowRight'?flowB.next():flowB.prev(); }
+  else if(activeTab==='C'){ e.key==='ArrowRight'?flowC.next():flowC.prev(); }
+});
+</script>
+</body>
+</html>

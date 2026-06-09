@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>alph⍺βeta — Page Templates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f1e8;--paper-2:#efe9da;--ink:#2a2a2a;
+    --ink-soft:rgba(42,42,42,.55);--ink-faint:rgba(42,42,42,.32);
+    --terra:#a64d3b;--terra-soft:color-mix(in srgb, var(--terra) 7%, transparent);--terra-line:color-mix(in srgb, var(--terra) 45%, transparent);
+    --green:#3a6b4a;--green-soft:rgba(58,107,74,.07);--green-line:rgba(58,107,74,.5);
+    --plinth:#5a6b8c;--plinth-soft:color-mix(in srgb, var(--plinth) 9%, transparent);--plinth-line:color-mix(in srgb, var(--plinth) 50%, transparent);
+    --rule:rgba(42,42,42,.42);--rule-faint:rgba(42,42,42,.22);
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+    --font-hand:"Caveat",cursive;
+    --max-w:1140px;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--font-mono);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(42,42,42,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,42,.035) 1px,transparent 1px);background-size:28px 28px;}
+  .ds{position:relative;z-index:1;max-width:var(--max-w);margin:0 auto;padding:28px;}
+
+  .ds-header{border-bottom:1.5px dashed var(--rule);padding-bottom:18px;margin-bottom:24px;}
+  .ds-title{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .ds-title .a,.ds-title .b{color:var(--terra);}
+  .ds-sub{font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.6;max-width:740px;}
+
+  .section{margin-bottom:48px;}
+  .sec-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--terra);font-weight:700;margin-bottom:4px;}
+  .sec-rule{border:none;border-top:1.5px dashed var(--rule-faint);margin:8px 0 16px;}
+  .sec-note{font-size:11.5px;color:var(--ink-soft);font-style:italic;margin-bottom:14px;line-height:1.55;max-width:700px;}
+
+  /* template card */
+  .tpl{border:1.5px dashed var(--rule);background:rgba(255,255,255,.28);margin-bottom:24px;}
+  .tpl-head{padding:14px 18px;border-bottom:1.5px dashed var(--rule-faint);display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .tpl-name{font-size:15px;font-weight:700;}
+  .tpl-uses{font-size:10px;color:var(--ink-faint);font-style:italic;}
+  .tpl-desc{padding:14px 18px;font-size:11.5px;color:var(--ink-soft);line-height:1.6;border-bottom:1.5px dashed var(--rule-faint);}
+  .tpl-desc b{color:var(--ink);}
+  .tpl-preview{padding:18px;background:var(--paper-2);position:relative;overflow:hidden;}
+
+  /* mini layout blocks */
+  .m-gnav{background:var(--ink);height:28px;display:flex;align-items:center;padding:0 10px;gap:12px;}
+  .m-gnav .ml{font-size:9px;color:#e3a487;font-weight:700;}
+  .m-gnav .mn{font-size:7px;color:rgba(230,223,206,.6);}
+  .m-rail{display:flex;gap:4px;padding:8px 0;flex-wrap:wrap;}
+  .m-rail .mr{font-size:7px;padding:3px 8px;border:1px dashed var(--rule-faint);color:var(--ink-faint);}
+  .m-rail .mr.active{border-color:var(--terra);border-style:solid;color:var(--terra);background:var(--terra-soft);}
+  .m-rail .mr.done{border-color:var(--green-line);color:var(--green);}
+  .m-narrator{background:var(--ink);height:24px;display:flex;align-items:center;padding:0 10px;font-size:7px;color:rgba(230,223,206,.6);}
+  .m-narrator::before{content:"▶";color:#e3a487;margin-right:6px;}
+  .m-carried{border:1px solid var(--green-line);background:var(--green-soft);height:32px;display:flex;align-items:center;padding:0 10px;font-size:7px;color:var(--green);}
+  .m-cols{display:grid;gap:10px;align-items:start;}
+  .m-cols.two{grid-template-columns:1.4fr 1fr;}
+  .m-cols.equal{grid-template-columns:1fr 1fr;}
+  .m-cols.wide{grid-template-columns:1fr;}
+  .m-slot{border:1.5px dashed;padding:10px;min-height:60px;display:flex;flex-direction:column;gap:4px;justify-content:center;}
+  .m-slot.main{border-color:var(--terra-line);background:var(--terra-soft);}
+  .m-slot.side{border-color:var(--plinth-line);background:var(--plinth-soft);}
+  .m-slot.full{border-color:var(--rule);background:rgba(255,255,255,.3);}
+  .m-slot.read{border-color:var(--green-line);background:var(--green-soft);}
+  .m-slot.action{border-color:var(--terra);background:var(--terra-soft);}
+  .m-slot .ms-label{font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:700;}
+  .m-slot.main .ms-label{color:var(--terra);} .m-slot.side .ms-label{color:var(--plinth);}
+  .m-slot.full .ms-label{color:var(--ink-soft);} .m-slot.read .ms-label{color:var(--green);}
+  .m-slot.action .ms-label{color:var(--terra);}
+  .m-slot .ms-desc{font-size:7px;color:var(--ink-faint);line-height:1.4;}
+  .m-footer{border-top:1px dashed var(--rule-faint);padding-top:6px;margin-top:10px;font-size:7px;color:var(--ink-faint);}
+
+  /* slot spec table */
+  .slots-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px;}
+  .slots-table th{text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);padding:6px 10px;border-bottom:1.5px dashed var(--rule-faint);}
+  .slots-table td{padding:6px 10px;border-bottom:1px dashed var(--rule-faint);vertical-align:top;line-height:1.5;}
+  .slots-table td:first-child{font-weight:700;color:var(--terra);white-space:nowrap;}
+  .slots-table .opt{color:var(--ink-faint);font-style:italic;}
+
+  .usage{font-size:10.5px;color:var(--ink-soft);line-height:1.6;padding:12px 18px;border-top:1.5px dashed var(--rule-faint);}
+  .usage b{color:var(--ink);}
+  .usage code{font-size:10px;background:var(--paper-2);padding:1px 5px;border:1px dashed var(--rule-faint);}
+
+  .princ{font-size:12px;line-height:1.7;color:var(--ink-soft);display:flex;flex-direction:column;gap:10px;max-width:740px;}
+  .princ div b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="ds">
+
+  <header class="ds-header">
+    <div class="ds-title">alph<span class="a">⍺</span><span class="b">β</span>eta</div>
+    <div class="ds-sub">Page templates — the recurring layout skeletons. Pick a template, fill the slots, and the page is consistent without reinventing structure. Pair with the <a href="Design System.html" style="color:var(--terra)">component reference</a>.</div>
+  </header>
+
+  <!-- ======== STRUCTURAL RULES ======== -->
+  <div class="section">
+    <div class="sec-label">Structural Rules · Every Page</div>
+    <hr class="sec-rule">
+    <div class="princ">
+      <div><b>Global nav (gnav)</b> is always present, always sticky top:0, always dark ink. Same links on every page.</div>
+      <div><b>Max-width: 1140px</b>, centered. Page padding: 28px (--sp-2xl). All content inside this container.</div>
+      <div><b>Blueprint grid</b> (28px, 3.5% ink) is always visible as a body::before pseudo-element.</div>
+      <div><b>Lifecycle rail</b> appears on every Layer 3 (refinement) screen. The current step is active (terra solid); completed steps are done (green); future steps are faint (dashed). The rail IS the back/forward navigation — every chip is a link.</div>
+      <div><b>Carried-bet reminder</b> appears on every screen after the bet front door — a compact locked-mini card showing what was committed. Read-only; links back to edit.</div>
+      <div><b>Narrator band</b> appears ONLY on walkthrough/demo screens (Full Flow, Decomposition Visualizer). Never on the product screens themselves. Dark ink, not paper.</div>
+      <div><b>Footer</b> with cross-links to related screens. Dashed rule, 11px ink-soft.</div>
+    </div>
+  </div>
+
+  <!-- ======== TEMPLATE A ======== -->
+  <div class="section">
+    <div class="sec-label">Templates</div>
+    <hr class="sec-rule">
+
+    <div class="tpl">
+      <div class="tpl-head">
+        <div class="tpl-name">A · Two-Column: Form + Sidebar</div>
+        <div class="tpl-uses">Bet Front Door · Feasibility · Decision Criteria · Commit & Lock</div>
+      </div>
+      <div class="tpl-desc">The <b>primary refinement template</b> — the user works on the left, the discipline annotates on the right. The sidebar is sticky (top: 52px, below gnav). Used for every step in the Layer 3 lifecycle where the user is actively editing or committing.</div>
+      <div class="tpl-preview">
+        <div class="m-gnav"><span class="ml">⍺β</span><span class="mn">full flow</span><span class="mn">journal</span><span class="mn">new bet</span></div>
+        <div class="m-rail"><span class="mr done">✓ bet</span><span class="mr done">✓ feasibility</span><span class="mr active">criteria</span><span class="mr">commit</span><span class="mr">revisit</span></div>
+        <div class="m-carried">🔒 carried bet reminder · read-only · links back to edit</div>
+        <div class="m-cols two" style="margin-top:10px">
+          <div>
+            <div class="m-slot main" style="min-height:180px">
+              <div class="ms-label">main content</div>
+              <div class="ms-desc">panel with .ptitle + .psub<br>field-labels + fields (editable)<br>criteria rows (if applicable)<br>commit controls (if commit step)</div>
+            </div>
+          </div>
+          <div class="m-slot side" style="min-height:180px;position:sticky;top:0">
+            <div class="ms-label">annotation sidebar</div>
+            <div class="ms-desc">.annot component<br>insertion moment name<br>discipline commentary<br>margin note (optional)<br>sticky · top: 52px</div>
+          </div>
+        </div>
+        <div class="m-footer">footer · cross-links to related screens</div>
+      </div>
+      <table class="slots-table">
+        <tr><th>slot</th><th>component</th><th>notes</th></tr>
+        <tr><td>gnav</td><td>gnav</td><td>always identical</td></tr>
+        <tr><td>rail</td><td>lifecycle rail</td><td>highlight current step; every chip is a link</td></tr>
+        <tr><td>carried</td><td>locked-mini</td><td class="opt">omit on Bet Front Door (nothing committed yet)</td></tr>
+        <tr><td>main</td><td>panel → fields, criteria, controls</td><td>1.4fr column; scrolls with page</td></tr>
+        <tr><td>sidebar</td><td>.annot</td><td>1fr column; sticky top:52px; in-product discipline</td></tr>
+        <tr><td>footer</td><td>cross-links</td><td>dashed rule above</td></tr>
+      </table>
+      <div class="usage"><b>When to use:</b> any screen where the user is <b>actively editing</b> something (typing in fields, adjusting sliders, picking criteria) and the discipline layer should be visible alongside. This is the workhorse.</div>
+    </div>
+
+    <!-- TEMPLATE B -->
+    <div class="tpl">
+      <div class="tpl-head">
+        <div class="tpl-name">B · Two-Column: Read + Act</div>
+        <div class="tpl-uses">Revisit · In-flight A/B · In-flight Interviews</div>
+      </div>
+      <div class="tpl-desc">The user <b>reads committed data on the left, acts on the right</b>. The left column is the frozen record or incoming data; the right is where verdicts, calls, and deviation logging happen. Used for Layer 4 screens where the commitment meets reality.</div>
+      <div class="tpl-preview">
+        <div class="m-gnav"><span class="ml">⍺β</span><span class="mn">full flow</span><span class="mn">journal</span></div>
+        <div class="m-rail"><span class="mr done">✓ bet</span><span class="mr done">✓ feasibility</span><span class="mr done">✓ criteria</span><span class="mr done">✓ commit</span><span class="mr active">revisit</span></div>
+        <div class="m-cols equal" style="margin-top:10px">
+          <div>
+            <div class="m-slot read" style="min-height:100px">
+              <div class="ms-label">locked record</div>
+              <div class="ms-desc">the committed bet · read-only<br>locked-mini or full wager<br>pre-registered actions<br>fingerprint + timestamp</div>
+            </div>
+            <div class="m-slot full" style="min-height:80px;margin-top:8px">
+              <div class="ms-label">incoming data</div>
+              <div class="ms-desc">actuals slider / result input<br>integrity checks (SRM, guardrails)<br>method-specific monitoring</div>
+            </div>
+          </div>
+          <div>
+            <div class="m-slot action" style="min-height:100px">
+              <div class="ms-label">verdict + call</div>
+              <div class="ms-desc">bucket (computed from fold-if)<br>pre-registered action recalled<br>"your call" selector<br>honored / deviation judgment</div>
+            </div>
+            <div class="m-slot action" style="min-height:60px;margin-top:8px">
+              <div class="ms-label">deviation log</div>
+              <div class="ms-desc">textarea + logged-not-blocked note<br>learning / calibration field</div>
+            </div>
+          </div>
+        </div>
+        <div class="m-footer">footer · cross-links</div>
+      </div>
+      <table class="slots-table">
+        <tr><th>slot</th><th>component</th><th>notes</th></tr>
+        <tr><td>gnav</td><td>gnav</td><td>always identical</td></tr>
+        <tr><td>rail</td><td>lifecycle rail</td><td>all steps done through commit; revisit active</td></tr>
+        <tr><td>locked</td><td>locked-mini or full locked card</td><td>1fr left column; read-only, green border</td></tr>
+        <tr><td>data</td><td>readout, slider, checks</td><td>below locked card on left; method-specific</td></tr>
+        <tr><td>verdict</td><td>bucket + call selector</td><td>1fr right column; action zone</td></tr>
+        <tr><td>deviation</td><td>textarea + note</td><td>shows conditionally on mismatch</td></tr>
+      </table>
+      <div class="usage"><b>When to use:</b> any screen where the user is <b>comparing commitments to outcomes</b> — the record is frozen on the left, the judgment happens on the right. Equal columns (1fr 1fr), not weighted.</div>
+    </div>
+
+    <!-- TEMPLATE C -->
+    <div class="tpl">
+      <div class="tpl-head">
+        <div class="tpl-name">C · Full-Width Data View</div>
+        <div class="tpl-uses">Journal Index · Plan View · Cross-Goal Scoping · Dependent Bets</div>
+      </div>
+      <div class="tpl-desc">A <b>single wide column</b> for data-heavy screens — ledgers, timelines, dependency chains. No sidebar. Controls (filters, view switchers, toggles) sit above the main content area. The annotation, if any, goes below the data in the narrator band style (dark).</div>
+      <div class="tpl-preview">
+        <div class="m-gnav"><span class="ml">⍺β</span><span class="mn">full flow</span><span class="mn">journal</span></div>
+        <div class="m-cols wide" style="margin-top:10px">
+          <div class="m-slot full" style="min-height:24px;padding:6px 10px">
+            <div class="ms-label">controls bar</div>
+            <div class="ms-desc">view switcher (seg) + filter chips + toggles · all in one row</div>
+          </div>
+          <div class="m-slot full" style="min-height:140px;margin-top:8px">
+            <div class="ms-label">main data area</div>
+            <div class="ms-desc">ledger rows grouped by objective<br>OR timeline/gantt with week columns<br>OR dependency chain with nodes + arrows<br>full width, no sidebar</div>
+          </div>
+          <div class="m-slot full" style="min-height:40px;margin-top:8px;border-color:var(--ink);background:rgba(42,42,42,.06)">
+            <div class="ms-label" style="color:var(--ink-soft)">callouts / annotation (optional)</div>
+            <div class="ms-desc">contention warnings, chain-of-custody note, commentary</div>
+          </div>
+        </div>
+        <div class="m-footer">footer · cross-links</div>
+      </div>
+      <table class="slots-table">
+        <tr><th>slot</th><th>component</th><th>notes</th></tr>
+        <tr><td>gnav</td><td>gnav</td><td>always</td></tr>
+        <tr><td>controls</td><td>seg + chips + toggles</td><td>one row; no wrapping if possible</td></tr>
+        <tr><td>data</td><td>varies: rows, timeline, chain</td><td>full-width; overflow-x if needed (timeline)</td></tr>
+        <tr><td>callouts</td><td>callout cards or narrator band</td><td class="opt">optional; use for contention/warnings</td></tr>
+      </table>
+      <div class="usage"><b>When to use:</b> any screen that's primarily <b>reading / scanning / managing</b> many items — not editing a single bet. No discipline sidebar because the data IS the view; any annotation goes below.</div>
+    </div>
+
+    <!-- TEMPLATE D -->
+    <div class="tpl">
+      <div class="tpl-head">
+        <div class="tpl-name">D · Two-Column: Input + Output</div>
+        <div class="tpl-uses">Decomposition Visualizer · Open Front Door · Bet Sequencing</div>
+      </div>
+      <div class="tpl-desc">The user <b>provides raw input on the left; the system responds on the right</b> — parsing, extracting, routing. Used for front-door and decomposition screens where the interaction is "say something → watch it get structured."</div>
+      <div class="tpl-preview">
+        <div class="m-gnav"><span class="ml">⍺β</span><span class="mn">full flow</span><span class="mn">journal</span></div>
+        <div class="m-narrator">walkthrough · dark narrator band (for demo screens)</div>
+        <div class="m-cols equal" style="margin-top:10px">
+          <div>
+            <div class="m-slot main" style="min-height:100px">
+              <div class="ms-label">raw input</div>
+              <div class="ms-desc">textarea (free text dump)<br>or structured form<br>example presets row above</div>
+            </div>
+            <div class="m-slot full" style="min-height:60px;margin-top:8px">
+              <div class="ms-label">annotated source</div>
+              <div class="ms-desc">the input re-rendered with<br>inline highlights per slot<br>color-coded legend below</div>
+            </div>
+          </div>
+          <div>
+            <div class="m-slot action" style="min-height:100px">
+              <div class="ms-label">classification + extraction</div>
+              <div class="ms-desc">altitude classification card<br>extracted slot cards (animated in)<br>missing-slot warnings</div>
+            </div>
+            <div class="m-slot action" style="min-height:50px;margin-top:8px">
+              <div class="ms-label">routing CTA</div>
+              <div class="ms-desc">"proceed as single bet" / "set up as sequence" / "start in strategy"</div>
+            </div>
+          </div>
+        </div>
+        <div class="m-footer">footer · cross-links</div>
+      </div>
+      <table class="slots-table">
+        <tr><th>slot</th><th>component</th><th>notes</th></tr>
+        <tr><td>gnav</td><td>gnav</td><td>always</td></tr>
+        <tr><td>narrator</td><td>narrator band</td><td class="opt">only on demo/walkthrough versions</td></tr>
+        <tr><td>input</td><td>textarea or form</td><td>1fr left column</td></tr>
+        <tr><td>annotated</td><td>highlighted re-render</td><td>below input, same column; shows after parse</td></tr>
+        <tr><td>output</td><td>classification + slots + CTA</td><td>1fr right column; animated entrance</td></tr>
+      </table>
+      <div class="usage"><b>When to use:</b> any screen where the core interaction is <b>"give us something messy, watch it get structured."</b> The left-to-right flow mirrors the transformation.</div>
+    </div>
+
+    <!-- TEMPLATE E -->
+    <div class="tpl">
+      <div class="tpl-head">
+        <div class="tpl-name">E · Storyboard / Stepper</div>
+        <div class="tpl-uses">Full Flow</div>
+      </div>
+      <div class="tpl-desc">A <b>step-through presentation</b> — one screen at a time, with a step rail and next/prev controls. Each screen can use any inner layout. Used for walkthrough demos where you narrate a multi-screen journey as a single artifact.</div>
+      <div class="tpl-preview">
+        <div class="m-gnav"><span class="ml">⍺β</span><span class="mn">full flow</span><span class="mn">journal</span></div>
+        <div class="m-rail"><span class="mr active">1 · strategy</span><span class="mr">2 · sequencing</span><span class="mr">3 · lifecycle</span><span class="mr">4 · revisit</span><span class="mr">5 · ledger</span></div>
+        <div class="m-narrator">step 1 · narrator caption describing this screen</div>
+        <div class="m-slot full" style="min-height:100px;margin-top:8px">
+          <div class="ms-label">screen content</div>
+          <div class="ms-desc">any layout — the full board (template C),<br>or a two-column form (template A),<br>or a read+act (template B).<br>only one screen visible at a time.</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <div class="m-slot full" style="min-height:20px;width:80px;text-align:center"><div class="ms-desc">◂ back</div></div>
+          <div class="m-slot main" style="min-height:20px;width:80px;text-align:center"><div class="ms-desc">next ▸</div></div>
+        </div>
+      </div>
+      <table class="slots-table">
+        <tr><th>slot</th><th>component</th><th>notes</th></tr>
+        <tr><td>gnav</td><td>gnav</td><td>always</td></tr>
+        <tr><td>step rail</td><td>step chips (not lifecycle rail)</td><td>clickable; current = active; done = green</td></tr>
+        <tr><td>narrator</td><td>narrator band</td><td>updates per step; explains the screen</td></tr>
+        <tr><td>screen</td><td>varies</td><td>swapped on step change; any template inside</td></tr>
+        <tr><td>nav</td><td>back/next buttons</td><td>fixed at bottom of the template area</td></tr>
+      </table>
+      <div class="usage"><b>When to use:</b> presenting a <b>multi-screen journey as one artifact</b> — for demos, colleague walkthroughs, pitch presentations. Each screen is a contained unit; the stepper sequences them.</div>
+    </div>
+
+  </div>
+
+  <!-- ======== DECISION TREE ======== -->
+  <div class="section">
+    <div class="sec-label">Template Decision Tree</div>
+    <hr class="sec-rule">
+    <div class="princ">
+      <div>Is the user <b>editing a single bet</b> with discipline alongside? → <b>A · Form + Sidebar</b></div>
+      <div>Is the user <b>comparing locked commitment to outcome</b>? → <b>B · Read + Act</b></div>
+      <div>Is the user <b>scanning/managing many items</b> (ledger, timeline, chains)? → <b>C · Full-Width Data</b></div>
+      <div>Is the user <b>providing raw input to be structured</b>? → <b>D · Input + Output</b></div>
+      <div>Is this a <b>multi-screen walkthrough</b> for demo/pitch? → <b>E · Storyboard</b></div>
+    </div>
+  </div>
+
+  <!-- ======== COMMON PATTERNS ======== -->
+  <div class="section">
+    <div class="sec-label">Common Patterns Across Templates</div>
+    <hr class="sec-rule">
+    <div class="princ">
+      <div><b>Carried state.</b> Every screen after the Bet Front Door should show what's been committed upstream. Use the locked-mini component. Read-only; clicking it navigates back to that step.</div>
+      <div><b>Controls bar.</b> When a screen has filters, view switchers, or mode toggles, place them in a single row above the main content. Use the seg component for mutually-exclusive modes; chip buttons for filters. Never put controls in the sidebar.</div>
+      <div><b>Callouts.</b> For warnings (contention, missing fields, integrity issues), use the callout component below the relevant content area. Icon (⚠/✓/✕) + text. Amber for caution, green for ok, terra for failure.</div>
+      <div><b>Transitions.</b> When the user moves between lifecycle steps, the rail updates and the carried-bet reminder reflects the new committed state. No page transition animation; instant swap. Persist scroll position via sessionStorage if returning.</div>
+      <div><b>Responsive.</b> Two-column layouts collapse to single-column at 820px. The sidebar drops below the main content. The gnav stays. Timeline views get overflow-x: auto.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
