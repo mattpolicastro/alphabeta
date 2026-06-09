@@ -13,18 +13,13 @@
 import type {
   Articulation,
   Bet,
+  BetStatus,
   Learning,
   LockedSnapshot,
   Resolution,
 } from "@/lib/db/types";
 import { getDb } from "@/lib/db";
-
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `bet-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
+import { uuid } from "@/lib/uuid";
 
 function emptyArticulation(): Articulation {
   return {
@@ -77,7 +72,7 @@ export async function mintDraft(
   opts?: { cardId?: string },
 ): Promise<Bet> {
   const now = new Date().toISOString();
-  const bet = emptyBet(newId(), now);
+  const bet = emptyBet(uuid(), now);
   if (initial) {
     bet.articulation = { ...bet.articulation, ...initial };
   }
@@ -105,9 +100,9 @@ export async function updateDraft(
 ): Promise<void> {
   const existing = await getDb().bets.get(id);
   if (!existing) throw new Error(`Bet not found: ${id}`);
-  if (existing.status !== "draft") {
+  if (existing.status !== "draft" && existing.status !== "ready") {
     throw new Error(
-      `Cannot updateDraft a ${existing.status} bet — locked records are immutable`,
+      `Cannot updateDraft a ${existing.status} bet — only draft and ready bets are editable`,
     );
   }
   await getDb().bets.update(id, {
@@ -123,9 +118,9 @@ export async function lockBet(
 ): Promise<void> {
   const existing = await getDb().bets.get(id);
   if (!existing) throw new Error(`Bet not found: ${id}`);
-  if (existing.status !== "draft") {
+  if (existing.status !== "draft" && existing.status !== "ready") {
     throw new Error(
-      `Cannot lock a ${existing.status} bet — already locked / immutable`,
+      `Cannot lock a ${existing.status} bet — only draft and ready bets can be locked`,
     );
   }
   const now = new Date().toISOString();
@@ -140,12 +135,36 @@ export async function lockBet(
   });
 }
 
+export async function markReady(id: string): Promise<void> {
+  const existing = await getDb().bets.get(id);
+  if (!existing) throw new Error(`Bet not found: ${id}`);
+  if (existing.status !== "draft") {
+    throw new Error(`Cannot mark a ${existing.status} bet as ready — only drafts can transition to ready`);
+  }
+  await getDb().bets.update(id, {
+    status: "ready" as BetStatus,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function unmarkReady(id: string): Promise<void> {
+  const existing = await getDb().bets.get(id);
+  if (!existing) throw new Error(`Bet not found: ${id}`);
+  if (existing.status !== "ready") {
+    throw new Error(`Cannot unmark a ${existing.status} bet — only ready bets can revert to draft`);
+  }
+  await getDb().bets.update(id, {
+    status: "draft" as BetStatus,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function deleteBet(id: string): Promise<void> {
   const existing = await getDb().bets.get(id);
   if (!existing) return;
-  if (existing.status !== "draft") {
+  if (existing.status !== "draft" && existing.status !== "ready") {
     throw new Error(
-      `Cannot delete a ${existing.status} bet — locked records are immutable`,
+      `Cannot delete a ${existing.status} bet — only draft and ready bets can be deleted`,
     );
   }
   await getDb().bets.delete(id);

@@ -11,7 +11,7 @@ export function BoardView({ bets, onDeleteBet }: BoardViewProps) {
   const groups = groupBetsByStatus(bets);
   
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
       {ALL_STATUSES.map((status) => {
         const betGroup = groups[status];
         const count = betGroup.length;

@@ -13,6 +13,7 @@ function daysAgo(n: number): string {
 const BASE: Omit<
   Bet,
   | "id"
+  | "surface"
   | "articulation"
   | "status"
   | "lockedAt"
@@ -52,11 +53,12 @@ const EMPTY_LEARNING: Bet["learning"] = {
 };
 
 const FIXTURES: Omit<Bet, "fingerprint">[] = [
-  // 1. Draft — GPS SL_1: product-led growth demo
+  // ── Draft ────────────────────────────────────────────────────────
   {
     ...BASE,
     id: id(1),
     cardId: "ex-gps-solution-1",
+    surface: "marketing",
     articulation: {
       change: "adding a self-serve interactive demo to the marketing site",
       direction: "reduce",
@@ -75,139 +77,266 @@ const FIXTURES: Omit<Bet, "fingerprint">[] = [
     updatedAt: daysAgo(3),
   },
 
-  // 2. Locked — GPS SL_2: EU data region
+  // ── Ready ────────────────────────────────────────────────────────
   {
     ...BASE,
     id: id(2),
-    cardId: "ex-gps-solution-2",
+    surface: "onboarding",
     articulation: {
-      change: "deploying an EU data region on AWS Frankfurt",
+      change: "adding a progress indicator to the onboarding flow",
       direction: "lift",
-      metric: "EU customer count",
-      magnitude: "50 new EU customers in 90 days",
+      metric: "onboarding completion rate",
+      magnitude: "6%",
       mechanism:
-        "Data residency was the blocker cited in 3 lost deals last quarter. Removing it reopens those pipelines.",
-      confidence: "highly",
-      foldIf: "+20 EU customers in 90 days",
+        "Progress indicator reduces perceived effort, keeping users moving through the flow.",
+      confidence: "fairly",
+      foldIf: "+2pp completion rate",
     },
-    instrument: {
-      type: "observational",
-      overrideReason:
-        "Can't randomly assign prospects to data residency; observational before/after.",
-      feasibility: {},
-    },
-    criteria: {
-      win: "Keep — commit to multi-region as default for new enterprise contracts.",
-      inconclusive:
-        "Hold — the infrastructure stays, but don't expand to more regions yet.",
-      loss: "Revert to single-region — the compliance cost isn't justified by pipeline movement.",
-      minMindChanger: "+20 EU customers in 90 days",
-      evidenceBar: "",
-      runtime: 90,
-    },
-    status: "locked",
-    lockedAt: daysAgo(12),
+    status: "ready",
+    lockedAt: null,
     resolution: EMPTY_RESOLUTION,
     learning: EMPTY_LEARNING,
-    createdAt: daysAgo(18),
-    updatedAt: daysAgo(12),
+    createdAt: daysAgo(5),
+    updatedAt: daysAgo(1),
   },
 
-  // 3. Resolved (win) — GPS SL_3: free-to-paid upgrade flow
+  // ── Locked ───────────────────────────────────────────────────────
   {
     ...BASE,
     id: id(3),
-    cardId: "ex-gps-solution-3",
+    cardId: "ex-gps-solution-2",
+    surface: "pricing",
     articulation: {
-      change:
-        "replacing time-based trial expiration with usage-based upgrade prompts",
+      change: "testing a high-contrast CTA color on the pricing page",
       direction: "lift",
-      metric: "free-to-paid conversion rate (90-day cohort)",
+      metric: "pricing page → checkout-start rate",
+      magnitude: "5%",
+      mechanism:
+        "High-contrast CTA draws attention from the testimonial band, focusing the eye on the action.",
+      confidence: "fairly",
+      foldIf: "+2pp checkout-start",
+    },
+    status: "locked",
+    lockedAt: daysAgo(4),
+    resolution: EMPTY_RESOLUTION,
+    learning: EMPTY_LEARNING,
+    createdAt: daysAgo(10),
+    updatedAt: daysAgo(4),
+  },
+
+  // ── Running ──────────────────────────────────────────────────────
+  {
+    ...BASE,
+    id: id(4),
+    surface: "email",
+    articulation: {
+      change: "moving the CTA button above the fold in retention emails",
+      direction: "lift",
+      metric: "7-day login rate from email",
       magnitude: "8%",
       mechanism:
-        "Users hit contextual limits at the moment they feel the product's value, not an arbitrary deadline.",
+        "Button above the fold reduces scroll friction — the action is visible before the user decides to bail.",
       confidence: "fairly",
-      foldIf: "+2pp conversion rate within 90-day cohort",
+      foldIf: "+2pp login rate",
+    },
+    status: "running",
+    lockedAt: daysAgo(8),
+    resolution: EMPTY_RESOLUTION,
+    learning: EMPTY_LEARNING,
+    createdAt: daysAgo(14),
+    updatedAt: daysAgo(8),
+  },
+
+  // ── Resolved: won ────────────────────────────────────────────────
+  {
+    ...BASE,
+    id: id(5),
+    surface: "email",
+    articulation: {
+      change: "shortening email subject lines to under 40 characters",
+      direction: "lift",
+      metric: "email open rate",
+      magnitude: "3%",
+      mechanism:
+        "Shorter subject lines reduce cognitive load — the value prop lands in the preview pane without truncation.",
+      confidence: "fairly",
+      foldIf: "+1pp open rate",
+    },
+    status: "resolved",
+    lockedAt: daysAgo(55),
+    resolution: {
+      outcome: "win",
+      actuals: { lift: 4.2, guardrails: "ok" },
+      integrityFlags: [],
+      call: "keep",
+      deviation: { occurred: false, reason: null },
+      resolvedAt: daysAgo(40),
+    },
+    learning: {
+      calibration:
+        "Expected +3pp; got +4.2pp. Subject-line length matters more than personalization tokens.",
+      reflection:
+        "Clean win. The mechanism was right — cognitive load in the preview pane is the bottleneck. Apply the same principle to push notification copy next.",
+    },
+    createdAt: daysAgo(62),
+    updatedAt: daysAgo(40),
+  },
+
+  // ── Resolved: won ────────────────────────────────────────────────
+  {
+    ...BASE,
+    id: id(6),
+    surface: "onboarding",
+    articulation: {
+      change: "reducing onboarding from 7 steps to 4 steps",
+      direction: "lift",
+      metric: "onboarding completion rate",
+      magnitude: "12%",
+      mechanism:
+        "Fewer steps = higher completion. Each removed step eliminates a dropout point.",
+      confidence: "highly",
+      foldIf: "+4pp completion rate",
+    },
+    status: "resolved",
+    lockedAt: daysAgo(50),
+    resolution: {
+      outcome: "win",
+      actuals: { lift: 14, guardrails: "ok" },
+      integrityFlags: [],
+      call: "keep",
+      deviation: { occurred: false, reason: null },
+      resolvedAt: daysAgo(35),
+    },
+    learning: {
+      calibration:
+        "Expected +12pp; got +14pp. Every removed step lifted completion ~3pp. The friction reduction mechanism is reliable here.",
+      reflection:
+        "Confirmed — step count is the dominant lever in onboarding. Progress indicators are cosmetic compared to actually removing steps.",
+    },
+    createdAt: daysAgo(58),
+    updatedAt: daysAgo(35),
+  },
+
+  // ── Resolved: won ────────────────────────────────────────────────
+  {
+    ...BASE,
+    id: id(7),
+    cardId: "ex-gps-solution-3",
+    surface: "pricing",
+    articulation: {
+      change: "simplifying pricing from 5 tiers to 3 tiers",
+      direction: "lift",
+      metric: "pricing page → demo request conversion rate",
+      magnitude: "4%",
+      mechanism:
+        "3 tiers instead of 5 reduces decision paralysis — prospects pick faster when the choice set is smaller.",
+      confidence: "fairly",
+      foldIf: "+2pp conversion rate",
+    },
+    criteria: {
+      win: "Keep — commit to 3-tier structure.",
+      inconclusive: "Hold — keep 3 tiers but watch upsell metrics.",
+      loss: "Revert to 5 tiers.",
+      minMindChanger: "+2pp",
+      evidenceBar: "",
+      runtime: 30,
     },
     status: "resolved",
     lockedAt: daysAgo(45),
     resolution: {
       outcome: "win",
-      actuals: { lift: 3.1, guardrails: "ok" },
+      actuals: { lift: 4.8, guardrails: "ok" },
       integrityFlags: [],
       call: "keep",
       deviation: { occurred: false, reason: null },
-      resolvedAt: daysAgo(5),
+      resolvedAt: daysAgo(15),
     },
     learning: {
       calibration:
-        "Expected +8pp; got +3.1pp. Directionally right but overestimated magnitude by ~2.5x. Usage triggers work, but the specific prompts need more iteration.",
+        "Expected +4pp; got +4.8pp. Friction reduction on pricing works. But need to watch upsell — fewer tiers means less upsell surface.",
       reflection:
-        "The mechanism was right — users do convert better at natural limits. But 8% was aspirational. Next time, anchor the magnitude on the cohort data we already have, not the industry benchmark.",
+        "Decision paralysis was real. The mechanism (fewer choices → faster decisions) holds on pricing. Test whether it holds on plan feature comparisons too.",
     },
     createdAt: daysAgo(52),
-    updatedAt: daysAgo(5),
+    updatedAt: daysAgo(15),
   },
 
-  // 4. Resolved (loss) — GPS SL_4: localization partnerships
+  // ── Resolved: loss ───────────────────────────────────────────────
   {
     ...BASE,
-    id: id(4),
-    cardId: "ex-gps-solution-4",
+    id: id(8),
+    surface: "pricing",
     articulation: {
-      change:
-        "translating website and help docs into German, French, and Spanish",
+      change: "moving the plan picker above the fold on the pricing page",
       direction: "lift",
-      metric: "EU website-to-signup conversion rate",
-      magnitude: "15%",
+      metric: "pricing page → checkout-start rate",
+      magnitude: "8%",
       mechanism:
-        "Localized content reduces friction for non-English-speaking prospects evaluating the product.",
-      confidence: "hunch-level",
-      foldIf: "+3pp EU website-to-signup conversion within 60 days",
-    },
-    instrument: {
-      type: "quasi",
-      overrideReason:
-        "Geo-based split: localized pages serve in DE/FR/ES, control markets keep English.",
-      feasibility: {},
-    },
-    criteria: {
-      win: "Keep — extend localization to sales collateral and in-app strings.",
-      inconclusive: "Hold — localization stays but don't extend scope.",
-      loss: "Deprioritize — redirect budget to direct sales in EU.",
-      minMindChanger: "+3pp",
-      evidenceBar: "",
-      runtime: 60,
+        "Plans visible without scrolling lifts checkout-start — users see their options immediately.",
+      confidence: "fairly",
+      foldIf: "+3pp checkout-start",
     },
     status: "resolved",
-    lockedAt: daysAgo(75),
+    lockedAt: daysAgo(70),
     resolution: {
       outcome: "loss",
-      actuals: { lift: -0.4, guardrails: "ok" },
+      actuals: { lift: 0.4, guardrails: "ok" },
       integrityFlags: [],
-      call: "hold",
-      deviation: {
-        occurred: true,
-        reason:
-          "The localized content quality was poor — agency delivered literal translations, not localized messaging. We're holding rather than reverting because a second pass with native copywriters might recover value.",
-      },
-      resolvedAt: daysAgo(10),
+      call: "revert",
+      deviation: { occurred: false, reason: null },
+      resolvedAt: daysAgo(50),
     },
     learning: {
       calibration:
-        "Expected +15pp; got -0.4pp. Confidence was hunch-level and that was honest — the mechanism was wrong as executed. Translation ≠ localization.",
+        "Expected +8pp; got +0.4pp (under the +3pp fold-if). Users scroll past the picker regardless — the testimonial band is the real blocker.",
       reflection:
-        "The bet was right to test. The failure was in execution (literal translation), not strategy (localized content). Next time, pilot one language with a native speaker before scaling to three simultaneously.",
+        "Layout position wasn't the problem. The testimonial band intercepts attention. Next bet should target the band directly, not the picker position.",
     },
-    createdAt: daysAgo(82),
-    updatedAt: daysAgo(10),
+    createdAt: daysAgo(78),
+    updatedAt: daysAgo(50),
   },
 
-  // 5. Resolved (inconclusive, with deviation) — derived from GPS goal 1
+  // ── Resolved: loss ───────────────────────────────────────────────
   {
     ...BASE,
-    id: id(5),
-    cardId: null,
+    id: id(9),
+    cardId: "ex-gps-solution-4",
+    surface: "email",
+    articulation: {
+      change: "using urgency framing in retention email copy",
+      direction: "lift",
+      metric: "email → re-engagement rate (14-day)",
+      magnitude: "5%",
+      mechanism:
+        "Urgency framing increases re-engagement — scarcity and deadlines create motivation to act now.",
+      confidence: "hunch-level",
+      foldIf: "+1.5pp re-engagement",
+    },
+    status: "resolved",
+    lockedAt: daysAgo(60),
+    resolution: {
+      outcome: "loss",
+      actuals: { lift: -1.2, guardrails: "ok" },
+      integrityFlags: [],
+      call: "revert",
+      deviation: { occurred: false, reason: null },
+      resolvedAt: daysAgo(42),
+    },
+    learning: {
+      calibration:
+        "Expected +5pp; got -1.2pp. Urgency backfired — felt spammy. The copy mechanism was wrong for this surface.",
+      reflection:
+        "Urgency framing works in transactional contexts but not in re-engagement. Empathy framing to test next — \"we noticed you haven't been around\" instead of \"last chance.\"",
+    },
+    createdAt: daysAgo(68),
+    updatedAt: daysAgo(42),
+  },
+
+  // ── Resolved: inconclusive (with deviation) ──────────────────────
+  {
+    ...BASE,
+    id: id(10),
+    surface: "pricing",
     articulation: {
       change:
         "shortening the enterprise pricing page from 4 tiers to 2 tiers",
@@ -218,6 +347,14 @@ const FIXTURES: Omit<Bet, "fingerprint">[] = [
         "Choice overload is killing enterprise prospects. Reducing options focuses the decision on the right plan.",
       confidence: "fairly",
       foldIf: "+3pp conversion rate",
+    },
+    criteria: {
+      win: "Keep — commit to 2-tier enterprise structure.",
+      inconclusive: "Hold — keep it but don't extend to other segments.",
+      loss: "Revert — the enterprise buyer needs granularity.",
+      minMindChanger: "+3pp",
+      evidenceBar: "",
+      runtime: 30,
     },
     status: "resolved",
     lockedAt: daysAgo(30),
@@ -237,7 +374,7 @@ const FIXTURES: Omit<Bet, "fingerprint">[] = [
       calibration:
         "Expected +12pp; got +1.8pp. The direction was right but the magnitude wildly overestimated. Pricing page conversion is stickier than expected.",
       reflection:
-        "Interesting case: the quantitative result says inconclusive but every qualitative signal says win. Logged the deviation honestly. Next time, maybe run the quant test longer or pair it with a qualitative instrument from the start.",
+        "Interesting case: the quantitative result says inconclusive but every qualitative signal says win. Logged the deviation honestly. Next time, pair quant with qualitative instrument from the start.",
     },
     createdAt: daysAgo(38),
     updatedAt: daysAgo(2),

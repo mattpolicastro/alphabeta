@@ -16,7 +16,7 @@ describe('allBets', () => {
   it('extracts bets from sequence groups', () => {
     const b1 = makeBet({ id: 'b1' });
     const b2 = makeBet({ id: 'b2' });
-    const entries: PlanEntry[] = [{ type: 'seq', id: 's1', name: 'seq1', bets: [b1, b2] }];
+    const entries: PlanEntry[] = [{ type: 'seq', id: 's1', name: 'seq1', chain: '', bets: [b1, b2] }];
     expect(allBets(entries)).toEqual([b1, b2]);
   });
 
@@ -26,7 +26,7 @@ describe('allBets', () => {
     const b3 = makeBet({ id: 'b3' });
     const entries: PlanEntry[] = [
       { type: 'solo', bet: b1 },
-      { type: 'seq', id: 's1', name: 'seq1', bets: [b2, b3] }
+      { type: 'seq', id: 's1', name: 'seq1', chain: '', bets: [b2, b3] }
     ];
     expect(allBets(entries)).toEqual([b1, b2, b3]);
   });
@@ -51,7 +51,7 @@ describe('betById', () => {
   it('finds bet inside a sequence group', () => {
     const b1 = makeBet({ id: 'b1' });
     const b2 = makeBet({ id: 'b2' });
-    const entries: PlanEntry[] = [{ type: 'seq', id: 's1', name: 'seq1', bets: [b1, b2] }];
+    const entries: PlanEntry[] = [{ type: 'seq', id: 's1', name: 'seq1', chain: '', bets: [b1, b2] }];
     expect(betById(entries, 'b2')).toBe(b2);
   });
 });

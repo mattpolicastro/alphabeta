@@ -3,8 +3,10 @@ import {
   getBet,
   listBets,
   lockBet,
+  markReady,
   mintDraft,
   recordResolution,
+  unmarkReady,
   updateDraft,
 } from "@/lib/bet/queries";
 import { buildLockedSnapshot } from "@/lib/bet/factory";
@@ -144,6 +146,19 @@ describe("lockBet", () => {
     ).rejects.toThrow(/locked|immutable/i);
   });
 
+  it("transitions status ready -> locked", async () => {
+    const bet = await mintDraft();
+    await markReady(bet.id);
+    const lockedAt = new Date().toISOString();
+    const snapshot = buildLockedSnapshot(sampleAbBet, lockedAt);
+    const fp = "a".repeat(64);
+    await lockBet(bet.id, snapshot, fp);
+    const after = await getBet(bet.id);
+    expect(after?.status).toBe("locked");
+    expect(after?.lockedAt).toBe(lockedAt);
+    expect(after?.fingerprint).toBe(fp);
+  });
+
   it("rejects an unknown id", async () => {
     const snapshot = buildLockedSnapshot(sampleAbBet, new Date().toISOString());
     await expect(
@@ -199,5 +214,60 @@ describe("recordResolution", () => {
         { calibration: null, reflection: null },
       ),
     ).rejects.toThrow(/locked/i);
+  });
+});
+
+describe("markReady", () => {
+  it("transitions a draft bet to ready", async () => {
+    const bet = await mintDraft();
+    const before = bet.updatedAt;
+    await new Promise((r) => setTimeout(r, 5));
+    await markReady(bet.id);
+    const after = await getBet(bet.id);
+    expect(after?.status).toBe("ready");
+    expect(after?.updatedAt).not.toBe(before);
+  });
+
+  it("refuses to mark a locked bet as ready", async () => {
+    const bet = await mintDraft();
+    const snapshot = buildLockedSnapshot(sampleAbBet, new Date().toISOString());
+    await lockBet(bet.id, snapshot, "a".repeat(64));
+    await expect(markReady(bet.id)).rejects.toThrow(/draft/i);
+  });
+
+  it("refuses to mark an already-ready bet as ready", async () => {
+    const bet = await mintDraft();
+    await markReady(bet.id);
+    await expect(markReady(bet.id)).rejects.toThrow(/draft/i);
+  });
+
+  it("rejects an unknown id", async () => {
+    await expect(markReady("unknown-id")).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("unmarkReady", () => {
+  it("transitions a ready bet back to draft", async () => {
+    const bet = await mintDraft();
+    await markReady(bet.id);
+    await unmarkReady(bet.id);
+    const after = await getBet(bet.id);
+    expect(after?.status).toBe("draft");
+  });
+
+  it("refuses to unmark a draft bet", async () => {
+    const bet = await mintDraft();
+    await expect(unmarkReady(bet.id)).rejects.toThrow(/ready/i);
+  });
+
+  it("refuses to unmark a locked bet", async () => {
+    const bet = await mintDraft();
+    const snapshot = buildLockedSnapshot(sampleAbBet, new Date().toISOString());
+    await lockBet(bet.id, snapshot, "a".repeat(64));
+    await expect(unmarkReady(bet.id)).rejects.toThrow(/ready/i);
+  });
+
+  it("rejects an unknown id", async () => {
+    await expect(unmarkReady("unknown-id")).rejects.toThrow(/not found/i);
   });
 });

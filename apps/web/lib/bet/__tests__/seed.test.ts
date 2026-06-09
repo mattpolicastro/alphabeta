@@ -12,11 +12,11 @@ afterEach(async () => {
 });
 
 describe("seedDemoBets", () => {
-  it("inserts 5 demo bets into an empty DB", async () => {
+  it("inserts 10 demo bets into an empty DB", async () => {
     const count = await seedDemoBets();
-    expect(count).toBe(5);
+    expect(count).toBe(10);
     const bets = await listBets();
-    expect(bets).toHaveLength(5);
+    expect(bets).toHaveLength(10);
   });
 
   it("is idempotent — returns 0 on second call", async () => {
@@ -24,12 +24,12 @@ describe("seedDemoBets", () => {
     const count = await seedDemoBets();
     expect(count).toBe(0);
     const bets = await listBets();
-    expect(bets).toHaveLength(5);
+    expect(bets).toHaveLength(10);
   });
 
   it("produces valid fingerprints for locked bets", async () => {
     await seedDemoBets();
-    const bet = await getBet("demo-bet-002");
+    const bet = await getBet("demo-bet-003");
     expect(bet).toBeDefined();
     expect(bet!.fingerprint).toBeTruthy();
     const expected = await fingerprint({
@@ -46,7 +46,9 @@ describe("seedDemoBets", () => {
     const bets = await listBets();
     const statuses = new Set(bets.map((b) => b.status));
     expect(statuses).toContain("draft");
+    expect(statuses).toContain("ready");
     expect(statuses).toContain("locked");
+    expect(statuses).toContain("running");
     expect(statuses).toContain("resolved");
   });
 });
@@ -55,7 +57,7 @@ describe("clearDemoBets", () => {
   it("removes all demo bets", async () => {
     await seedDemoBets();
     const removed = await clearDemoBets();
-    expect(removed).toBe(5);
+    expect(removed).toBe(10);
     const bets = await listBets();
     expect(bets).toHaveLength(0);
   });

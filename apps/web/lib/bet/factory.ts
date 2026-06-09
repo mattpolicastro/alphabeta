@@ -5,6 +5,7 @@
 
 import type { AbBet } from "@/lib/bet/storage";
 import type { Articulation, Bet, LockedSnapshot } from "@/lib/db/types";
+import { uuid } from "@/lib/uuid";
 
 export function buildArticulation(b: AbBet): Articulation {
   return {
@@ -61,10 +62,7 @@ export function buildBetRecord(
 ): Bet {
   const snapshot = buildLockedSnapshot(b, lockedAt);
   return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `bet-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: uuid(),
     cardId: null,
     ownerId: null,
     type: "single",

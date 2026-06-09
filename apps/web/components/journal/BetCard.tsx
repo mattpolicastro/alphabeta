@@ -23,15 +23,16 @@ function buildAbBet(b: Bet): AbBet {
 }
 
 function hrefFor(bet: Bet): string {
-  return bet.status === "draft"
-    ? `/bet/wager?id=${bet.id}`
-    : `/bet/revisit?id=${bet.id}`;
+  if (bet.status === "draft") return `/bet/wager?id=${bet.id}`;
+  if (bet.status === "ready") return `/bet/lock?id=${bet.id}`;
+  return `/bet/revisit?id=${bet.id}`;
 }
 
 type StatusBadge = { cls: string; label: string };
 
 function badgeFor(bet: Bet): StatusBadge {
   if (bet.status === "draft") return { cls: "st-draft", label: "draft" };
+  if (bet.status === "ready") return { cls: "st-ready", label: "ready" };
   if (bet.status === "locked" || bet.status === "running") {
     return { cls: "st-locked", label: "locked" };
   }
@@ -74,7 +75,7 @@ function compactSummary(bet: Bet): string {
 export function BetCard({ bet, compact = false, onDelete }: BetCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const badge = badgeFor(bet);
-  const isDraft = bet.status === "draft";
+  const canDelete = bet.status === "draft" || bet.status === "ready";
 
   return (
     <div className="dashed-panel relative" data-testid={`bet-card-${bet.id}`}>
@@ -98,7 +99,7 @@ export function BetCard({ bet, compact = false, onDelete }: BetCardProps) {
           <span className={`st ${badge.cls} flex-shrink-0`}>{badge.label}</span>
         </div>
       </a>
-      {isDraft && onDelete && (
+      {canDelete && onDelete && (
         <button
           type="button"
           onClick={(e) => {

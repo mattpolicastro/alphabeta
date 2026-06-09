@@ -47,9 +47,10 @@ function makeBet(id: string, status: BetStatus, overrides: Partial<Bet> = {}): B
 }
 
 describe("BoardView", () => {
-  it("renders all four status column headers", () => {
+  it("renders all five status column headers", () => {
     render(<BoardView bets={[]} />);
     expect(screen.getByText(/^draft$/)).toBeInTheDocument();
+    expect(screen.getByText(/^ready$/)).toBeInTheDocument();
     expect(screen.getByText(/^locked$/)).toBeInTheDocument();
     expect(screen.getByText(/^running$/)).toBeInTheDocument();
     expect(screen.getByText(/^resolved$/)).toBeInTheDocument();
@@ -62,9 +63,9 @@ describe("BoardView", () => {
       makeBet("c", "locked"),
     ];
     render(<BoardView bets={bets} />);
-    // Two drafts, one locked, zero running/resolved.
+    // Two drafts, zero ready, one locked, zero running/resolved.
     const counts = screen.getAllByText(/^\(\d+\)$/).map((el) => el.textContent);
-    expect(counts).toEqual(["(2)", "(1)", "(0)", "(0)"]);
+    expect(counts).toEqual(["(2)", "(0)", "(1)", "(0)", "(0)"]);
   });
 
   it("places each bet under its own status column via BetCard", () => {
@@ -81,8 +82,8 @@ describe("BoardView", () => {
 
   it("renders the 'no bets yet' hint in empty columns", () => {
     render(<BoardView bets={[makeBet("d", "draft")]} />);
-    // Three empty columns remaining (locked / running / resolved).
+    // Four empty columns remaining (ready / locked / running / resolved).
     const empties = screen.getAllByText(/no bets yet/i);
-    expect(empties).toHaveLength(3);
+    expect(empties).toHaveLength(4);
   });
 });
