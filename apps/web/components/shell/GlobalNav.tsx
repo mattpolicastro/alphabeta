@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { DebugPanel } from "@/components/shell/DebugPanel";
 
 type NavItem =
   | { kind: "link"; href: string; label: string; layer?: string }
@@ -29,18 +30,14 @@ const ITEMS: NavItem[] = [
     layer: "Layer 1 — Strategy",
   },
   {
-    kind: "dropdown",
+    kind: "link",
+    href: "/",
     label: "plan",
     layer: "Layer 2 — Planning",
-    children: [
-      { kind: "link", href: "/", label: "journal" },
-      { kind: "link", href: "/plan", label: "timeline" },
-      { kind: "link", href: "/sequencing", label: "sequencing" },
-    ],
   },
   {
     kind: "link",
-    href: "/bet/new",
+    href: "/bet/wager",
     label: "draft",
     layer: "Layer 3 — Refinement",
   },
@@ -53,10 +50,10 @@ const ITEMS: NavItem[] = [
     ],
   },
   {
-    kind: "disabled",
+    kind: "link",
+    href: "/learn",
     label: "learn",
     layer: "Layer 5 — KM",
-    note: "cross-bet calibration",
   },
 ];
 
@@ -67,6 +64,7 @@ const FOOTER_LINKS: NavItem[] = [
 export function GlobalNav() {
   const pathname = usePathname() ?? "";
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
 
   // Click-outside / Escape closes the open dropdown.
@@ -95,8 +93,8 @@ export function GlobalNav() {
     <nav ref={navRef} className="gnav" aria-label="Global navigation">
       <a
         className="gnav-logo"
-        href="/"
-        aria-current={pathname === "/" ? "page" : undefined}
+        href="/bet/new"
+        aria-current={pathname === "/bet/new" ? "page" : undefined}
       >
         alph<span className="a">⍺</span>
         <span className="b">β</span>eta
@@ -121,6 +119,27 @@ export function GlobalNav() {
           setOpenMenu={setOpenMenu}
         />
       ))}
+      <button
+        type="button"
+        onClick={() => setSettingsOpen(true)}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: 'rgba(230, 223, 206, 0.6)',
+          cursor: 'pointer',
+          fontSize: '14px',
+          padding: '0 8px',
+          height: '38px',
+          display: 'flex',
+          alignItems: 'center',
+          fontFamily: 'inherit',
+        }}
+        aria-label="Settings"
+        title="Settings & debug"
+      >
+        ⚙
+      </button>
+      <DebugPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </nav>
   );
 }

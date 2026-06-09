@@ -17,6 +17,8 @@ export function currentStage(bet: Bet): LifecycleStage {
   switch (bet.status) {
     case "draft":
       return "wager";
+    case "ready":
+      return "lock";
     case "locked":
     case "running":
     case "resolved":

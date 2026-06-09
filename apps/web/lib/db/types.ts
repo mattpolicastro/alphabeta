@@ -10,7 +10,7 @@ export type InstrumentType =
   | "observational"
   | "holdback"
   | "interviews";
-export type BetStatus = "draft" | "locked" | "running" | "resolved";
+export type BetStatus = "draft" | "ready" | "locked" | "running" | "resolved";
 export type Outcome = "win" | "inconclusive" | "loss";
 export type Call = "keep" | "hold" | "revert";
 
@@ -76,6 +76,8 @@ export interface Bet {
   cardId: string | null;
   ownerId: string | null;
   type: "single" | "sequence";
+
+  surface?: string;
 
   articulation: Articulation;
   instrument: Instrument;

@@ -39,6 +39,14 @@
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-caveat);
 
+  /* Spacing scale */
+  --sp-xs: 4px;
+  --sp-s: 8px;
+  --sp-m: 14px;
+  --sp-l: 18px;
+  --sp-xl: 24px;
+  --sp-2xl: 28px;
+
   /* Layout */
   --container-content: 1140px;
 
@@ -83,6 +91,27 @@
   --blueprint-grid-line: rgba(42, 42, 42, 0.035);
 }
 
+html {
+  overflow-y: scroll;
+  scrollbar-color: rgba(42, 42, 42, 0.15) transparent;
+  scrollbar-width: thin;
+}
+
+/* WebKit (Safari / Chrome) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(42, 42, 42, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(42, 42, 42, 0.3);
+}
+
 html,
 body {
   background-color: var(--color-paper);
@@ -90,12 +119,13 @@ body {
 }
 
 body {
+  min-height: 100vh;
   background-image:
     linear-gradient(var(--blueprint-grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--blueprint-grid-line) 1px, transparent 1px);
   background-size: var(--blueprint-grid-size) var(--blueprint-grid-size);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }

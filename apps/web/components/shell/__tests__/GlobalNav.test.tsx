@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 const usePathnameMock = vi.fn<() => string>();
 vi.mock("next/navigation", () => ({
@@ -10,19 +9,19 @@ vi.mock("next/navigation", () => ({
 import { GlobalNav } from "../GlobalNav";
 
 describe("GlobalNav", () => {
-  it("renders the wordmark linking to /", () => {
+  it("renders the wordmark linking to /bet/new", () => {
     usePathnameMock.mockReturnValue("/something");
     render(<GlobalNav />);
     const logo = screen.getByRole("link", { name: /alph.*eta/i });
-    expect(logo).toHaveAttribute("href", "/");
+    expect(logo).toHaveAttribute("href", "/bet/new");
   });
 
-  it("renders 'draft' as a direct top-level link to /bet/new", () => {
+  it("renders 'draft' as a direct top-level link to /bet/wager", () => {
     usePathnameMock.mockReturnValue("/");
     render(<GlobalNav />);
     expect(
       screen.getByRole("link", { name: "draft" }),
-    ).toHaveAttribute("href", "/bet/new");
+    ).toHaveAttribute("href", "/bet/wager");
   });
 
   it("renders design system in the footer slot", () => {
@@ -41,38 +40,31 @@ describe("GlobalNav", () => {
     ).toHaveAttribute("href", "/strategy");
   });
 
-  it("renders disabled top-level layers without anchors", () => {
+  it("renders 'learn' as a link to /learn", () => {
     usePathnameMock.mockReturnValue("/");
     render(<GlobalNav />);
-    for (const label of ["run", "learn"]) {
-      const node = screen.getByText(label);
-      expect(node.tagName.toLowerCase()).toBe("span");
-      expect(node).toHaveAttribute("aria-disabled", "true");
-    }
+    const learn = screen.getByText("learn");
+    expect(learn.tagName.toLowerCase()).toBe("a");
+    expect(learn).toHaveAttribute("href", "/learn");
   });
 
-  it("opens the plan dropdown on click and shows its children", async () => {
+  it("renders 'run' as a dropdown trigger", () => {
     usePathnameMock.mockReturnValue("/");
-    const user = userEvent.setup();
     render(<GlobalNav />);
-    const trigger = screen.getByRole("button", { name: /^plan$/ });
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-
-    await user.click(trigger);
-
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("menuitem", { name: /journal/i })).toHaveAttribute(
-      "href",
-      "/",
-    );
-    // Sequencing is disabled within the dropdown.
-    const sequencing = screen.getByText("sequencing");
-    expect(sequencing.tagName.toLowerCase()).toBe("span");
-    expect(sequencing).toHaveAttribute("aria-disabled", "true");
+    const run = screen.getByRole("button", { name: /^run/ });
+    expect(run).toHaveAttribute("aria-haspopup", "menu");
   });
 
-  it("marks the journal logo as current on /", () => {
-    usePathnameMock.mockReturnValue("/");
+  it("renders 'plan' as a direct top-level link to /", () => {
+    usePathnameMock.mockReturnValue("/strategy");
+    render(<GlobalNav />);
+    expect(
+      screen.getByRole("link", { name: "plan" }),
+    ).toHaveAttribute("href", "/");
+  });
+
+  it("marks the wordmark as current on /bet/new", () => {
+    usePathnameMock.mockReturnValue("/bet/new");
     render(<GlobalNav />);
     expect(
       screen.getByRole("link", { name: /alph.*eta/i }),
@@ -87,11 +79,11 @@ describe("GlobalNav", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
-  it("doesn't mark 'draft' as current when on a bet stage route", () => {
+  it("marks 'draft' as current on /bet/wager", () => {
     usePathnameMock.mockReturnValue("/bet/wager");
     render(<GlobalNav />);
     expect(
       screen.getByRole("link", { name: "draft" }),
-    ).not.toHaveAttribute("aria-current");
+    ).toHaveAttribute("aria-current", "page");
   });
 });

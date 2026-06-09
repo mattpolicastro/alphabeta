@@ -57,8 +57,8 @@ const sample = [
 ];
 
 describe("ALL_STATUSES", () => {
-  it("enumerates the four bet statuses", () => {
-    expect(ALL_STATUSES).toEqual(["draft", "locked", "running", "resolved"]);
+  it("enumerates the five bet statuses", () => {
+    expect(ALL_STATUSES).toEqual(["draft", "ready", "locked", "running", "resolved"]);
   });
 });
 
@@ -115,6 +115,7 @@ describe("groupBetsByStatus", () => {
   it("returns an object with empty arrays on empty input", () => {
     expect(groupBetsByStatus([])).toEqual({
       draft: [],
+      ready: [],
       locked: [],
       running: [],
       resolved: [],

@@ -7,6 +7,7 @@ import type { Bet, BetStatus } from "@/lib/db/types";
 
 export const ALL_STATUSES: BetStatus[] = [
   "draft",
+  "ready",
   "locked",
   "running",
   "resolved",
@@ -35,6 +36,7 @@ export function filterBetsByStatus(
 export function groupBetsByStatus(bets: Bet[]): StatusGroups {
   const groups: StatusGroups = {
     draft: [],
+    ready: [],
     locked: [],
     running: [],
     resolved: [],

@@ -152,8 +152,8 @@
 
 .ab-cols {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 22px;
   align-items: start;
   margin-top: 22px;
 }
@@ -584,6 +584,63 @@ a.srail:hover {
   transform: rotate(-1.2deg);
 }
 
+/* ── Walkthrough modules ───────────────────────────────────────────── */
+
+.walkthrough {
+  border: 1.5px dashed var(--color-plinth-line);
+  background: var(--color-plinth-soft);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.walkthrough::before {
+  content: "WALKTHROUGH";
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  background: var(--color-paper);
+  padding: 0 6px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--color-plinth);
+  font-weight: bold;
+}
+.walkthrough-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.walkthrough-step + .walkthrough-step {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-plinth-line);
+}
+.walkthrough-step-n {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-plinth);
+  color: var(--color-plinth);
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.walkthrough-step-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--color-plinth);
+  margin-bottom: 3px;
+}
+.walkthrough-step-body {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--color-ink-soft);
+}
+
 /* ── Header / dump textarea ─────────────────────────────────────────── */
 
 .wordmark {
@@ -660,6 +717,11 @@ textarea.dump:focus {
   border-color: var(--color-rule-faint);
   border-style: dashed;
 }
+.st-ready {
+  color: var(--color-plinth);
+  border-color: var(--color-plinth);
+  border-style: dashed;
+}
 .st-locked {
   color: var(--color-terra);
   border-color: var(--color-terra-line);
@@ -704,4 +766,415 @@ textarea.dump:focus {
   color: var(--color-plinth);
   font-size: 11px;
   letter-spacing: 0.02em;
+}
+
+/* ── Decomposition Chat (front door) ──────────────────────────────── */
+
+.compose-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 38px);
+  max-width: var(--container-content);
+  margin: 0 auto;
+  width: 100%;
+}
+.compose-walkthrough-slot {
+  flex-shrink: 0;
+  padding: 12px 28px 0;
+}
+
+.compose-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: auto auto 1fr auto;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+@media (max-width: 860px) {
+  .compose-shell {
+    grid-template-columns: 1fr;
+  }
+  .compose-rail { display: none; }
+}
+
+.compose-rail {
+  grid-row: 1 / -1;
+  grid-column: 2;
+  border-left: 1.5px dashed var(--color-rule-faint);
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.compose-rail-section {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+  margin-bottom: 4px;
+}
+.compose-rail-empty {
+  font-size: 11px;
+  color: var(--color-ink-faint);
+  font-style: italic;
+}
+
+.compose-header {
+  grid-column: 1;
+  padding: 16px 20px 12px;
+  border-bottom: 1.5px dashed var(--color-rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-shrink: 0;
+}
+.compose-sub {
+  font-size: 10px;
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.compose-presets {
+  grid-column: 1;
+  display: flex;
+  gap: 6px;
+  padding: 8px 20px;
+  border-bottom: 1px dashed var(--color-rule-faint);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.compose-presets-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+.compose-presets-sep {
+  color: var(--color-ink-faint);
+  font-size: 10px;
+}
+.compose-preset {
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px 10px;
+  border: 1.5px dashed var(--color-rule-faint);
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.compose-preset:hover {
+  background: var(--color-paper-hover);
+  border-color: var(--color-terra-line);
+}
+.compose-preset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.compose-express {
+  font-size: 10px;
+  color: var(--color-ink-faint);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--color-rule-faint);
+}
+.compose-express:hover {
+  color: var(--color-terra);
+  border-color: var(--color-terra-line);
+}
+
+/* Thread */
+.compose-thread {
+  grid-column: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+/* Messages */
+.compose-msg {
+  max-width: 92%;
+  animation: compose-fadeUp 0.3s ease both;
+}
+@keyframes compose-fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.compose-msg-user {
+  align-self: flex-end;
+}
+.compose-msg-system {
+  align-self: flex-start;
+}
+.compose-msg-who {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+  margin-bottom: 4px;
+}
+.compose-msg-system .compose-msg-who {
+  color: var(--color-terra);
+}
+.compose-msg-body {
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compose-msg-user .compose-msg-body {
+  background: var(--color-ink);
+  color: #e6dfce;
+  box-shadow: 3px 3px 0 rgba(42, 42, 42, 0.15);
+}
+.compose-msg-system .compose-msg-body {
+  border: 1.5px dashed var(--color-rule);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Extraction card */
+.compose-ext {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.compose-ext-slot {
+  border: 1.5px dashed var(--color-rule-faint);
+  background: rgba(255, 255, 255, 0.5);
+  padding: 7px 10px;
+}
+.compose-ext-key {
+  font-size: 8.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.compose-ext-dot {
+  width: 8px;
+  height: 3px;
+  display: inline-block;
+}
+.compose-ext-val {
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* Altitude badge */
+.compose-altitude {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.compose-alt-badge {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 4px 10px;
+  border: 1.5px solid;
+}
+.compose-alt-sub {
+  font-size: 11px;
+  color: var(--color-ink-soft);
+}
+.compose-alt-vague {
+  color: var(--color-ink-faint);
+  border-color: var(--color-rule);
+  background: rgba(255, 255, 255, 0.4);
+}
+.compose-alt-goal {
+  color: var(--color-plinth);
+  border-color: var(--color-plinth-line);
+  background: var(--color-plinth-soft);
+}
+.compose-alt-bet {
+  color: var(--color-terra);
+  border-color: var(--color-terra);
+  background: var(--color-terra-soft);
+}
+.compose-alt-ready {
+  color: var(--color-green);
+  border-color: var(--color-green);
+  background: var(--color-green-soft);
+}
+
+/* Classification badge */
+.compose-classify {
+  border: 1.5px solid var(--color-rule);
+  background: rgba(255, 255, 255, 0.5);
+  padding: 8px 12px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.compose-cl-icon {
+  font-size: 14px;
+}
+.compose-cl-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.compose-cl-single {
+  color: var(--color-terra);
+}
+.compose-cl-sequence {
+  color: #8b5cf6;
+}
+.compose-cl-strategy {
+  color: var(--color-plinth);
+}
+
+/* Reply chips */
+.compose-replies {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.compose-reply {
+  font-family: inherit;
+  font-size: 10.5px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-terra-line);
+  background: var(--color-terra-soft);
+  color: var(--color-terra);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.compose-reply:hover {
+  background: var(--color-terra);
+  color: var(--color-paper);
+}
+.compose-reply:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Route CTA (renders as <button>) */
+.compose-route-cta {
+  margin-top: 10px;
+  display: inline-block;
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--color-terra);
+  background: var(--color-terra);
+  color: var(--color-paper);
+  cursor: pointer;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+}
+.compose-route-cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.compose-route-cta:hover {
+  background: color-mix(in srgb, var(--color-terra) 82%, #000);
+}
+
+/* Input bar */
+.compose-input-bar {
+  grid-column: 1;
+  flex-shrink: 0;
+  border-top: 1.5px dashed var(--color-rule);
+  padding: 12px 20px;
+  display: flex;
+  gap: 8px;
+  background: var(--color-paper);
+}
+.compose-textarea {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-ink);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1.5px dashed var(--color-rule-faint);
+  padding: 10px 12px;
+  resize: none;
+  line-height: 1.5;
+  outline: none;
+  min-height: 44px;
+  max-height: 120px;
+}
+.compose-textarea:focus {
+  border-color: var(--color-terra-line);
+}
+.compose-textarea::placeholder {
+  color: var(--color-ink-faint);
+  font-style: italic;
+}
+.compose-send {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 0 16px;
+  border: 1.5px solid var(--color-terra);
+  background: var(--color-terra);
+  color: var(--color-paper);
+  cursor: pointer;
+  align-self: flex-end;
+  height: 44px;
+}
+.compose-send:hover {
+  background: color-mix(in srgb, var(--color-terra) 82%, #000);
+}
+.compose-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Typing indicator */
+.compose-typing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+.compose-typing-dots {
+  display: flex;
+  gap: 3px;
+}
+.compose-typing-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-terra);
+  animation: compose-blink 1.2s infinite;
+}
+.compose-typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.compose-typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes compose-blink {
+  0%, 80% { opacity: 0.2; }
+  40% { opacity: 1; }
+}
+
+/* LLM status indicator */
+.compose-llm-status {
+  grid-column: 1;
+  text-align: right;
+  padding: 4px 20px;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--color-ink-faint);
+  text-transform: uppercase;
 }
