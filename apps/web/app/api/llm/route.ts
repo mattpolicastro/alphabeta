@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const OLLAMA_BASE = "http://localhost:11434";
+const OLLAMA_BASE = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
