@@ -1,4 +1,5 @@
 import type { ColumnId, Milestone } from '@/lib/strategy/types'
+import { uuid } from '@/lib/uuid'
 import { useBoard } from '@/components/strategy/hooks/useBoardState'
 import { getColumnDef } from '@/lib/strategy/templates'
 import { CardList } from './CardList'
@@ -21,7 +22,7 @@ export function Column({ columnId }: ColumnProps) {
     if (hasUnsavedCard) return
     dispatch({
       type: 'ADD_CARD',
-      id: crypto.randomUUID(),
+      id: uuid(),
       columnId,
       fields: colDef!.blankFields(),
     })
@@ -45,5 +46,5 @@ export function Column({ columnId }: ColumnProps) {
 }
 
 export function makeMilestone(label = ''): Milestone {
-  return { id: crypto.randomUUID(), label, done: false }
+  return { id: uuid(), label, done: false }
 }

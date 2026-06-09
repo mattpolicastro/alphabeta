@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
+import { ButtonLink } from "@/components/ui/Button";
 import { DashedPanel } from "@/components/ui/DashedPanel";
 import { BetCard } from "@/components/journal/BetCard";
 import { BoardView } from "@/components/journal/BoardView";
+import { TimelineView } from "@/components/plan/TimelineView";
 import { listBets, deleteBet } from "@/lib/bet/queries";
-import { seedDemoBets, clearDemoBets } from "@/lib/bet/seed";
 import {
   ALL_STATUSES,
   filterBetsByStatus,
@@ -14,10 +15,11 @@ import {
 import type { Bet, BetStatus } from "@/lib/db/types";
 
 type LoadState = "loading" | "loaded" | "empty";
-type Lens = "log" | "board";
+type Lens = "log" | "board" | "timeline";
 
 const STATUS_LABELS: Record<BetStatus, string> = {
   draft: "draft",
+  ready: "ready",
   locked: "locked",
   running: "running",
   resolved: "resolved",
@@ -49,26 +51,6 @@ export default function Home() {
     };
   }, [refresh]);
 
-  const hasDemo = bets.some((b) => b.id.startsWith("demo-bet-"));
-
-  const handleSeedDemo = async () => {
-    try {
-      await seedDemoBets();
-    } catch (e) {
-      console.error("seedDemoBets failed:", e);
-    }
-    await refresh();
-  };
-
-  const handleClearDemo = async () => {
-    try {
-      await clearDemoBets();
-    } catch (e) {
-      console.error("clearDemoBets failed:", e);
-    }
-    await refresh();
-  };
-
   const handleDeleteBet = async (id: string) => {
     try {
       await deleteBet(id);
@@ -92,14 +74,22 @@ export default function Home() {
   return (
     <div className="ab-wrap">
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
-        <div className="wordmark">
-          alph<span className="a">⍺</span>
-          <span className="b">β</span>eta
-        </div>
-        <div className="text-[13.5px] text-ink-soft mt-[6px]">
+        <div className="text-[13.5px] text-ink-soft">
           journal — every bet logged on this device. nothing leaves the browser.
         </div>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="This is your bet journal">
+          Every bet you create lives here — drafts, locked pre-registrations, running experiments, and resolved outcomes. Nothing leaves the browser.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Three views">
+          Switch between <b>log</b> (chronological list), <b>board</b> (kanban by status), and <b>timeline</b> (Gantt-style projection with contention detection).
+        </WalkthroughStep>
+        <WalkthroughStep n={3} title="Start a new bet">
+          The front door decomposes your idea into a structured bet — or skip straight to a blank draft with the express lane.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <div className="flex flex-wrap items-center gap-[14px] mb-[20px]">
         <ButtonLink variant="primary" href="/bet/new">
@@ -109,12 +99,16 @@ export default function Home() {
           <>
             <span className="text-[11px] text-ink-faint">·</span>
             <LensToggle value={lens} onChange={setLens} />
-            <span className="text-[11px] text-ink-faint">·</span>
-            <FilterChips
-              active={activeStatuses}
-              onToggle={toggleStatus}
-              counts={statusCounts(bets)}
-            />
+            {lens !== "timeline" && (
+              <>
+                <span className="flex-1" />
+                <FilterChips
+                  active={activeStatuses}
+                  onToggle={toggleStatus}
+                  counts={statusCounts(bets)}
+                />
+              </>
+            )}
           </>
         )}
       </div>
@@ -129,46 +123,9 @@ export default function Home() {
             The discipline starts the first time you sharpen a loose idea into
             something that can lose. Start your first bet to see it persist here.
           </p>
-          <Button
-            onClick={handleSeedDemo}
-            className="mt-[12px]"
-          >
-            Load demo bets
-          </Button>
-          <span className="text-[10.5px] text-ink-faint ml-[10px]">
-            5 fixtured bets across lifecycle stages, seeded from the GPS example board
-          </span>
         </DashedPanel>
       )}
 
-      {load === "loaded" && (
-        <div className="flex items-center gap-[10px] mb-[14px] text-[10.5px]">
-          {hasDemo ? (
-            <>
-              <span className="text-ink-faint uppercase tracking-[1px]">
-                demo data loaded
-              </span>
-              <button
-                type="button"
-                onClick={handleClearDemo}
-                className="btn"
-                style={{ fontSize: 10, padding: "3px 8px" }}
-              >
-                Clear demo bets
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSeedDemo}
-              className="btn"
-              style={{ fontSize: 10, padding: "3px 8px" }}
-            >
-              Load demo bets
-            </button>
-          )}
-        </div>
-      )}
 
       {load === "loaded" && (
         <>
@@ -187,6 +144,7 @@ export default function Home() {
           {filtered.length > 0 && lens === "board" && (
             <BoardView bets={filtered} onDeleteBet={handleDeleteBet} />
           )}
+          {lens === "timeline" && <TimelineView />}
         </>
       )}
     </div>
@@ -196,6 +154,7 @@ export default function Home() {
 function statusCounts(bets: Bet[]): Record<BetStatus, number> {
   const counts: Record<BetStatus, number> = {
     draft: 0,
+    ready: 0,
     locked: 0,
     running: 0,
     resolved: 0,
@@ -249,32 +208,30 @@ type LensToggleProps = {
 };
 
 function LensToggle({ value, onChange }: LensToggleProps) {
+  const lenses: { key: Lens; label: string }[] = [
+    { key: "log", label: "log" },
+    { key: "board", label: "board" },
+    { key: "timeline", label: "timeline" },
+  ];
   return (
     <div
       role="radiogroup"
       aria-label="View lens"
       className="flex gap-[6px]"
     >
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "log"}
-        onClick={() => onChange("log")}
-        className={value === "log" ? "btn btn-primary" : "btn"}
-        style={{ fontSize: 10.5, padding: "4px 9px" }}
-      >
-        log
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "board"}
-        onClick={() => onChange("board")}
-        className={value === "board" ? "btn btn-primary" : "btn"}
-        style={{ fontSize: 10.5, padding: "4px 9px" }}
-      >
-        board
-      </button>
+      {lenses.map(({ key, label }) => (
+        <button
+          key={key}
+          type="button"
+          role="radio"
+          aria-checked={value === key}
+          onClick={() => onChange(key)}
+          className={value === key ? "btn btn-primary" : "btn"}
+          style={{ fontSize: 10.5, padding: "4px 9px" }}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { uuid } from '@/lib/uuid'
 import {
   useCallback,
   useEffect,
@@ -98,7 +99,7 @@ export function CardShell({ card: initialCard }: CardShellProps) {
     if (inConnectMode && connectTarget) {
       dispatch({
         type: 'ADD_CONNECTION',
-        id: crypto.randomUUID(),
+        id: uuid(),
         fromCardId: connectSource!,
         toCardId: card.id,
       })
@@ -122,7 +123,7 @@ export function CardShell({ card: initialCard }: CardShellProps) {
       // Emit a synthetic click via the dispatch path.
       dispatch({
         type: 'ADD_CONNECTION',
-        id: crypto.randomUUID(),
+        id: uuid(),
         fromCardId: connectSource!,
         toCardId: card.id,
       })

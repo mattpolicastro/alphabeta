@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
@@ -100,11 +101,7 @@ function BetWagerInner() {
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>setup spine</Crumb>
               <Crumb>·</Crumb>
               <Crumb>the wager</Crumb>
@@ -124,6 +121,15 @@ function BetWagerInner() {
           outcome can be spun as a win.
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Name the bet, state the hypothesis">
+          A bet needs a title you can say in one sentence, and a hypothesis phrased as something that can lose. &quot;We believe X will cause Y&quot; — if Y doesn&apos;t happen, the bet lost.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Set the fold-if">
+          One number. If your metric moves less than this, you fold — no post-hoc rationalization. This is the mechanism that defeats goalpost-moving.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <SpineRail steps={lifecycleSteps(id)} />
       <BetSourceBadge cardId={cardId} />

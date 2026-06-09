@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { WagerStatic } from "@/components/bet/WagerStatic";
@@ -264,11 +265,7 @@ function RevisitBody({
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[16px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>lifecycle</Crumb>
               <Crumb>·</Crumb>
               <Crumb>revisit</Crumb>
@@ -286,6 +283,15 @@ function RevisitBody({
           <em className="text-terra not-italic">not the other way around.</em>
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Report against the locked record">
+          The experiment ran. Now compare actuals against what you pre-registered — the locked snapshot is the truth you committed to.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Win, loss, or inconclusive">
+          Record the outcome and your call (keep, hold, or revert). Deviations from the pre-registered plan get logged separately.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <SpineRail
         steps={[
@@ -542,12 +548,6 @@ function RevisitBody({
 function NoLockedBet() {
   return (
     <div className="ab-wrap">
-      <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
-        <div className="wordmark">
-          alph<span className="a">⍺</span>
-          <span className="b">β</span>eta · Revisit
-        </div>
-      </header>
       <div className="dashed-panel">
         <div className="dashed-panel-title">Nothing locked to revisit yet</div>
         <div className="dashed-panel-sub">

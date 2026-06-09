@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { CarriedWager } from "@/components/bet/CarriedWager";
@@ -209,11 +210,7 @@ function InstrumentPageInner() {
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>setup spine</Crumb>
               <Crumb>·</Crumb>
               <Crumb>instrument &amp; feasibility</Crumb>
@@ -231,6 +228,15 @@ function InstrumentPageInner() {
           smallest effect the instrument must detect.
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Choose your instrument">
+          The instrument is how you'll test the bet — A/B test, quasi-experiment, holdback, observational study, or moderated interviews.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Override with a reason">
+          If feasibility says one thing but you pick another, record why. The override reason becomes part of the locked record.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <SpineRail steps={lifecycleSteps(id)} />
       <BetSourceBadge cardId={bet?.cardId ?? null} />

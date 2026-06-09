@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { CarriedWager } from "@/components/bet/CarriedWager";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
@@ -172,11 +173,7 @@ function CriteriaPageInner() {
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>setup spine</Crumb>
               <Crumb>·</Crumb>
               <Crumb>decision criteria</Crumb>
@@ -196,6 +193,15 @@ function CriteriaPageInner() {
           you still can&apos;t see the result.
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Define what winning looks like">
+          Success criteria are the metrics and thresholds you commit to before seeing results. Primary metric, guardrails, and the minimum sample size.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Guardrails protect against tunnel vision">
+          A bet can hit its primary metric while breaking something else. Guardrails are the metrics that must not degrade.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <SpineRail steps={lifecycleSteps(id)} />
       <BetSourceBadge cardId={bet?.cardId ?? null} />

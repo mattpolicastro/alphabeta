@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useBoard } from '@/components/strategy/hooks/useBoardState'
+import { uuid } from '@/lib/uuid'
 import { getColumnDef } from '@/lib/strategy/templates'
 
 /**
@@ -86,7 +87,7 @@ export function DragConnectLayer({
             ) {
               dispatch({
                 type: 'ADD_CONNECTION',
-                id: crypto.randomUUID(),
+                id: uuid(),
                 fromCardId: dragging.sourceCardId,
                 toCardId: targetCardId,
               })

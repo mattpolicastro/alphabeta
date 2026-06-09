@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { BoardProvider } from "@/components/strategy/hooks/BoardProvider";
 import { Board } from "@/components/strategy/Board";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -71,14 +72,31 @@ function EmptyState() {
         onCancel={() => setDeleting(null)}
       />
 
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Strategy boards map the why">
+          Each board holds your North Star, drivers, problems, goals, and work items — and the lineage between them.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Pick a framework">
+          Choose from NSF, RICE, GPS, OKR, or GIST — each structures prioritization differently. Example boards show the framework in action.
+        </WalkthroughStep>
+        <WalkthroughStep n={3} title="Cards become bets">
+          Connect a strategy card to a bet to trace why you're running an experiment back to the business objective that motivated it.
+        </WalkthroughStep>
+      </Walkthrough>
+
       <div className="dashed-panel">
         <div className="dashed-panel-title">Strategy</div>
         <p>
           Strategy boards hold the North Star, drivers, problems, goals, and
           work — and the lineage between them.
         </p>
-        <p>
-          <Link href="/strategy/new">Start a new board →</Link>
+        <p className="mt-[12px]">
+          <Link
+            href="/strategy/new"
+            className="inline-block border-[1.5px] border-dashed border-terra-line bg-terra-soft px-[14px] py-[7px] text-[12px] font-bold text-terra hover:bg-terra hover:text-paper transition-colors"
+          >
+            Start a new board →
+          </Link>
         </p>
       </div>
 

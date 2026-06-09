@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
+import { takeSequenceSeed } from "@/lib/compose/handoff";
+import { uuid } from "@/lib/uuid";
 
 type Mode = "single" | "sequence";
 type DepType = "chain" | "fanin" | "parallel";
@@ -18,17 +21,29 @@ function Crumb({ children }: { children: React.ReactNode }) {
 export default function SequencingPage() {
   const [mode, setMode] = useState<Mode>("single");
   const [depType, setDepType] = useState<DepType>("chain");
-  const [subBets, setSubBets] = useState<SubBet[]>([
-    { id: "1", q: "Will a reminder email get opened?", instr: "A/B · subject lines" },
-    { id: "2", q: "Of opens, which CTA drives app login?", instr: "A/B · email body" },
-    { id: "3", q: "Does the reactivation persist past 7 days?", instr: "holdback" },
-  ]);
-
+  const [subBets, setSubBets] = useState<SubBet[]>([]);
   const [claim, setClaim] = useState("");
   const [mechanism, setMechanism] = useState("");
 
+  useEffect(() => {
+    const seed = takeSequenceSeed();
+    if (seed) {
+      setMode("sequence");
+      setDepType(seed.depType);
+      if (seed.claim) setClaim(seed.claim);
+      if (seed.mechanism) setMechanism(seed.mechanism);
+      setSubBets(
+        seed.subBets.map((sb, i) => ({
+          id: String(i + 1),
+          q: sb.question,
+          instr: sb.instrument,
+        })),
+      );
+    }
+  }, []);
+
   const addSubBet = () => {
-    setSubBets([...subBets, { id: crypto.randomUUID(), q: "", instr: "" }]);
+    setSubBets([...subBets, { id: uuid(), q: "", instr: "" }]);
   };
 
   const removeSubBet = (id: string) => {
@@ -44,11 +59,7 @@ export default function SequencingPage() {
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[16px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>Layer 2</Crumb>
               <Crumb>·</Crumb>
               <Crumb>sequencing</Crumb>
@@ -62,6 +73,15 @@ export default function SequencingPage() {
           <span className="text-terra font-medium">You arrive here from the strategy view.</span> The job: decide if this is one bet or a sequence of dependent bets — and if it's a sequence, lay out the shape.
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Single or sequence?">
+          A single bet stands alone. A sequence chains multiple bets where each depends on the previous — the order is the hypothesis.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="Dependency shapes">
+          Chain = sequential. Fan-in = multiple signals converging on one decision. Parallel = independent bets sharing a surface.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <div className="border-[1.5px] border-solid border-green-line bg-green-soft p-[14px] mb-[18px] relative">
         <div className="absolute top-[-9px] left-[14px] bg-paper px-[8px] text-[9.5px] tracking-[2px] text-green">CARRIED FROM STRATEGY</div>

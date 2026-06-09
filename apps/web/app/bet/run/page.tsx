@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
@@ -142,11 +143,7 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[16px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>lifecycle</Crumb>
               <Crumb>·</Crumb>
               <Crumb>in-flight</Crumb>
@@ -175,6 +172,15 @@ function InFlightDashboard({ bet }: { bet: Bet }) {
           )}
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="The experiment is live">
+          Monitor progress against your locked pre-registration. The fold-if threshold is your stop-loss — if the metric crosses it, the bet folds automatically.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="No peeking, no tweaking">
+          The locked record is the truth you committed to. Mid-flight changes invalidate the pre-registration. If you need a change, it becomes a new version.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <SpineRail steps={lifecycleSteps} />
       <BetSourceBadge cardId={bet.cardId} />

@@ -4,16 +4,17 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AnnotationSidebar } from "@/components/bet/AnnotationSidebar";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { SpineRail, type SpineStep } from "@/components/bet/SpineRail";
 import { BetSourceBadge } from "@/components/bet/BetSourceBadge";
 import { WagerStatic } from "@/components/bet/WagerStatic";
 import { buildLockedSnapshotFromBet } from "@/lib/bet/factory";
-import { getBet, lockBet } from "@/lib/bet/queries";
+import { getBet, lockBet, markReady, unmarkReady } from "@/lib/bet/queries";
 import type { AbBet } from "@/lib/bet/storage";
 import { fingerprint } from "@/lib/integrity/fingerprint";
 import type { Bet } from "@/lib/db/types";
 
-type LockState = "loading" | "missing" | "draft" | "confirming" | "locked";
+type LockState = "loading" | "missing" | "draft" | "ready" | "confirming" | "locked";
 
 type CommittedView = {
   betId: string;
@@ -62,6 +63,8 @@ function CommitAndLockInner() {
             fingerprint: row.fingerprint ?? "",
           });
           setState("locked");
+        } else if (row.status === "ready") {
+          setState("ready");
         } else {
           setState("draft");
         }
@@ -123,14 +126,10 @@ function CommitAndLockInner() {
       <header className="border-b-[1.5px] border-dashed border-rule pb-[18px] mb-[20px]">
         <div className="flex justify-between items-start gap-[18px] flex-wrap">
           <div>
-            <div className="wordmark">
-              alph<span className="a">⍺</span>
-              <span className="b">β</span>eta
-            </div>
-            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px] mt-[6px]">
+            <div className="flex flex-wrap gap-x-[14px] gap-y-[6px]">
               <Crumb>commit &amp; lock</Crumb>
               <Crumb>·</Crumb>
-              <Crumb>draft → freeze</Crumb>
+              <Crumb>draft → ready → freeze</Crumb>
               <Crumb>·</Crumb>
               <Crumb>SHA-256 fingerprint</Crumb>
             </div>
@@ -141,15 +140,25 @@ function CommitAndLockInner() {
           <span className="text-green font-medium">
             Everything&apos;s carried here.
           </span>{" "}
-          Two steps: keep it a <em className="text-terra not-italic">draft</em>{" "}
-          and stay editable, or <em className="text-terra not-italic">lock</em>{" "}
-          — timestamp the whole pre-registration and freeze every field. Once
-          locked, it&apos;s measured against later results,{" "}
+          Three states:{" "}
+          <em className="text-terra not-italic">draft</em> (editable) →{" "}
+          <em className="text-terra not-italic">ready</em> (reviewed, staged for lock) →{" "}
+          <em className="text-terra not-italic">locked</em> (frozen, fingerprinted).
+          Once locked, it&apos;s measured against later results,{" "}
           <em className="text-terra not-italic">
             never edited to match them.
           </em>
         </p>
       </header>
+
+      <Walkthrough>
+        <WalkthroughStep n={1} title="Three states: draft, ready, locked">
+          Draft is editable. Ready means you've reviewed it and staged it for lock. Locked freezes every field and timestamps it with a SHA-256 fingerprint.
+        </WalkthroughStep>
+        <WalkthroughStep n={2} title="The lock is the product">
+          Once locked, the bet is measured against later results — never edited to match them. Need a change? It becomes a new version.
+        </WalkthroughStep>
+      </Walkthrough>
 
       <SpineRail steps={lifecycleSteps(id, isLocked)} />
       <BetSourceBadge cardId={betRow?.cardId ?? null} />
@@ -162,13 +171,15 @@ function CommitAndLockInner() {
                 Pre-registration — decision journal entry
               </div>
               <div
-                className={
+                className={`text-[10.5px] uppercase tracking-[1px] font-bold ${
                   isLocked
-                    ? "text-[10.5px] uppercase tracking-[1px] text-terra font-bold"
-                    : "text-[10.5px] uppercase tracking-[1px] text-ink-soft"
-                }
+                    ? "text-terra"
+                    : state === "ready"
+                      ? "text-plinth"
+                      : "text-ink-soft"
+                }`}
               >
-                {isLocked ? "● locked" : "● draft · editable"}
+                {isLocked ? "● locked" : state === "ready" ? "● ready · staged" : "● draft · editable"}
               </div>
             </div>
 
@@ -251,10 +262,43 @@ function CommitAndLockInner() {
                 <Button
                   variant="primary"
                   style={{ width: "100%" }}
-                  onClick={() => setState("confirming")}
+                  onClick={async () => {
+                    if (id) {
+                      try { await markReady(id); } catch { /* already ready */ }
+                    }
+                    setState("ready");
+                  }}
                   disabled={!canLock}
                 >
+                  Mark as ready ▸
+                </Button>
+              </>
+            )}
+
+            {state === "ready" && (
+              <>
+                <div className="text-[12px] leading-[1.6] mb-[12px]">
+                  This bet is <b>ready to lock</b>. Review the record on the
+                  left one last time — locking freezes every field and
+                  timestamps it.
+                </div>
+                <Button
+                  variant="primary"
+                  style={{ width: "100%", marginBottom: 8 }}
+                  onClick={() => setState("confirming")}
+                >
                   Commit &amp; lock ▸
+                </Button>
+                <Button
+                  style={{ width: "100%" }}
+                  onClick={async () => {
+                    if (id) {
+                      try { await unmarkReady(id); } catch { /* already draft */ }
+                    }
+                    setState("draft");
+                  }}
+                >
+                  ← back to draft
                 </Button>
               </>
             )}
@@ -306,10 +350,11 @@ function CommitAndLockInner() {
             body={
               <>
                 <p>
-                  The two-step is the whole ethic: low-friction <em>draft</em>{" "}
-                  so nobody&apos;s gated out, then a deliberate <em>lock</em>{" "}
-                  that makes the commitment real. Compliance gates get routed
-                  around; a timestamp doesn&apos;t.
+                  The three-step is the whole ethic: low-friction{" "}
+                  <em>draft</em> so nobody&apos;s gated out,{" "}
+                  <em>ready</em> to signal you&apos;ve reviewed it, then a
+                  deliberate <em>lock</em> that makes the commitment real.
+                  Compliance gates get routed around; a timestamp doesn&apos;t.
                 </p>
                 <p>
                   The fingerprint is the integrity primitive — a content hash

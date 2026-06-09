@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Walkthrough, WalkthroughStep } from "@/components/shell/Walkthrough";
 import { mintBoard } from "@/lib/strategy/queries";
 import { defaultBoardState } from "@/lib/strategy/constants";
 import { TEMPLATES, getTemplate } from "@/lib/strategy/templates";
@@ -28,6 +29,7 @@ function NewBoardInner() {
 
   const [showPicker, setShowPicker] = useState(false);
   const [creating, setCreating] = useState(false);
+  const mintedRef = useRef(false);
 
   // ?example=<templateId> → seed with that template's example board
   useEffect(() => {
@@ -35,23 +37,20 @@ function NewBoardInner() {
       setShowPicker(true);
       return;
     }
-    let cancelled = false;
+    if (mintedRef.current) return;
+    mintedRef.current = true;
     setCreating(true);
     (async () => {
       try {
         const initial = getTemplate(validExample).exampleBoard();
         const row = await mintBoard(initial);
-        if (!cancelled) {
-          router.replace(`/strategy?id=${row.id}`);
-        }
+        router.replace(`/strategy?id=${row.id}`);
       } catch (err) {
         console.error("Failed to create new board:", err);
+        mintedRef.current = false;
         setCreating(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [router, validExample]);
 
   const handleSelect = useCallback(
@@ -77,11 +76,23 @@ function NewBoardInner() {
 
   if (showPicker) {
     return (
-      <TemplatePicker
-        open
-        onSelect={handleSelect}
-        onCancel={handleCancel}
-      />
+      <>
+        <div className="ab-wrap">
+          <Walkthrough>
+            <WalkthroughStep n={1} title="Choose a prioritization framework">
+              Each framework structures how you think about work differently — NSF for north-star alignment, RICE for scoring, OKR for objectives, GPS or GIST for goal-driven planning.
+            </WalkthroughStep>
+            <WalkthroughStep n={2} title="Pre-built examples">
+              The example boards show the framework in action with realistic cards. Start from an example or create a blank board.
+            </WalkthroughStep>
+          </Walkthrough>
+        </div>
+        <TemplatePicker
+          open
+          onSelect={handleSelect}
+          onCancel={handleCancel}
+        />
+      </>
     );
   }
 

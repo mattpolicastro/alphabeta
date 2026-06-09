@@ -1,4 +1,5 @@
 import type { GoalFields, Milestone } from '@/lib/strategy/types'
+import { uuid } from '@/lib/uuid'
 import { MetricChips } from '../MetricChips'
 import { MilestoneBar } from '../MilestoneBar'
 import { Labeled, TextArea, TextInput } from './sharedEdit'
@@ -102,7 +103,7 @@ function GoalEdit({
   function addMilestone() {
     const next = [
       ...(fields.milestones ?? []),
-      { id: crypto.randomUUID(), label: '', done: false },
+      { id: uuid(), label: '', done: false },
     ]
     onDraft({ ...fields, milestones: next })
   }

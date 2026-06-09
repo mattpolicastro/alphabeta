@@ -8,18 +8,12 @@
 
 import { getDb } from "@/lib/db";
 import type { BoardRow, BoardState } from "@/lib/strategy/types";
-
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `board-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
+import { uuid } from "@/lib/uuid";
 
 export async function mintBoard(initial: BoardState): Promise<BoardRow> {
   const now = new Date().toISOString();
   const row: BoardRow = {
-    id: newId(),
+    id: uuid(),
     ownerId: null,
     ...initial,
     createdAt: now,
