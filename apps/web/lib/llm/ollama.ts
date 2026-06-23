@@ -102,6 +102,7 @@ function ollamaPayload(
     stream: false,
     format: "json",
     think: false,
+    keep_alive: -1,
     options: {
       num_predict: opts?.maxTokens ?? 1024,
       temperature: opts?.temperature ?? 0.3,

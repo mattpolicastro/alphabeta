@@ -48,6 +48,7 @@ export async function negotiateProvider(): Promise<LLMProvider> {
         messages: [{ role: "user", content: "ping" }],
         stream: false,
         think: false,
+        keep_alive: -1,
         options: { num_predict: 1 },
       }),
       signal: AbortSignal.timeout(3000),
