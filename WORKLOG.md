@@ -1,5 +1,23 @@
 # WORKLOG
 
+## 2026-06-23 — Demo on mlpc-ubuntu; aipc-ubuntu provisioned as primary dev box
+
+**What:** Brought the prototype up on mlpc-ubuntu for a quick demo, then stood up the new aipc-ubuntu machine as the primary agentic-engineering box — cloned repo, installed toolchain/deps, verified tests + dev server + local Ollama LLM path end to end.
+
+**Decisions:**
+- Committed `keep_alive: -1` (01a31a7) on the Ollama inference payload + provider-negotiation ping to pin the chat/extraction model in VRAM on dedicated local-LLM dev boxes (no cold-load stall). Kept as a committed default since the only Ollama consumers are dev boxes.
+- aipc `.env.local` points `NEXT_PUBLIC_LLM_MODEL` at the already-pulled `qwen3.6:27b-mtp-q8_0` rather than pulling the `.env.example` default `qwen3.6:27b` (saved a ~17GB download). `.env.local` stays gitignored/machine-local.
+- aipc clones/pushes over HTTPS via the `gh` credential helper (no SSH key present); repo is public so clone needs no auth.
+
+**Verify:** 730 tests pass (62 files); dev server 200 at :3000; Ollama inference ping 200, model resident `100% GPU / Forever`.
+
+**Next:**
+- Mac Studio checkout is 79 commits behind `origin/main` — clean fast-forward pull when convenient.
+- aipc lacks `nvidia-smi`/`nvtop` on PATH for GPU monitoring during agent runs.
+- Pinned model holds ~30GB VRAM `Forever` on aipc; `ollama stop` to reclaim.
+
+---
+
 ## 2026-06-04 (cont. 2) — Sprint 4c: Strategy UX, test coverage, schema refinement
 
 Continuation of overnight session (second context compaction).
