@@ -1,5 +1,64 @@
 # WORKLOG
 
+## 2026-08-16 → 08-25 — Foundations pivot: graph canvas prototype, event grammar, brand v0
+
+**What:** Reframed the project from a five-layer screens app to a schema-first
+substrate with a graph canvas as its primary projection. Built a working
+prototype, settled an event grammar through seven stress rounds, and landed a
+brand system.
+
+**The pivot:** the concept model had been expressed as UI (one route per
+lifecycle stage), so concept iteration was expensive — a lock-timing change
+forced a screen rebuild. New position: schema = append-only event log +
+projections; the canvas, ledger, docket, and calibration views are all folds
+over one log. `apps/web` becomes a quarry (copy-and-adapt), not a maintained app.
+
+**Prototype** (`prototypes/graph-canvas`, Vite + React Flow, deliberately
+disposable): five node kinds (goal/problem/question/solution/bet), tree
+auto-layout with horizontal default, server-canonical state via a relay plugin,
+a conversational "open field" (Claude or a local Ollama model as facilitator),
+ceremony overlays (lock with premortem, resolve with computed bucket +
+required deviation, answer with expectation-before-lookup, amend), dossier
+panel with per-kind faces, kanban ledger with ceremony-gated drags, and a
+gantt docket with dependency leader lines.
+
+**Grammar** (`shape/`): 18 event kinds + constraints; seq tags, gates, evidence
+links, and layout demoted to projections; rubric kept out of the log as policy.
+Survived red-team (0 silent slips after 4 fixes), foreign-domain transplant
+(prereg, ADR, ML eval), volume (199 events), projection completeness, authority
+modelling, and ingestion of a third-party CRO audit. Instrument ladder settled
+(A/B → quasi/holdback → study → pre/post → ship-and-watch), each rung with a
+ceremony and a validity ceiling; "just do it" is the bottom rung, not a
+separate kind. Feasibility reclassified as instrument-capability context, not
+graph content.
+
+**Literature:** six bodies reviewed (design-rationale capture, safety science,
+forecasting/JDM, lab notebooks, commitment devices, surrogate endpoints). Named
+the central wager: the LLM inverts Grudin's capture-cost asymmetry — the user
+talks, the assistant does the recording. Every capture moment must pay the
+author immediately; the archive is a byproduct.
+
+**Local models:** qwen3.8:27b scores ~17/19 against frontier-quality reference
+responses on the reflect tier (passes the confound trap; ~98s/case), qwen3-
+coder-next ~15/19 and fast. The June assumption that feedback needs a frontier
+model is dead on this hardware.
+
+**Brand v0:** αlphaβeta wordmark in Commissioner 900 (native Greek), "the
+Instrument" register (Barlow SC headings, Barlow body, IBM Plex Mono data),
+ballpoint ultramarine #4059d8 spent only on commitment marks, cool chalk /
+graphite grounds, light-dark toggle. Two system laws: state-as-style (draft =
+pencil, locked = ink) and accent-never-decorates.
+
+**Not committed, deliberately:** `sessions/` (live-use corpus), `shape/eval/*.json`
+(eval cases and model outputs), `runtime/` (board state). These contain real
+work material and stay local.
+
+**Next:** push; wire maturation/runtime into the lock ceremony (the docket
+defaults to 14 days today); tier-B surfaces (diff, history scrubber, focus
+mode); more live sessions to grow the corpus.
+
+---
+
 ## 2026-06-23 — Demo on mlpc-ubuntu; aipc-ubuntu provisioned as primary dev box
 
 **What:** Brought the prototype up on mlpc-ubuntu for a quick demo, then stood up the new aipc-ubuntu machine as the primary agentic-engineering box — cloned repo, installed toolchain/deps, verified tests + dev server + local Ollama LLM path end to end.
