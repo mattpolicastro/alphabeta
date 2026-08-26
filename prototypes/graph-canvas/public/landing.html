@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta — the tools aren't missing. The discipline is.</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:64px 0; border-bottom:1px solid var(--line) }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h1 u { text-decoration:none; border-bottom:4px solid var(--accent) }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink) }
+  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  .loop { display:grid; gap:12px; grid-template-columns:repeat(5,1fr); counter-reset:step }
+  .loop .tile::before { counter-increment:step; content:'0' counter(step); display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); margin-bottom:8px }
+  blockquote { margin:0; padding:20px 24px; border-left:3px solid var(--accent); background:var(--card); font-size:17.5px }
+  .callout { padding:28px; border:1.5px solid var(--ink); background:var(--card) }
+  ul { padding-left:20px } li { margin-bottom:8px }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+  @media (max-width:720px){ .loop { grid-template-columns:1fr 1fr } }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <span class="wordmark">αlphaβeta</span>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<!-- ═══ HERO ═══ -->
+<section>
+  <div class="eyebrow">a discipline layer for decisions that get tested</div>
+  <h1>The tools aren&rsquo;t missing.<br><u>The discipline is.</u></h1>
+  <p class="lede">αlphaβeta is a thinking partner for empirical work. Talk through what you're trying to do; it pushes back, maps the problems, and holds you to what you said before the data existed.</p>
+  <a class="cta primary" href="#how">See how it works</a>
+  <a class="cta" href="#try">Try the open field</a>
+</section>
+
+<!-- ═══ PROBLEM ═══ -->
+<section>
+  <div class="eyebrow">The problem</div>
+  <h2>Most teams don't lose to bad statistics. They lose to moving goalposts.</h2>
+  <div class="grid">
+    <div class="tile"><h3>Wins declared after the fact</h3><p class="muted">A test comes back mushy. Someone finds the segment that moved. Six months later nobody remembers what "success" was supposed to mean.</p></div>
+    <div class="tile"><h3>Ideas that never had a problem</h3><p class="muted">Features get built because someone wanted them. Nobody wrote down what they were supposed to fix — so nothing can prove they didn't.</p></div>
+    <div class="tile"><h3>Zombie projects</h3><p class="muted">A loss with no agreed meaning doesn't die. It mutates into "the next version." The cost is every test slot it keeps occupying.</p></div>
+  </div>
+  <p style="margin-top:24px">Every experimentation platform tells you whether you <em>can</em> run a test. None of them ask whether you <em>should</em> — or remember what you promised.</p>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section id="how">
+  <div class="eyebrow">How it works</div>
+  <h2>One loop, five moments.</h2>
+  <div class="loop">
+    <div class="tile"><h3>Talk</h3><p class="muted">Dump what you're thinking, in plain language. No forms.</p></div>
+    <div class="tile"><h3>Map</h3><p class="muted">It builds the picture as you talk: goals, problems, open questions, ideas — and asks what each idea is actually for.</p></div>
+    <div class="tile"><h3>Commit</h3><p class="muted">Before a test or launch: why you believe it, how you'll know, and the result that makes you walk away. Written down, dated, before results exist.</p></div>
+    <div class="tile"><h3>Resolve</h3><p class="muted">Outcome lands next to the prediction. The bucket is computed from what you committed — not from the mood in the room.</p></div>
+    <div class="tile"><h3>Calibrate</h3><p class="muted">Over time: how good your judgment actually is, and where it's reliably wrong.</p></div>
+  </div>
+</section>
+
+<!-- ═══ THE MAP ═══ -->
+<section>
+  <div class="eyebrow">The map</div>
+  <h2>Goals flow down. Evidence folds back up.</h2>
+  <p>Everything you discuss becomes a node on a living map: <strong>goals</strong> at the top, the <strong>problems</strong> blocking them, the <strong>questions</strong> you can answer with a lookup instead of a test, the <strong>solutions</strong> competing to solve each problem, and the <strong>bets</strong> you've committed to run.</p>
+  <p>Answer a question and it folds into the problem it informed. Lose a bet and the branch it was gating visibly prunes. Kill an idea before testing it — the map remembers that as a win, because it was one.</p>
+  <p class="muted">[visual: the canvas — altitude cascade, folded questions, a pruned branch]</p>
+</section>
+
+<!-- ═══ A REAL EXAMPLE (public, citable) ═══ -->
+<section>
+  <div class="eyebrow">A real example</div>
+  <h2>Seven changes, one test, no way to learn.</h2>
+  <blockquote>Before a year-end campaign, a nonprofit shipped a full donation-form redesign — seven simultaneous changes bundled into one A/B test. Revenue dropped 69.6%. The post-mortem: "test individual elements separately to identify which changes caused the decline."</blockquote>
+  <p style="margin-top:20px">The test ran fine. The <em>bet</em> was malformed: seven mechanisms in one wager means no result — win or lose — can say which change did what. That's knowable before a single visitor arrives.</p>
+  <p>αlphaβeta's admission step asks the questions that were skippable here: <em>what problem does each change solve, what's the mechanism, and can this test actually resolve it?</em> Sometimes the honest answer is a smaller test. Sometimes it's no test at all — which is the cheapest win there is.</p>
+  <p class="muted">Source: <a href="https://www.nextafter.com/experiments/how-a-radically-redesigned-donation-form-impacted-gifts/" >NextAfter research library, Buckner International donation-form experiment</a>.</p>
+</section>
+
+<!-- ═══ DIFFERENT ═══ -->
+<section>
+  <div class="eyebrow">What's different</div>
+  <h2>Built for the person who cares. Happens to protect them when a colleague doesn't.</h2>
+  <div class="grid">
+    <div class="tile"><h3>It listens instead of demanding forms</h3><p class="muted">Every tool like this has died of homework. Here the writing-down is done for you by a partner that pushes back while you think. You get sharper thinking now; the record is a free side effect.</p></div>
+    <div class="tile"><h3>Honesty is rewarded, not policed</h3><p class="muted">Changed the plan mid-way? Recording it counts <em>in your favor</em> — the way aviation turned confession into a safety system. Nothing blocks you. Everything is remembered.</p></div>
+    <div class="tile"><h3>It judges the "should," not the "can"</h3><p class="muted">It asks what an idea is for, whether the evidence supports it, and whether the test can even resolve — and cheerfully kills bad ideas before they cost six weeks of traffic.</p></div>
+    <div class="tile"><h3>Yours</h3><p class="muted">Runs privately. No account. Your data never leaves your machine unless you choose — and it works alongside whatever platform you already test on.</p></div>
+  </div>
+</section>
+
+<!-- ═══ WHO ═══ -->
+<section>
+  <div class="eyebrow">Who it's for</div>
+  <h2>People who run tests and would like to be held to them.</h2>
+  <ul>
+    <li><strong>Domain experts with a stats-shaped gap</strong> — researchers, designers, marketers who own the decision and want the method handled honestly.</li>
+    <li><strong>Practitioners</strong> who know the process and want the commitment loop without the ceremony.</li>
+    <li><strong>Small teams pushing back</strong> on decisions that arrive without reasons.</li>
+  </ul>
+  <p class="muted">Not for: exploratory or creative work where the goal is discovered in the making. Pre-commitment is the wrong tool there, and alphaBeta says so.</p>
+</section>
+
+<!-- ═══ PRINCIPLES ═══ -->
+<section>
+  <div class="callout">
+    <div class="eyebrow">Principles</div>
+    <ul>
+      <li>Nudge, never gate. Everything is recorded; nothing is blocked.</li>
+      <li>Commitments are dated and tamper-evident — but the lock is a property of the record, not a wall in your way.</li>
+      <li>Discipline stats are private by default and never a leaderboard.</li>
+      <li>Platform-agnostic. Method-agnostic. A/B tests are one instrument, not the product.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section id="try">
+  <div class="eyebrow">Status</div>
+  <h2>In development, built in the open.</h2>
+  <p>αlphaβeta is being designed through live use — every session shapes the next version. If you run experiments and recognize the problems above, we'd like to hear how they show up where you work.</p>
+  <a class="cta primary" href="#">Get in touch</a>
+  <a class="cta" href="https://github.com/mattpolicastro/alphabeta">Follow the work</a>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+</body>
+</html>

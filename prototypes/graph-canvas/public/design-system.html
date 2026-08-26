@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta — design system v0</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff;
+    --win:#2e7d5b; --incon:#b58a1e; --loss:#c0392b;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+    --win:#4faf87; --incon:#d4a83c; --loss:#e06552;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:15px/1.55 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:.2s }
+  main { max-width:960px; margin:0 auto; padding:24px 24px 80px }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 0 6px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:22px; letter-spacing:-.02em }
+  .wordmark small { font-family:'IBM Plex Mono',monospace; font-weight:400; font-size:11px; color:var(--dim); letter-spacing:0 }
+  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  h2.sec { font-family:'Barlow Semi Condensed',sans-serif; font-size:13px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:52px 0 18px; display:flex; align-items:center; gap:10px }
+  h2.sec::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .note { font-size:12.5px; color:var(--dim); max-width:640px; margin:-8px 0 18px }
+  .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start }
+  .mono { font-family:'IBM Plex Mono',monospace }
+
+  /* tokens */
+  .swatches { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
+  .swatch { border:1px solid var(--line); background:var(--card) }
+  .swatch .c { height:52px }
+  .swatch .l { padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--dim) }
+
+  .ramp > div { display:flex; align-items:baseline; gap:16px; margin-bottom:8px }
+  .ramp .lbl { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--dim); width:150px; flex-shrink:0 }
+
+  /* primitives */
+  .btn { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; border:1.5px solid var(--ink); background:none; color:var(--ink); padding:10px 18px; margin-right:10px; cursor:pointer }
+  .btn.pri { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .btn.sm { font-size:11px; padding:5px 12px }
+  .chip { font-family:'Barlow Semi Condensed',sans-serif; font-size:10px; letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--line); padding:2px 8px; margin-right:6px; color:var(--dim); display:inline-block; margin-bottom:6px }
+  .chip.tag { font-family:'IBM Plex Mono',monospace; border-color:var(--ink); color:var(--ink); font-weight:600 }
+  .chip.answered { color:var(--win); border-color:var(--win) }
+  .chip.detonated { color:var(--loss); border-color:var(--loss) }
+  .chip.locked { background:var(--ink); color:var(--ground); border-color:var(--ink) }
+  .chip.running { background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); animation:pulse 1.6s infinite }
+  .chip.win { background:var(--win); color:#fff; border-color:var(--win) }
+  .chip.loss { background:var(--loss); color:#fff; border-color:var(--loss) }
+  .chip.incon { background:var(--incon); color:#fff; border-color:var(--incon) }
+  .chip.gated { border-style:dashed; color:var(--incon); border-color:var(--incon) }
+  .chip.pruned { border-style:dashed; opacity:.5 }
+  .chip.invalid { border-style:dashed; color:var(--loss); border-color:var(--loss) }
+  .chip.owner { font-family:'IBM Plex Mono',monospace; text-transform:none; letter-spacing:0 }
+  @keyframes pulse { 50% { opacity:.55 } }
+  .input { font-family:'IBM Plex Mono',monospace; font-size:12px; border:1.5px dashed var(--dim); background:none; color:var(--ink); padding:9px 11px; width:240px }
+  .input:focus { outline:none; border-style:solid; border-color:var(--accent) }
+  .seal { background:var(--accent); color:var(--accent-contrast); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; padding:5px 11px; transform:rotate(-2deg); display:inline-block }
+  .dimlbl { font-family:'Barlow Semi Condensed',sans-serif; font-size:10.5px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; display:flex; align-items:center; gap:8px; width:100% }
+  .dimlbl::before,.dimlbl::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .annot { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent) }
+  .dot { width:8px; height:8px; display:inline-block; margin-right:6px }
+  .dot.up { background:var(--win) } .dot.down { background:var(--loss); animation:pulse 1s infinite }
+
+  /* node cards */
+  .node { background:var(--card); border:1px solid var(--line); padding:11px 13px; width:235px; font-size:12px; line-height:1.45 }
+  .node .eyebrow { font-family:'Barlow Semi Condensed',sans-serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:4px }
+  .node .title { font-weight:600 }
+  .node.goal { border:2px solid var(--ink) }
+  .node.question { border-style:dotted; border-color:var(--dim) }
+  .node.question .eyebrow { color:var(--incon) }
+  .node.answered { opacity:.6; border-style:solid }
+  .takeaway { margin-top:5px; color:var(--win); font-weight:600; font-size:11px }
+  .achip { float:right; color:var(--win); font-size:9px; letter-spacing:.1em; border:1px solid var(--win); padding:0 4px }
+  .node.bet { width:260px; border-left:4px solid var(--accent) }
+  .node.bet.draft { border-left-color:var(--dim); border-style:dashed }
+  .node.bet.winb { border-left-color:var(--win) }
+  .betmeta { font-family:'IBM Plex Mono',monospace; font-size:10.5px; margin-top:4px; color:var(--dim) }
+  .foldif { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--accent); font-weight:600; margin-top:5px }
+  .node.gatedn { opacity:.75; border-style:dashed }
+  .node.prunedn { opacity:.3; filter:grayscale(1) }
+
+  /* conversation */
+  .threadbox { border:1px dashed var(--accent); background:var(--card); width:360px; padding:10px 12px }
+  .msgrow { display:flex; margin:6px 0 } .msgrow.you { justify-content:flex-end }
+  .msg { max-width:82%; padding:5px 9px; font-size:12px }
+  .msg.you { border:1px solid var(--ink); background:var(--ground); text-align:right }
+  .msg.claude { border-left:3px solid var(--accent); color:var(--accent) }
+  .msgstatus { font-size:8.5px; margin-top:3px; color:var(--dim); letter-spacing:.06em }
+  .dockrow { display:flex; gap:10px; align-items:center; border-top:1px dashed var(--accent); margin-top:8px; padding-top:8px }
+  .dockeyebrow { font-family:'Barlow Semi Condensed',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); white-space:nowrap }
+  .facbtn { font-family:'IBM Plex Mono',monospace; font-size:9px; background:none; border:1px dashed var(--accent); color:var(--accent); padding:1px 7px; cursor:pointer }
+
+  /* ledger + edges */
+  .ledger { border:1px solid var(--line); background:var(--card); font-family:'IBM Plex Mono',monospace; font-size:11.5px; width:100% }
+  .ledger > div { display:flex; gap:14px; padding:7px 12px; border-bottom:1px solid var(--line) }
+  .ledger > div:last-child { border-bottom:none }
+  .ledger .k { color:var(--accent); width:150px; flex-shrink:0 }
+  .ledger .t { color:var(--dim); margin-left:auto }
+  .edges div { display:flex; align-items:center; gap:10px; font-size:12px; margin-bottom:8px }
+  .ew { width:56px; border-top:2px solid var(--ink) }
+  .ew.acc { border-color:var(--accent) } .ew.dash { border-top-style:dashed; border-color:var(--accent) }
+  .ew.dot2 { border-top-style:dotted; border-color:var(--dim) } .ew.grn { border-color:var(--win) }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <span class="wordmark">αlphaβeta <small>· design system v0</small></span>
+    <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+  </div>
+  <p class="note">The Instrument register. Two laws travel with every component: <b>state-as-style</b> (draft = pencil/dashed, committed = ink/solid) and <b>accent = commitment only</b> (ballpoint ultramarine never decorates).</p>
+
+  <h2 class="sec">color tokens</h2>
+  <div class="swatches" id="swatches"></div>
+
+  <h2 class="sec">type</h2>
+  <div class="ramp">
+    <div><span class="lbl">wordmark · Commissioner 900</span><span class="wordmark" style="font-size:30px">αlphaβeta</span></div>
+    <div><span class="lbl">display · Barlow SC 700/44</span><span style="font-family:'Barlow Semi Condensed';font-weight:700;font-size:44px;line-height:1">Fold if it fails.</span></div>
+    <div><span class="lbl">h2 · Barlow SC 700/29</span><span style="font-family:'Barlow Semi Condensed';font-weight:700;font-size:29px">Evidence before mechanism</span></div>
+    <div><span class="lbl">label · Barlow SC 600/11</span><span style="font-family:'Barlow Semi Condensed';font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)">bet 0007 · locked 2026-08-23</span></div>
+    <div><span class="lbl">body · Barlow 400/15</span><span>A bet is a claim with stakes; a question is answerable from data.</span></div>
+    <div><span class="lbl">data · Plex Mono 400/12</span><span class="mono" style="font-size:12px">conv 1.4% · gift $87 · fold-if +2pp · conf 0.6</span></div>
+  </div>
+
+  <h2 class="sec">primitives</h2>
+  <div class="row" style="align-items:center">
+    <span><button class="btn pri">Run the loop</button><button class="btn">Spec sheet</button><button class="btn sm">re-layout</button></span>
+    <input class="input" placeholder="fold if…">
+    <span class="seal">LOCKED · 2026-08-23</span>
+    <span class="annot">← witnessed, 08-23</span>
+    <span><span class="dot up"></span><span class="dot down"></span><span style="font-size:11px;color:var(--dim)">relay state</span></span>
+  </div>
+  <div style="margin-top:14px" class="dimlbl">dimension label — section &amp; card headers</div>
+
+  <h2 class="sec">chips — lifecycle family</h2>
+  <div>
+    <span class="chip tag">B7</span><span class="chip tag">Q4</span>
+    <span class="chip">draft</span><span class="chip">ready</span><span class="chip locked">locked</span><span class="chip running">running</span>
+    <span class="chip win">win</span><span class="chip loss">loss</span><span class="chip incon">incon.</span><span class="chip invalid">invalid</span>
+    <span class="chip gated">gated</span><span class="chip pruned">pruned</span>
+    <span class="chip answered">✓ answered</span><span class="chip detonated">✕ detonated</span>
+    <span class="chip owner">owner: PM</span>
+  </div>
+
+  <h2 class="sec">node cards</h2>
+  <div class="row">
+    <div class="node goal"><div class="eyebrow">G1 · goal</div><div class="title">Increase revenue per visitor through checkout</div></div>
+    <div class="node"><div class="eyebrow">P5 · problem</div><div class="title">Form friction unquantified (steps, mobile, wallets)</div></div>
+    <div class="node question"><div class="eyebrow">Q6 · question</div><div class="title">Where do people abandon — step drop-off, mobile vs desktop?</div></div>
+    <div class="node question answered"><div class="eyebrow">Q1 · question<span class="achip">✓ answered</span></div><div class="title">What are baseline conversion and average gift?</div><div class="takeaway">→ conv 1.4% vs 2.5–3% peer — slack is in conversion</div></div>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <div class="node bet draft"><div class="eyebrow" style="color:var(--dim)">B9 · bet · draft</div><div class="title">Stepped checkout experience</div><div class="betmeta">↑ conversion · (magnitude tbd)</div><div class="foldif" style="color:var(--dim)">fold if: (not yet declared)</div></div>
+    <div class="node bet"><div class="eyebrow">B7 · bet · locked</div><div class="title">Default the gift array to monthly</div><div class="betmeta">↑ recurring conversion · +2pp</div><div class="foldif">FOLD IF monthly signups &lt; +2pp</div></div>
+    <div class="node bet winb"><div class="eyebrow" style="color:var(--win)">B6 · bet · win</div><div class="title">Reduce onboarding from 7 steps to 4</div><div class="betmeta">expected +12pp · actual +14pp</div></div>
+    <div class="node bet gatedn"><div class="eyebrow">B11 · bet · gated</div><div class="title">Shorten push notification copy</div><div class="betmeta">waits on B4 (AND B5)</div></div>
+  </div>
+
+  <h2 class="sec">conversation — the open field</h2>
+  <div class="threadbox">
+    <div class="msgrow you"><div class="msg you">we need to increase revenue per visitor<div class="msgstatus">captured ✓</div></div></div>
+    <div class="msgrow"><div class="msg claude">On the board as a goal — it has a metric and a direction, but no baseline, no mechanism. Where do you believe the slack is?</div></div>
+    <div class="dockrow"><span class="dot up" style="flex-shrink:0"></span><span class="dockeyebrow">open field</span><button class="facbtn">⇄ claude</button><span style="font-size:12px;color:var(--dim)">say what you're thinking…</span></div>
+  </div>
+
+  <h2 class="sec">navigation — places bar</h2>
+  <div style="display:flex;align-items:center;gap:18px;padding:10px 16px;background:var(--card);border:1px solid var(--line)">
+    <span class="wordmark" style="font-size:16px">αlphaβeta</span>
+    <span style="font-family:'Barlow Semi Condensed';font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid var(--accent);padding:6px 2px">canvas</span>
+    <span style="font-family:'Barlow Semi Condensed';font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:6px 2px">ledger</span>
+    <span style="font-family:'Barlow Semi Condensed';font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);opacity:.4;padding:6px 2px">docket</span>
+  </div>
+  <p class="note" style="margin-top:8px">Three places only. Everything else is a panel, a moment, or a document.</p>
+
+  <h2 class="sec">the moment — ceremony overlay</h2>
+  <p class="note">Moments are modal ceremonies, never routes; each emits exactly one event kind. Scrim at ink/45%. Required fields refuse blanks with a mono warning; deviations are demanded (never blocked) when the call departs the pre-registered action.</p>
+  <div style="border:1.5px solid var(--ink);background:var(--card);max-width:430px;padding:18px 20px">
+    <div style="font-family:'Barlow Semi Condensed';font-weight:700;font-size:17px">Lock — but first, the premortem</div>
+    <div style="font-size:12px;color:var(--dim);margin:4px 0 10px">It's a year later and this bet failed. What happened?</div>
+    <input class="input" style="width:100%" placeholder="it failed because…">
+    <div style="margin-top:12px"><span class="btn pri" style="font-size:12px;padding:8px 14px">Continue</span>
+    <span class="mono" style="font-size:10px;color:#c0392b;margin-left:8px">the lock refuses blanks</span></div>
+  </div>
+
+  <h2 class="sec">the ledger — events as ui</h2>
+  <div class="ledger">
+    <div><span class="k">question.expected</span><span>Q4 · "monthly ≈ 20% of revenue"</span><span class="t">08-21 14:02</span></div>
+    <div><span class="k">question.answered</span><span>Q4 · 41% of 12-mo revenue · reshapes G1</span><span class="t">08-21 14:40</span></div>
+    <div><span class="k">bet.locked</span><span>B7 · monthly-first array · fold-if +2pp ■</span><span class="t">08-22 09:15</span></div>
+    <div><span class="k">bet.amended</span><span>B7 · runtime 14→21d · "traffic below plan"</span><span class="t">08-25 11:03</span></div>
+  </div>
+
+  <h2 class="sec">edge grammar</h2>
+  <div class="edges">
+    <div><span class="ew"></span> lineage — the cascade (goal → problem → question/solution)</div>
+    <div><span class="ew dash"></span> tests — elevation (solution → bet)</div>
+    <div><span class="ew acc"></span> unlocks — dependency (bet → bet, gates)</div>
+    <div><span class="ew dot2"></span> spawned — learning follow-on</div>
+    <div><span class="ew grn"></span> evidence — never default-on; focus mode only</div>
+  </div>
+</main>
+<script>
+  const TOKENS = ['ground','card','ink','line','dim','accent','accent-contrast','win','incon','loss']
+  function renderSwatches(){
+    const s = getComputedStyle(document.documentElement)
+    document.getElementById('swatches').innerHTML = TOKENS.map(t=>{
+      const v = s.getPropertyValue('--'+t).trim()
+      return `<div class="swatch"><div class="c" style="background:${v}"></div><div class="l">--${t}<br>${v}</div></div>`
+    }).join('')
+  }
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  let theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  function apply(){ document.documentElement.setAttribute('data-theme',theme)
+    document.getElementById('themebtn').textContent = theme==='dark' ? '◑ light' : '◐ dark'
+    requestAnimationFrame(renderSwatches) }
+  function toggleTheme(){ theme = theme==='dark'?'light':'dark'; try{localStorage.setItem('ab-theme',theme)}catch(e){}; apply() }
+  apply()
+</script>
+</body>
+</html>

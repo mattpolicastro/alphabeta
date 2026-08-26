@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>alphaBeta — brand direction studies</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;600&family=IBM+Plex+Mono:wght@400;600&family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;700&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box }
+  body { margin:0; background:#232323; color:#eee; font:14px/1.5 'Inter',sans-serif; padding:32px }
+  .intro { max-width:900px; margin:0 auto 40px }
+  .intro h1 { font-size:22px } .intro p { color:#aaa }
+  .study { max-width:900px; margin:0 auto 56px; padding:40px; border-radius:2px }
+  .study h2 { margin:0 0 4px; font-size:13px; letter-spacing:.2em; text-transform:uppercase; opacity:.55 }
+  .study .thesis { margin:0 0 28px; font-size:13px; opacity:.7 }
+  .row { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start }
+  .col { flex:1; min-width:260px }
+
+  /* ── STUDY 1 · THE REGISTRY ───────────────────────────── */
+  .s1 { background:#fcfcfa; color:#1a1a1c; font-family:'Inter',sans-serif }
+  .s1 .wordmark { font-family:'Archivo'; font-weight:900; font-size:34px; letter-spacing:-.02em }
+  .s1 .wordmark sup { color:#c8371f; font-size:14px; vertical-align:super }
+  .s1 .hero { font-family:'Archivo'; font-weight:700; font-size:30px; line-height:1.15; margin:18px 0; border-top:3px solid #1a1a1c; padding-top:14px }
+  .s1 .card { border:1px solid #e3e3df; background:#fff; padding:16px; position:relative }
+  .s1 .card .no { font-family:'IBM Plex Mono'; font-size:11px; color:#8a8a86; border-bottom:1px solid #e3e3df; padding-bottom:8px; margin-bottom:10px; display:flex; justify-content:space-between }
+  .s1 .card .foldif { font-family:'IBM Plex Mono'; font-size:13px; color:#c8371f; font-weight:600; margin-top:10px }
+  .s1 .seal { position:absolute; top:-12px; right:14px; background:#c8371f; color:#fff; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.12em; padding:4px 10px; transform:rotate(2deg); box-shadow:0 1px 0 rgba(0,0,0,.15) }
+  .s1 .btn { font-family:'IBM Plex Mono'; font-size:13px; border:1.5px solid #1a1a1c; background:none; padding:9px 16px; margin-right:8px; cursor:pointer }
+  .s1 .btn.pri { background:#1a1a1c; color:#fcfcfa }
+  .s1 .marg { font-family:'IBM Plex Mono'; font-size:11px; color:#c8371f; transform:rotate(-1deg); display:inline-block; margin-top:12px }
+  .s1 .chip { font-family:'IBM Plex Mono'; font-size:10px; border:1px solid #b9b9b4; padding:2px 8px; margin-right:6px; color:#5c5c58 }
+
+  /* ── STUDY 2 · THE INSTRUMENT ─────────────────────────── */
+  .s2 { background:#f7f8f8; color:#33363a; font-family:'Barlow',sans-serif }
+  .s2 .wordmark { font-family:'Barlow Semi Condensed'; font-weight:700; font-size:32px; letter-spacing:.02em; text-transform:uppercase }
+  .s2 .wordmark .tick { color:#ff6a13 }
+  .s2 .hero { font-family:'Barlow Semi Condensed'; font-weight:700; font-size:30px; line-height:1.12; margin:18px 0 }
+  .s2 .hero u { text-decoration:none; border-bottom:3px solid #ff6a13 }
+  .s2 .card { border:1px solid #cfd4d8; background:#fff; padding:16px; position:relative }
+  .s2 .dim { font-size:10px; color:#9aa3ab; letter-spacing:.08em; text-transform:uppercase; display:flex; align-items:center; gap:6px; margin-bottom:10px }
+  .s2 .dim::before, .s2 .dim::after { content:''; flex:1; border-top:1px solid #cfd4d8 }
+  .s2 .foldif { font-size:13px; color:#33363a; margin-top:10px; padding-left:10px; border-left:3px solid #ff6a13 }
+  .s2 .foldif b { color:#ff6a13 }
+  .s2 .tol { font-size:11px; color:#9aa3ab }
+  .s2 .btn { font-family:'Barlow Semi Condensed'; font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:12px; border:1.5px solid #33363a; background:none; padding:9px 18px; margin-right:8px; cursor:pointer }
+  .s2 .btn.pri { background:#ff6a13; border-color:#ff6a13; color:#fff }
+  .s2 .chip { font-size:10px; letter-spacing:.08em; text-transform:uppercase; background:#e8ebed; padding:3px 8px; margin-right:6px; color:#5d666e }
+
+  /* ── STUDY 3 · THE FIELD JOURNAL ──────────────────────── */
+  .s3 { background:#f6f5ee; color:#22392c; font-family:'Public Sans',sans-serif }
+  .s3 .wordmark { font-family:'Source Serif 4'; font-weight:700; font-size:32px; font-style:italic }
+  .s3 .hero { font-family:'Source Serif 4'; font-weight:700; font-size:30px; line-height:1.18; margin:18px 0 }
+  .s3 .fig { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8a7a1b; margin-bottom:8px }
+  .s3 .card { border:1px solid #d8d5c4; background:#fffdf6; padding:16px }
+  .s3 .card .label { display:inline-block; background:#22392c; color:#f6f5ee; font-size:10px; letter-spacing:.1em; padding:3px 8px; margin-bottom:10px }
+  .s3 .foldif { font-family:'Source Serif 4'; font-style:italic; font-size:15px; color:#8a5a1b; margin-top:10px }
+  .s3 .btn { font-size:13px; font-weight:600; border:1.5px solid #22392c; background:none; padding:9px 16px; margin-right:8px; cursor:pointer; color:#22392c }
+  .s3 .btn.pri { background:#22392c; color:#f6f5ee }
+  .s3 .chip { font-size:10px; letter-spacing:.1em; text-transform:uppercase; border-bottom:2px solid #c9c39b; padding:2px 2px; margin-right:10px; color:#6a6a52 }
+
+  /* shared state-as-style demo */
+  .statepair { display:flex; gap:12px; margin-top:16px }
+  .statepair > div { flex:1; padding:10px 12px; font-size:12px }
+  .draftbox { border:1.5px dashed currentColor; opacity:.55 }
+  .lockbox { border:1.5px solid currentColor }
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>alphaBeta · three brand direction studies</h1>
+  <p>Constraint: structured &amp; professional core, lightness at the edges. Explicitly avoiding warm-paper AI-tool defaults and Memphis confetti. Cross-cutting principle in all three: <b>state-as-style</b> — draft and locked content are typeset differently, so commitment is legible at a glance.</p>
+</div>
+
+<!-- STUDY 1 -->
+<div class="study s1">
+  <h2>Study 1 · The Registry</h2>
+  <p class="thesis">Notary meets modern grotesk. Cold near-white, hairline rules, tabular mono for anything that is data. One color exists — sealing-wax red — and it is spent ONLY on commitment: the fold-if, the seal, the margin note. Lightness = the stamp's slight rotation, inked marginalia.</p>
+  <div class="row">
+    <div class="col">
+      <div class="wordmark">alphaBeta<sup>®</sup></div>
+      <div class="hero">The tools aren't missing. The discipline is.</div>
+      <button class="btn pri">Open the ledger</button><button class="btn">How it works</button>
+      <div><span class="marg">← witnessed, 2026-08-23</span></div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="seal">LOCKED</div>
+        <div class="no"><span>BET № 0007</span><span>2026-08-23 14:02</span></div>
+        <b>Default the gift array to monthly</b>
+        <div style="font-size:12px;color:#5c5c58;margin-top:4px">↑ recurring conversion · +2pp · because defaults carry recommendation</div>
+        <div class="foldif">FOLD IF: monthly signups &lt; +2pp</div>
+      </div>
+      <div style="margin-top:10px"><span class="chip">Q4 · ANSWERED</span><span class="chip">P2 · DETONATED</span></div>
+      <div class="statepair"><div class="draftbox">draft — pencil register, freely editable</div><div class="lockbox">locked — ink register, sealed &amp; dated</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDY 2 -->
+<div class="study s2">
+  <h2>Study 2 · The Instrument</h2>
+  <p class="thesis">Engineering drawing, not blueprint cliché. Graphite on chalk, condensed DIN-flavored labels, dimension lines as the decorative grammar. Safety orange is the marking crayon — it flags only what is measured and committed. Lightness = tolerance annotations (±), dimension ticks.</p>
+  <div class="row">
+    <div class="col">
+      <div class="wordmark">alpha<span class="tick">/</span>beta</div>
+      <div class="hero">The tools aren't missing.<br><u>The discipline is.</u></div>
+      <button class="btn pri">Run the loop</button><button class="btn">Spec sheet</button>
+      <div class="tol" style="margin-top:12px">confidence 0.6 ± you'll find out</div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="dim">bet 0007 · locked 2026-08-23</div>
+        <b>Default the gift array to monthly</b>
+        <div style="font-size:12px;color:#5d666e;margin-top:4px">recurring conversion ↑ +2pp · mechanism: defaults recommend</div>
+        <div class="foldif"><b>FOLD IF</b> monthly signups &lt; +2pp <span class="tol">(tolerance: none — that's the point)</span></div>
+      </div>
+      <div style="margin-top:10px"><span class="chip">Q4 answered</span><span class="chip">P2 detonated</span></div>
+      <div class="statepair"><div class="draftbox">draft — pencil, dashed</div><div class="lockbox">locked — inked, dimensioned</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDY 3 -->
+<div class="study s3">
+  <h2>Study 3 · The Field Journal</h2>
+  <p class="thesis">Naturalist's record: deep green ink on cool cream, serif voice with specimen labels. Ochre is the collector's thread — evidence and takeaways. Lightness = figure numbering ("Fig. 4"), specimen-tag chips. Warmer than 1–2 but bookish-scientific, not AI-cozy.</p>
+  <div class="row">
+    <div class="col">
+      <div class="wordmark">alphaBeta</div>
+      <div class="hero">The tools aren't missing. The discipline is.</div>
+      <button class="btn pri">Begin the journal</button><button class="btn">Field guide</button>
+      <div class="fig" style="margin-top:14px">Fig. 1 — a decision, pinned</div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <span class="label">SPECIMEN · BET 0007 · LOCKED 23 AUG</span><br>
+        <b>Default the gift array to monthly</b>
+        <div style="font-size:12px;color:#5d5d49;margin-top:4px">recurring conversion, +2pp expected — defaults carry recommendation</div>
+        <div class="foldif">fold if monthly signups fall short of +2pp</div>
+      </div>
+      <div style="margin-top:10px"><span class="chip">Q4 answered</span><span class="chip">P2 detonated</span></div>
+      <div class="statepair"><div class="draftbox">draft — unpinned, pencil</div><div class="lockbox">locked — pinned, inked</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

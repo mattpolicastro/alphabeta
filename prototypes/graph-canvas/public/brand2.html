@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta — color playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --ground:#f7f8f8; --ink:#33363a; --line:#cfd4d8; --dimtxt:#9aa3ab; --accent:#4059d8; --accent-text:#4059d8; --card:#ffffff; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--ground); color:var(--ink); font:15px/1.55 'Barlow',sans-serif; transition:background .2s,color .2s }
+  .bar { position:sticky; top:0; background:#232323; color:#eee; padding:12px 20px; display:flex; gap:18px; align-items:center; flex-wrap:wrap; z-index:9; font-size:12px }
+  .bar b { letter-spacing:.1em; text-transform:uppercase; font-size:10px; opacity:.6; margin-right:4px }
+  .sw { width:26px; height:26px; border-radius:2px; border:2px solid transparent; cursor:pointer; display:inline-block }
+  .sw.on { border-color:#fff }
+  main { max-width:880px; margin:0 auto; padding:48px 24px }
+  .wordmark { font-family:'Archivo'; font-weight:900; font-size:40px; letter-spacing:-.02em }
+  .wordmark .gk { font-family:'Inter','Noto Sans',sans-serif; font-weight:900; font-size:.965em; letter-spacing:-.01em }
+  .wordmark sup { color:var(--accent); font-size:16px; vertical-align:super }
+  .hero { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:44px; line-height:1.08; margin:22px 0 }
+  .hero u { text-decoration:none; border-bottom:4px solid var(--accent) }
+  .lede { font-size:18px; max-width:560px; color:var(--ink) }
+  .btn { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:13px; border:1.5px solid var(--ink); background:none; color:var(--ink); padding:10px 20px; margin:16px 10px 0 0; cursor:pointer }
+  .btn.pri { background:var(--accent); border-color:var(--accent); color:#fff }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; margin-top:44px }
+  .card { border:1px solid var(--line); background:var(--card); padding:16px }
+  .dim { font-size:10px; color:var(--dimtxt); letter-spacing:.08em; text-transform:uppercase; display:flex; align-items:center; gap:6px; margin-bottom:10px }
+  .dim::before,.dim::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .foldif { font-family:'IBM Plex Mono'; font-size:12.5px; margin-top:10px; padding-left:10px; border-left:3px solid var(--accent) }
+  .foldif b { color:var(--accent-text) }
+  .chip { font-size:10px; letter-spacing:.08em; text-transform:uppercase; background:color-mix(in srgb, var(--ink) 8%, var(--ground)); padding:3px 8px; margin-right:6px; color:var(--ink) }
+  .draftbox { border:1.5px dashed var(--dimtxt); color:var(--dimtxt); padding:10px 12px; font-size:12px; margin-top:12px }
+  .lockbox { border:1.5px solid var(--ink); padding:10px 12px; font-size:12px; margin-top:8px }
+  .tol { font-size:11px; color:var(--dimtxt) }
+  .mono { font-family:'IBM Plex Mono' }
+  .fbtn { font:11px 'Barlow'; background:none; border:1px solid #555; color:#ddd; padding:3px 9px; cursor:pointer }
+  .fbtn.on { border-color:#fff; color:#fff }
+  .spec h4 { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dimtxt); margin:40px 0 14px; display:flex; align-items:center; gap:8px }
+  .spec h4::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .ramp > div { display:flex; align-items:baseline; gap:16px; margin-bottom:10px }
+  .ramp .lbl { font-family:'IBM Plex Mono'; font-size:10px; color:var(--dimtxt); width:110px; flex-shrink:0 }
+  .ledger { border:1px solid var(--line); background:var(--card); font-family:'IBM Plex Mono'; font-size:11.5px }
+  .ledger > div { display:flex; gap:14px; padding:7px 12px; border-bottom:1px solid var(--line) }
+  .ledger > div:last-child { border-bottom:none }
+  .ledger .k { color:var(--accent-text); width:130px; flex-shrink:0 }
+  .ledger .t { color:var(--dimtxt); margin-left:auto }
+  .elements { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start }
+  .qcard { border:1.5px dotted var(--dimtxt); background:var(--card); padding:12px; width:230px; font-size:12px }
+  .qcard .eyebrow { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--dimtxt); margin-bottom:5px }
+  .owner { font-size:10px; border:1px solid var(--line); padding:1px 7px; color:var(--dimtxt) }
+  .input { font-family:'IBM Plex Mono'; font-size:12px; border:1.5px dashed var(--dimtxt); background:none; color:var(--ink); padding:8px 10px; width:230px }
+  .input:focus { outline:none; border-style:solid; border-color:var(--accent) }
+  .seal2 { background:var(--accent); color:#fff; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.12em; padding:5px 11px; transform:rotate(-2deg); display:inline-block }
+</style>
+</head>
+<body>
+<div class="bar">
+  <span><b>accent</b>
+    <span class="sw" style="background:#ff6a13" data-k="accent" data-v="#ff6a13" title="safety orange"></span>
+    <span class="sw" style="background:#c8371f" data-k="accent" data-v="#c8371f" title="sealing wax"></span>
+    <span class="sw" style="background:#1f4fc8" data-k="accent" data-v="#1f4fc8" title="cobalt"></span>
+    <span class="sw" style="background:#0d7a6a" data-k="accent" data-v="#0d7a6a" title="viridian"></span>
+    <span class="sw" style="background:#d99000" data-k="accent" data-v="#d99000" title="amber"></span>
+    <span class="sw" style="background:#7a1fc8" data-k="accent" data-v="#7a1fc8" title="violet"></span>
+    <span class="sw" style="background:#c2187c" data-k="accent" data-v="#c2187c" title="magenta"></span>
+    <span class="sw" style="background:#3d6b4f" data-k="accent" data-v="#3d6b4f" title="moss"></span>
+  </span>
+  <span><b>blues</b>
+    <span class="sw" style="background:#002fa7" data-k="accent" data-v="#002fa7" title="klein"></span>
+    <span class="sw" style="background:#1f4fc8" data-k="accent" data-v="#1f4fc8" title="cobalt"></span>
+    <span class="sw" style="background:#2563eb" data-k="accent" data-v="#2563eb" title="azure"></span>
+    <span class="sw" style="background:#0e7bc4" data-k="accent" data-v="#0e7bc4" title="cerulean"></span>
+    <span class="sw" style="background:#1b4fa0" data-k="accent" data-v="#1b4fa0" title="lapis"></span>
+    <span class="sw" style="background:#274060" data-k="accent" data-v="#274060" title="prussian"></span>
+    <span class="sw on" style="background:#4059d8" data-k="accent" data-v="#4059d8" title="ballpoint ultramarine"></span>
+    <span class="sw" style="background:#4095d8" data-k="accent" data-v="#4095d8" title="cerulean"></span>
+  </span>
+  <span><b>ground</b>
+    <span class="sw on" style="background:#f7f8f8" data-k="ground" data-v="#f7f8f8|#33363a|#cfd4d8|#9aa3ab|#ffffff" title="chalk"></span>
+    <span class="sw" style="background:#fcfcfa" data-k="ground" data-v="#fcfcfa|#1a1a1c|#e3e3df|#8a8a86|#ffffff" title="registry white"></span>
+    <span class="sw" style="background:#eef0ec" data-k="ground" data-v="#eef0ec|#2b2e2a|#d3d7d0|#8b928a|#f9faf8" title="putty"></span>
+    <span class="sw" style="background:#f4f2ec" data-k="ground" data-v="#f4f2ec|#26282b|#ddd9cd|#95917f|#fcfbf7" title="bone"></span>
+    <span class="sw" style="background:#1d1f21;border:1px solid #555" data-k="ground" data-v="#1d1f21|#e8e8e4|#3a3d40|#787d82|#26282b" title="graphite dark"></span>
+  </span>
+  
+  <span id="readout" class="mono" style="opacity:.6"></span>
+</div>
+<main>
+  <div class="wordmark" style="font-family:'Commissioner'">αlphaβeta<sup>®</sup></div>
+  
+  <div class="hero">The tools aren't missing.<br><u>The discipline is.</u></div>
+  <p class="lede">A thinking partner for decisions that get tested against reality. It pushes back while you think, maps the problems, and holds you to what you said before the data existed.</p>
+  <button class="btn pri">Run the loop</button><button class="btn">Spec sheet</button>
+  <div class="tol" style="margin-top:14px">confidence 0.6 ± you'll find out</div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="dim">bet 0007 · locked 2026-08-23</div>
+      <b>Default the gift array to monthly</b>
+      <div style="font-size:12.5px;color:var(--dimtxt);margin-top:4px">recurring conversion ↑ +2pp · mechanism: defaults recommend</div>
+      <div class="foldif"><b>FOLD IF</b> monthly signups &lt; +2pp</div>
+    </div>
+    <div class="card">
+      <div class="dim">state as style</div>
+      <div class="draftbox">draft — pencil register, freely editable</div>
+      <div class="lockbox">locked — inked, dimensioned, dated <span class="mono" style="color:var(--accent)">■</span></div>
+      <div style="margin-top:12px"><span class="chip">Q4 answered</span><span class="chip">P2 detonated</span><span class="chip mono" style="color:var(--accent)">B7 locked</span></div>
+    </div>
+  </div>
+  <div class="spec">
+    <h4>type ramp</h4>
+    <div class="ramp">
+      <div><span class="lbl">display / 44</span><span style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:44px;line-height:1">Fold if it fails.</span></div>
+      <div><span class="lbl">h1 / 30</span><span style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:30px">Evidence before mechanism</span></div>
+      <div><span class="lbl">h2 / 21</span><span style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:21px">Questions before solutions, solutions before bets</span></div>
+      <div><span class="lbl">body / 15</span><span style="font-size:15px">A bet is a claim with stakes. A question is answerable from data — don't spend a test on what a query can answer.</span></div>
+      <div><span class="lbl">small / 12.5</span><span style="font-size:12.5px;color:var(--dimtxt)">Hedges are preserved verbatim; confidence language is data.</span></div>
+      <div><span class="lbl">data / 12 mono</span><span class="mono" style="font-size:12px">conv 1.4% · gift $87 · fold-if +2pp · conf 0.6</span></div>
+    </div>
+
+    <h4>the ledger (event log as ui)</h4>
+    <div class="ledger">
+      <div><span class="k">question.expected</span><span>Q4 · "monthly ≈ 20% of revenue"</span><span class="t">08-21 14:02</span></div>
+      <div><span class="k">question.answered</span><span>Q4 · 41% of 12-mo revenue · reshapes G1</span><span class="t">08-21 14:40</span></div>
+      <div><span class="k">bet.locked</span><span>B7 · monthly-first array · fold-if +2pp ■</span><span class="t">08-22 09:15</span></div>
+      <div><span class="k">bet.amended</span><span>B7 · runtime 14→21d · "traffic below plan"</span><span class="t">08-25 11:03</span></div>
+    </div>
+
+    <h4>elements</h4>
+    <div class="elements">
+      <div class="qcard">
+        <div class="eyebrow">Q9 · question · <span class="owner">owner: PM</span></div>
+        What problem is this feature meant to solve?
+        <div style="margin-top:8px;font-size:10px;color:var(--dimtxt)">open 4 days · expectation not yet stated</div>
+      </div>
+      <div>
+        <input class="input" placeholder="fold if…"><br><br>
+        <span class="seal2">LOCKED · 2026-08-23</span>
+      </div>
+      <div style="font-size:12px">
+        <span class="chip">answered ✓</span><span class="chip" style="color:var(--accent)">detonated ✕</span><br><br>
+        <span class="chip">gated</span><span class="chip" style="opacity:.5">pruned</span><span class="chip">invalid</span><br><br>
+        <span class="tol">↑ chip family — lifecycle states</span>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+  const readout = document.getElementById('readout')
+  const show = () => { const s = getComputedStyle(document.documentElement); readout.textContent = `accent ${s.getPropertyValue('--accent').trim()} · ground ${s.getPropertyValue('--ground').trim()}` }
+
+  document.querySelectorAll('.sw').forEach(sw => sw.addEventListener('click', () => {
+    const { k, v } = sw.dataset
+    if (k === 'accent') document.documentElement.style.setProperty('--accent', v)
+    else { const [g, ink, line, dim, card] = v.split('|')
+      const r = document.documentElement.style
+      r.setProperty('--ground', g); r.setProperty('--ink', ink); r.setProperty('--line', line); r.setProperty('--dimtxt', dim); r.setProperty('--card', card) }
+    document.querySelectorAll(`.sw[data-k="${k}"]`).forEach(x => x.classList.toggle('on', x === sw))
+    show()
+  }))
+  show()
+</script>
+</body>
+</html>
