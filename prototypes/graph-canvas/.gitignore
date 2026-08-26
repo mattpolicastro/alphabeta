@@ -1,0 +1,6 @@
+node_modules/
+dist/
+runtime/
+# private corpus + eval data (real dumps / model outputs) — never commit
+sessions/
+shape/eval/*.json

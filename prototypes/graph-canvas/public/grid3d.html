@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pipeline grid — 3d</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body { margin:0; height:100%; background:#2a2a2a; color:#f5f1e8;
+    font-family:'JetBrains Mono',monospace; overflow:hidden; }
+  #hud { position:fixed; top:14px; left:18px; font-size:12px; line-height:1.7; }
+  #hud b { font-size:15px; letter-spacing:.04em; }
+  #legend { position:fixed; bottom:14px; left:18px; font-size:11px; line-height:1.8; }
+  .sw { display:inline-block; width:12px; height:12px; margin-right:7px; vertical-align:-1px; }
+  #hint { position:fixed; bottom:14px; right:18px; font-size:10px; opacity:.5; }
+  canvas { display:block; cursor:grab; }
+</style>
+</head>
+<body>
+<div id="hud"><b>five stages × touch × drive</b><br>
+x: strategy → planning → refinement → resolution → knowledge<br>
+depth: low-touch (internal ops) ↔ high-touch (client-facing)<br>
+height: bottom-up (data/AI mining) ↕ top-down (human ideation)</div>
+<div id="legend">
+  <span class="sw" style="background:#6b6459"></span>internal × human<br>
+  <span class="sw" style="background:#3d6b4f"></span>internal × AI/data<br>
+  <span class="sw" style="background:#a64d3b"></span>client × human<br>
+  <span class="sw" style="background:#8a7a4f"></span>client × AI/data
+</div>
+<div id="hint">drag to rotate · scroll to zoom</div>
+<canvas id="c"></canvas>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W, H; const fit = () => { W = cv.width = innerWidth; H = cv.height = innerHeight; };
+fit(); addEventListener('resize', fit);
+
+const STAGES = ['strategy','planning','refinement','resolution','knowledge'];
+const COMBO = [['#3d6b4f','#6b6459'],['#8a7a4f','#a64d3b']]; // [touch][drive: 0=bottom-up(AI), 1=top-down(human)]
+
+let yaw = -0.65, pitch = 0.42, zoom = 92, auto = true;
+let dragging = false, px = 0, py = 0;
+cv.onmousedown = e => { dragging = true; auto = false; px = e.clientX; py = e.clientY; cv.style.cursor = 'grabbing'; };
+addEventListener('mouseup', () => { dragging = false; cv.style.cursor = 'grab'; });
+addEventListener('mousemove', e => {
+  if (!dragging) return;
+  yaw += (e.clientX - px) * 0.008; pitch += (e.clientY - py) * 0.006;
+  pitch = Math.max(0.05, Math.min(1.35, pitch));
+  px = e.clientX; py = e.clientY;
+});
+addEventListener('wheel', e => { zoom = Math.max(40, Math.min(220, zoom - e.deltaY * 0.15)); });
+cv.addEventListener('touchstart', e => { auto = false; px = e.touches[0].clientX; py = e.touches[0].clientY; });
+cv.addEventListener('touchmove', e => {
+  e.preventDefault();
+  yaw += (e.touches[0].clientX - px) * 0.008; pitch += (e.touches[0].clientY - py) * 0.006;
+  pitch = Math.max(0.05, Math.min(1.35, pitch));
+  px = e.touches[0].clientX; py = e.touches[0].clientY;
+}, { passive: false });
+
+function proj(x, y, z) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const x1 = x * cy - y * sy, y1 = x * sy + y * cy, z1 = z;
+  return { sx: W / 2 + x1 * zoom, sy: H / 2 + 30 - (z1 * cp - y1 * sp) * zoom, d: y1 * cp + z1 * sp };
+}
+
+// cell geometry: 5 stages (x), 2 touch (y/depth), 2 drive (z/height)
+const cells = [];
+for (let i = 0; i < 5; i++)
+  for (let j = 0; j < 2; j++)
+    for (let k = 0; k < 2; k++)
+      cells.push({ cx: (i - 2) * 1.7, cy: (j - 0.5) * 2.3, cz: (k - 0.5) * 2.3, col: COMBO[j][k] });
+
+const HX = 0.62, HY = 0.85, HZ = 0.85;
+const FACES = [ // corner index triples per box face (8 corners: bit0=x,bit1=y,bit2=z)
+  [0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]
+];
+
+function draw() {
+  if (auto) yaw += 0.0035;
+  ctx.clearRect(0, 0, W, H);
+
+  const polys = [];
+  for (const c of cells) {
+    const corners = [];
+    for (let b = 0; b < 8; b++)
+      corners.push(proj(
+        c.cx + ((b & 1) ? HX : -HX),
+        c.cy + ((b & 2) ? HY : -HY),
+        c.cz + ((b & 4) ? HZ : -HZ)
+      ));
+    for (const f of FACES) {
+      const pts = f.map(i => corners[i]);
+      polys.push({ pts, d: pts.reduce((s, p) => s + p.d, 0) / 4, col: c.col });
+    }
+  }
+  polys.sort((a, b) => a.d - b.d);
+  for (const p of polys) {
+    ctx.beginPath();
+    p.pts.forEach((q, i) => i ? ctx.lineTo(q.sx, q.sy) : ctx.moveTo(q.sx, q.sy));
+    ctx.closePath();
+    ctx.globalAlpha = 0.82; ctx.fillStyle = p.col; ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1.2; ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // axis labels
+  ctx.fillStyle = '#f5f1e8'; ctx.font = '11px JetBrains Mono'; ctx.textAlign = 'center';
+  STAGES.forEach((s, i) => {
+    const p = proj((i - 2) * 1.7, -1.55, -1.85);
+    ctx.fillText(s, p.sx, p.sy + 14);
+  });
+  ctx.fillStyle = '#b7b0a3';
+  let p = proj(4.6, -1.15, -1.4); ctx.fillText('low-touch', p.sx, p.sy);
+  p = proj(4.6, 1.15, -1.4); ctx.fillText('high-touch', p.sx, p.sy);
+  p = proj(-4.7, -1.5, -1.15); ctx.fillText('bottom-up', p.sx, p.sy);
+  p = proj(-4.7, -1.5, 1.15); ctx.fillText('top-down', p.sx, p.sy);
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
