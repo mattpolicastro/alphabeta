@@ -50,8 +50,11 @@ Bundle verified clean — no rubric, no `aipc-ubuntu`, no `/api/state`.
   (the 22-check compiled rubric with the reverse-engineerable trip points) and
   `shape/eval/GRADES.md` (a marked exam), both in the 2026-08-25 push. Moved to
   gitignored `runtime/private/` on 08-27 with the ignore broadened to
-  `shape/rubric-v*.md`; `gaming.py`'s judge prompt moved there too. History not
-  rewritten — 0 forks / 0 stars at the time, decision left open.
+  `shape/rubric-v*.md`; `gaming.py`'s judge prompt moved there too. History
+  then rewritten with `git filter-repo` and force-pushed (0 forks / 0 stars, so
+  the usual cost was nil); every SHA after `bb9d5a6` changed. The two blobs are
+  gone from reachable history but GitHub still serves the old commits as
+  dangling objects until a Support purge — that ticket is the remaining step.
 - **Facilitator liveness is invisible.** An orphaned watcher left a dock dump
   unanswered ~3 days while the dev server stayed up; `relayUp` tracks the
   server, not whether a facilitator is attached to the inbox. Same family as
