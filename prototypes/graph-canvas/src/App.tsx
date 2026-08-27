@@ -32,6 +32,11 @@ const nodeTypes = { strat: StratNode, bet: BetNode, openfield: OpenFieldNode }
 
 let fieldCounter = 0
 
+// Static demo build (VITE_STATIC=1, used for app.alphabeta.tools): the relay is
+// a dev-server plugin, so there is no /api/*. State lives in localStorage and
+// the LLM-backed open field + dock are compiled out.
+const STATIC = import.meta.env.VITE_STATIC === '1'
+
 const INK = '#26282c'
 const TERRA = '#4059d8'
 const FADE = '#8b939c'
@@ -188,6 +193,21 @@ function Canvas() {
 
   // ── boot: server state is canonical; migrate old localStorage once ─
   useEffect(() => {
+    if (STATIC) {
+      const local = loadState()
+      if (local?.nodes) {
+        setNodes(local.nodes)
+        setEdges(local.edges ?? [])
+      } else {
+        // fixture positions are authored by hand, not laid out — run the tree
+        // layout once on first load so a fresh visitor lands on a clean board
+        setNodes(deoverlap(relayout(initialNodes, initialEdges, orient), orient))
+        setEdges(initialEdges)
+      }
+      primed.current = true
+      setLoaded(true)
+      return
+    }
     const boot = async () => {
       try {
         const res = await fetch('/api/state')
@@ -232,6 +252,10 @@ function Canvas() {
       const body = JSON.stringify({ nodes, edges, dockThread, seen: [...seenReplies.current] })
       if (body === lastSaved.current) return
       lastSaved.current = body
+      if (STATIC) {
+        try { localStorage.setItem('gc-state', body) } catch {}
+        return
+      }
       fetch('/api/state', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
@@ -314,7 +338,7 @@ function Canvas() {
   const seenReplies = useRef<Set<string>>(new Set())
   const primed = useRef(false)
   useEffect(() => {
-    if (!loaded) return
+    if (!loaded || STATIC) return
     type RemoteOp =
       | { op: 'clear' }
       | { op: 'addNode'; node: Node }
@@ -540,7 +564,7 @@ function Canvas() {
 
   const onPaneClick = useCallback(
     (e: React.MouseEvent) => {
-      if (e.detail === 2) {
+      if (e.detail === 2 && !STATIC) {
         const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
         const id = `field-${++fieldCounter}-${Math.random().toString(36).slice(2, 6)}`
         setNodes((ns) => [...ns, { id, type: 'openfield', position: pos, data: { thread: [] } }])
@@ -673,7 +697,7 @@ function Canvas() {
         />
       )}
 
-      <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} />
+      {!STATIC && <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} />}
     </div>
   )
 }
