@@ -72,7 +72,9 @@ Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` m
 ## Routing & domain policy (settled 2026-06-03)
 
 - **App at root `/`**, no `/app` prefix. The app's URLs stay stable from tier-1 through tier-3 without migration.
-- **Marketing lives on a different domain/subdomain** when it materializes — `alphabeta.tools` (marketing) + `app.alphabeta.tools` (app) is the conventional pattern. Cookie scoping, independent deploys, cleaner Worker routes all follow.
+- **Marketing and app are split across subdomains (live since 2026-08-26).** `alphabeta.tools` serves the landing page; `app.alphabeta.tools` serves the application. `www` 301s to the apex. Cookie scoping, independent deploys, and cleaner Worker routes all follow.
+  - **The app origin is load-bearing and must never move.** IndexedDB is origin-scoped, so `app.alphabeta.tools` *is* the datastore — relocating it silently orphans every user's bets, with no migration path short of export/import. The Chrome extension's `externally_connectable` pins the same origin.
+  - `alphabeta.run` is also owned (Cloudflare registrar, same account) but unconfigured and **not** canonical. Vault/résumé references to it are stale.
 - **Bets are addressed by `?id=<uuid>` query string**, not path segments. `output: 'export'` requires `generateStaticParams` for `[id]` segments; user-generated UUIDs can't be enumerated at build time. Query-string addressing is static-export native and produces a single pre-rendered page per stage.
 - **Reserved route prefixes — do not claim for feature routes:**
   - `/api/*` — Cloudflare Workers backend (LLM provider proxy, sync, rate-limit checks).
@@ -80,3 +82,15 @@ Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` m
   - `/share/*` — public read-only share tokens for locked bets (handoff §10).
 - **Multi-tenancy: flat URLs.** No `/org/<slug>/...` prefix. Ownership resolves via auth context + Dexie query scoping. Org switching is an in-app affordance, not a URL rewrite. URLs are portable across the tier-1 → tier-3 upgrade — local-only bookmarks resolve identically once the user signs in.
 - Chrome extension `externally_connectable` will pin the app domain once chosen; routing is otherwise extension-agnostic.
+
+## Deployment (live)
+
+| Host | Cloudflare Pages project | Source |
+|---|---|---|
+| `alphabeta.tools` | `alphabeta-landing` | `apps/landing/` (static HTML) |
+| `app.alphabeta.tools` | `alphabeta-app` | `prototypes/graph-canvas`, built with `VITE_STATIC=1` |
+
+- Deploys are manual: `npx wrangler pages deploy <dir> --project-name <project>`. Not yet Git-connected.
+- **`VITE_STATIC=1` is what makes the prototype shippable.** The open-field relay is a Vite *dev-server* plugin, so `/api/*` exists only under `npm run dev` — that covers board state, not just the LLM. The flag swaps `/api/state` for `localStorage`, seeds from the `data.ts` fixture (running the tree layout once so a fresh board isn't a mess), and compiles out the dock, replies polling, and open-field creation. `npm run dev` is unaffected, so live relay sessions still work.
+- When publishing the prototype, deploy a copy of `dist/` with the `public/` extras removed (`landing.html`, `brand.html`, `brand2.html`, `design-system.html`, `grid3d.html`) — Vite copies them in and they are internal.
+- Known gap: `apps/web/app/api/llm/route.ts` is a route handler and cannot build under `output: 'export'`. It must become a Worker on `/api/*` or be removed before `apps/web` can deploy anywhere static.

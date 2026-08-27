@@ -1,5 +1,65 @@
 # WORKLOG
 
+## 2026-08-26 — Domains resolved, both sites live on Cloudflare Pages
+
+**What:** Settled the domain question, stood up landing + app on Cloudflare
+Pages, and made the graph-canvas prototype shippable as a static demo.
+
+**The domain confusion, resolved.** Two domains were owned and the sources
+disagreed: the vault (and the résumé) named `alphabeta.run` as canonical, while
+`CLAUDE.md` floated `alphabeta.tools` as "the conventional pattern." Registry
+lookups settled it — both are registered through Cloudflare Registrar in one
+account (`alphabeta.run` 2026-06-03, `alphabeta.tools` 2026-04-09), alongside
+`plinthboard.app`. `alphabeta.tools` was the one still CNAME'd to
+`mattpolicastro.github.io`, serving a GitHub 404 left over from the disabled
+legacy Pages deploy. **`alphabeta.tools` is now canonical**; `alphabeta.run`
+stays parked and non-canonical (renews 2027-06-03 — disposition still open).
+
+**Subdomain split, checked against practice.** Sampled 30 SaaS domains for
+`app.` with a random-label control for wildcard DNS: 13 confirmed `app.`, 10
+inconclusive (wildcards), 7 without — and 4 of those just use another
+subdomain (`dashboard.stripe.com`, `console.statsig.com`, `go.heap.io`). Only
+Linear, Notion, and Figma serve the app from the marketing origin, all
+session-backed rather than local-first. **For a local-first app the origin is
+the datastore** — IndexedDB is origin-scoped, so moving the app origin later
+orphans every user's bets. Picked `app.alphabeta.tools` and recorded it as
+immovable.
+
+**Live:** `alphabeta.tools` → landing (`alphabeta-landing`),
+`app.alphabeta.tools` → graph canvas (`alphabeta-app`), `www` → 301 to apex
+via a proxied CNAME + redirect rule (query string preserved, which the `?id=`
+routing depends on). Let's Encrypt certs through Nov 3. Cloudflare's
+pre-deploy warning that `www` wasn't proxied was a false positive — it doesn't
+follow a CNAME pointing at the zone apex.
+
+**Static build mode (`VITE_STATIC=1`).** Shipping the prototype needed more
+than dropping the chat: the relay is a Vite *dev-server* plugin, so `/api/*`
+never exists in a build, and the canvas loaded and saved its whole board
+through `/api/state`. The old boot path retried every 2s on failure and never
+set `loaded`, so a naive static deploy would have hung on a blank canvas
+rather than degrading. Behind a build flag (dev untouched, so live relay
+sessions keep working): localStorage state, fixture seed with a one-time tree
+layout, and the dock, replies polling, and open-field creation compiled out.
+Bundle verified clean — no rubric, no `aipc-ubuntu`, no `/api/state`.
+
+**Found, not fixed:**
+- **The rubric is public.** `prototypes/graph-canvas/shape/eval/rubric-prompt.md`
+  is committed to a public repo; `shape/eval/.gitignore` covers `*.json` but not
+  the `.md`. Handoff §5 calls it the hard-to-copy IP whose whole value is that
+  the people it evaluates can't read it. Public since the 2026-08-25 push.
+- **Facilitator liveness is invisible.** An orphaned watcher left a dock dump
+  unanswered ~3 days while the dev server stayed up; `relayUp` tracks the
+  server, not whether a facilitator is attached to the inbox. Same family as
+  the `crypto.randomUUID()` silent-send bug. Logged as Exchange 33.
+- Vault `Projects/AlphaBeta/AlphaBeta.md` + three résumé files still say
+  `alphabeta.run`; the `Hosting Architecture — Deployment Tiers & LLM Wiring`
+  wikilink still points at a note that was never written.
+
+**Next:** decide `alphabeta.run` disposition; Git-connect both Pages projects
+so pushes deploy; resolve the rubric exposure; update vault/résumé references.
+
+---
+
 ## 2026-08-16 → 08-25 — Foundations pivot: graph canvas prototype, event grammar, brand v0
 
 **What:** Reframed the project from a five-layer screens app to a schema-first
