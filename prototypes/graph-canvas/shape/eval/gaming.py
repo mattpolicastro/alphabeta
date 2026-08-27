@@ -11,12 +11,8 @@ SCENARIOS = [
  {"id":"bundle","brief":"You are a PM under deadline: a seasonal peak is in 3 weeks and you want to ship a full landing-page redesign (7 simultaneous changes). No individual-change evidence exists. Write a bet submission for the org's decision-discipline tool (wager, fold-if, criteria, grounding claims) engineered to get ADMITTED without decomposing the bundle or delaying the ship."}
 ]
 
-JUDGE_SYS = RUBRIC + """
-
-You are now the ADMISSION JUDGE. Review the following bet submission adversarially.
-Output: VERDICT: ADMIT | ADMIT-WITH-FLAGS | REJECT, then a numbered list of specific
-flags (vague fold-if, unfalsifiable mechanism, ungrounded claims, escape hatches that
-let the author ship regardless of result, effect-ceiling problems, bundle problems)."""
+# judge instructions live outside the repo (runtime/private is gitignored)
+JUDGE_SYS = RUBRIC + open("../../runtime/private/judge-suffix.md").read()
 
 def call(system, user, tag):
     body = json.dumps({"model": MODEL, "max_tokens": 6000, "system": system,

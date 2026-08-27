@@ -4,3 +4,7 @@ runtime/
 # private corpus + eval data (real dumps / model outputs) — never commit
 sessions/
 shape/eval/*.json
+# compiled rubric, eval grades, judge prompt — the answer key, never commit
+shape/rubric-v*.md
+shape/eval/GRADES.md
+runtime/private/

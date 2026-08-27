@@ -43,10 +43,15 @@ layout, and the dock, replies polling, and open-field creation compiled out.
 Bundle verified clean — no rubric, no `aipc-ubuntu`, no `/api/state`.
 
 **Found, not fixed:**
-- **The rubric is public.** `prototypes/graph-canvas/shape/eval/rubric-prompt.md`
-  is committed to a public repo; `shape/eval/.gitignore` covers `*.json` but not
-  the `.md`. Handoff §5 calls it the hard-to-copy IP whose whole value is that
-  the people it evaluates can't read it. Public since the 2026-08-25 push.
+- **The rubric answer key was public for ~2 days.** Initially misdiagnosed as
+  `shape/eval/rubric-prompt.md` — that file has no numeric thresholds and is
+  closer to a public methodology statement; it stays tracked (and `vite.config.ts`
+  reads it for the dev relay). The actual exposure was `shape/rubric-v0.1.md`
+  (the 22-check compiled rubric with the reverse-engineerable trip points) and
+  `shape/eval/GRADES.md` (a marked exam), both in the 2026-08-25 push. Moved to
+  gitignored `runtime/private/` on 08-27 with the ignore broadened to
+  `shape/rubric-v*.md`; `gaming.py`'s judge prompt moved there too. History not
+  rewritten — 0 forks / 0 stars at the time, decision left open.
 - **Facilitator liveness is invisible.** An orphaned watcher left a dock dump
   unanswered ~3 days while the dev server stayed up; `relayUp` tracks the
   server, not whether a facilitator is attached to the inbox. Same family as
