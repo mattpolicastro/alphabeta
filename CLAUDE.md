@@ -74,7 +74,7 @@ Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` m
 - **App at root `/`**, no `/app` prefix. The app's URLs stay stable from tier-1 through tier-3 without migration.
 - **Marketing and app are split across subdomains (live since 2026-08-26).** `alphabeta.tools` serves the landing page; `app.alphabeta.tools` serves the application. `www` 301s to the apex. Cookie scoping, independent deploys, and cleaner Worker routes all follow.
   - **The app origin is load-bearing and must never move.** IndexedDB is origin-scoped, so `app.alphabeta.tools` *is* the datastore — relocating it silently orphans every user's bets, with no migration path short of export/import. The Chrome extension's `externally_connectable` pins the same origin.
-  - `alphabeta.run` is also owned (Cloudflare registrar, same account) but unconfigured and **not** canonical. Vault/résumé references to it are stale.
+  - `alphabeta.run` is also owned (Cloudflare registrar, same account), unconfigured, and **not** the app's domain. Matt is holding it as a possible name for an agentic / semi-autonomous thing (idea, 2026-09-04) — don't point it at the app or let it lapse without asking.
 - **Bets are addressed by `?id=<uuid>` query string**, not path segments. `output: 'export'` requires `generateStaticParams` for `[id]` segments; user-generated UUIDs can't be enumerated at build time. Query-string addressing is static-export native and produces a single pre-rendered page per stage.
 - **Reserved route prefixes — do not claim for feature routes:**
   - `/api/*` — Cloudflare Workers backend (LLM provider proxy, sync, rate-limit checks).
