@@ -29,7 +29,9 @@ function relay(): Plugin {
       if (!fs.existsSync(facFile)) fs.writeFileSync(facFile, 'claude')
       const stateFileRef = path.join(dir, 'state.json')
 
-      async function localReply(dump: { nodeId: string; text: string }) {
+      // dump.scopeText is the rendered "you are looking at" block (src/llm.ts scopeBlock),
+      // sent alongside the structured `scope` so the local facilitator sees the same view
+      async function localReply(dump: { nodeId: string; text: string; scopeText?: string }) {
         const model = fs.readFileSync(facFile, 'utf8').trim()
         if (!model || model === 'claude') return
         let boardCtx = '(empty board)'
@@ -51,7 +53,7 @@ function relay(): Plugin {
         const rubric = fs.readFileSync(path.resolve(__dirname, 'shape/eval/rubric-prompt.md'), 'utf8')
         const body = JSON.stringify({
           model, max_tokens: 6000,
-          system: rubric + '\n\nCurrent board:\n' + boardCtx,
+          system: rubric + '\n\n' + (dump.scopeText ? dump.scopeText + '\n\n' : '') + 'Current board:\n' + boardCtx,
           messages: [...thread, { role: 'user', content: dump.text }],
         })
         const res = await fetch('http://aipc-ubuntu:11434/v1/messages', {

@@ -86,6 +86,7 @@ export interface StratRecord {
   expectation?: string
   owner?: string
   validity?: string
+  createdAt?: string // first seen — the docket ages an owned open question from here (src/docket-items.ts)
   // solution admission paperwork
   grounds?: Ground[]
   screens?: string[]

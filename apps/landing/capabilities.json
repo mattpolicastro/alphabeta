@@ -5,7 +5,7 @@
   "surfaces": [
     { "id": "canvas",      "kind": "place",    "name": "The Canvas",        "status": "live",    "note": "goal → problem → question/solution → bet cascade; tree auto-layout; horizontal or vertical" },
     { "id": "ledger",      "kind": "place",    "name": "The Ledger",        "status": "live",    "note": "table + kanban; filter by status, surface, instrument rung" },
-    { "id": "docket",      "kind": "place",    "name": "The Docket",        "status": "live",    "note": "what is on the clock; maturation read from the lock (declared, lab runtime, or the spec line — the 14-day default is labelled as such); contention rows when two live bets share a surface" },
+    { "id": "docket",      "kind": "place",    "name": "The Docket",        "status": "live",    "note": "due-list of obligations by urgency — overdue · this week · later · gated · off the clock — each row with the action that discharges it; maturation read from the lock (declared, lab runtime, or the spec line — the 14-day default is labelled as such); contentions and owned open questions are rows too; timeline (gantt) as a toggle" },
 
     { "id": "face-question", "kind": "face", "name": "Question dossier",       "status": "live",    "note": "record, expectation slot, answer history" },
     { "id": "face-solution", "kind": "face", "name": "Solution admission",     "status": "live",    "note": "grounds with provenance tiers, screens, rivals, arbitration — pencil register" },
@@ -23,7 +23,7 @@
     { "id": "doc-graveyard",   "kind": "document", "name": "The Graveyard",      "status": "stub",    "note": "detonated problems, mooted questions, lost and pruned bets", "gap": "priced only in days on the clock and solutions gated — no avoided-spend model; nothing on the demo board detonates, so the problem/question sections show empty" },
     { "id": "doc-history",     "kind": "document", "name": "History scrubber",   "status": "planned", "note": "needs the event log persisted, not board state" },
 
-    { "id": "tray-openfield", "kind": "tray", "name": "Open Field (facilitator)", "status": "partial", "gap": "bring your own Anthropic key in the public build; the relay facilitator needs npm run dev" },
+    { "id": "tray-openfield", "kind": "tray", "name": "Open Field (facilitator)", "status": "partial", "note": "scope-aware: the facilitator sees the current view, the selected record, any open document, and the docket's due-list — in both the direct and relay providers; the dock says what it sees", "gap": "bring your own Anthropic key in the public build; the relay facilitator needs npm run dev" },
     { "id": "tray-intake",    "kind": "tray", "name": "Intake / residue",        "status": "partial", "gap": "classifies by cues, doesn't converse — the facilitator is the conversational version" },
     { "id": "tray-whats-here","kind": "tray", "name": "The loop (walkthrough)", "status": "live", "note": "this registry, rendered in-app" },
 

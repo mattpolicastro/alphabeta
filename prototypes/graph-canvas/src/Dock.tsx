@@ -12,11 +12,13 @@ export function Dock({
   onSend,
   relayUp,
   error,
+  scopeHint,
 }: {
   thread: ThreadMsg[]
   onSend: (t: string) => void
   relayUp: boolean
   error?: string | null
+  scopeHint?: string // what the facilitator sees (src/llm.ts scopeLine)
 }) {
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
@@ -61,6 +63,7 @@ export function Dock({
         <span className="dock-eyebrow">open field</span>
         <StatusChip id="tray-openfield" />
         {!STATIC && <FacilitatorToggle />}
+        {scopeHint && live && <span className="dock-scope">{scopeHint}</span>}
         {STATIC && !hasKey ? (
           <>
             <input className="finput key-field" type="password" autoComplete="off" spellCheck={false}

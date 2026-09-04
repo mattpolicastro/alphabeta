@@ -87,3 +87,92 @@ describe('negotiation + the one sentence', () => {
     expect(PRIVACY_LINE.match(/\.(\s|$)/g)).toHaveLength(1) // one sentence
   })
 })
+
+// ── scope: what the facilitator sees of the current view ─────────────
+import { SCOPE_MAX_LINES, scopeBlock, scopeLine, RelayProvider, type Scope } from '../llm'
+import type { DueItem } from '../docket-items'
+
+const scopedNodes: Node[] = [
+  { id: 'b2', type: 'bet', position: { x: 0, y: 0 }, data: { seq: 2, bet: { status: 'locked', change: 'shorter demo', direction: 'reduce', metric: 'sales cycle', magnitude: '30 days', foldIf: '−10 days', surface: 'marketing', lockedAt: '2026-08-20T00:00:00.000Z', instrument: { type: 'ab', spec: '50/50 · 14 days' }, criteria: { win: 'keep', inconclusive: 'hold', loss: 'revert' } } } },
+  { id: 'q1', type: 'strat', position: { x: 0, y: 0 }, data: { seq: 1, strat: { kind: 'question', title: 'Where do deals stall?', owner: 'Priya', expectation: 'after the demo', detail: 'stage timestamps unpulled' } } },
+]
+const due: DueItem[] = [
+  { id: 'maturation:b2', kind: 'maturation', nodeId: 'b2', urgency: 'overdue', action: 'resolve', reason: 'matured 6 days ago (14d from the spec)' },
+  { id: 'question:q1', kind: 'question', nodeId: 'q1', urgency: 'off-clock', action: 'answer', reason: 'owned by Priya, open 21 days', ageDays: 21 },
+]
+
+describe('scopeBlock — the "you are looking at" block', () => {
+  it('canvas with a bet selected: the record on 3–6 lines', () => {
+    const lines = scopeBlock(scopedNodes, { view: 'canvas', selectedId: 'b2' }).split('\n')
+    expect(lines[0]).toBe('You are looking at: the canvas (the map)')
+    expect(lines[1]).toBe('selected: B2 · bet [locked] · surface marketing · locked 2026-08-20')
+    expect(lines.slice(2)).toEqual([
+      '  change: shorter demo → reduce sales cycle by 30 days',
+      '  fold-if: −10 days',
+      '  criteria: win → keep · inconclusive → hold · loss → revert',
+      '  rung: ab · rung 5 · valid (causal) · 50/50 · 14 days',
+    ])
+    expect(lines.length - 1).toBeLessThanOrEqual(6)
+  })
+  it('a selected question shows owner, title, expectation, detail', () => {
+    expect(scopeBlock(scopedNodes, { view: 'canvas', selectedId: 'q1' }).split('\n').slice(1)).toEqual([
+      'selected: Q1 · question · owner Priya',
+      '  Where do deals stall?',
+      '  expectation: after the demo',
+      '  detail: stage timestamps unpulled',
+    ])
+  })
+  it('ledger with a document open, nothing selected', () => {
+    expect(scopeBlock(scopedNodes, { view: 'ledger', openDocument: 'diff' })).toBe('You are looking at: the ledger (every bet as a row)\nopen document: the diff (as-planned vs as-reported)')
+  })
+  it('docket: one line per due item — urgency · tag · action · reason', () => {
+    const lines = scopeBlock(scopedNodes, { view: 'docket', due }).split('\n')
+    expect(lines).toEqual([
+      'You are looking at: the docket (the due-list of obligations)',
+      'due-list (2):',
+      '  overdue · B2 · resolve · matured 6 days ago (14d from the spec)',
+      '  off the clock · Q1 · answer · owned by Priya, open 21 days',
+    ])
+    expect(scopeBlock(scopedNodes, { view: 'docket', due: [] })).toContain('due-list: nothing owed')
+  })
+  it('caps the block at 40 lines and says how many were cut', () => {
+    const many = Array.from({ length: 60 }, (_, i) => ({ ...due[0], id: `m${i}`, nodeId: 'b2' }))
+    const lines = scopeBlock(scopedNodes, { view: 'docket', due: many }).split('\n')
+    expect(lines).toHaveLength(SCOPE_MAX_LINES)
+    expect(lines[SCOPE_MAX_LINES - 1]).toBe('  … 23 more lines not shown')
+  })
+})
+
+describe('scope rides into both providers', () => {
+  const scope: Scope = { view: 'docket', due }
+  it('boardContext without a scope is unchanged; with one, the block precedes the board', () => {
+    expect(boardContext(scopedNodes)).toBe('bet [locked]: shorter demo (fold-if: −10 days)\nquestion: Where do deals stall?')
+    expect(boardContext(scopedNodes, scope)).toBe(scopeBlock(scopedNodes, scope) + '\n\nCurrent board:\nbet [locked]: shorter demo (fold-if: −10 days)\nquestion: Where do deals stall?')
+  })
+  it('buildRequest puts the block in the system prompt after the rubric', () => {
+    const req = buildRequest('x', { nodes: scopedNodes, thread: [], scope }, { rubric: 'RUBRIC' })
+    expect(req.system.startsWith('RUBRIC\n\nYou are looking at: the docket')).toBe(true)
+    expect(req.system).toContain('\n\nCurrent board:\n')
+  })
+  it('the relay dump carries scope (structured) and scopeText (rendered)', async () => {
+    const fetchMock = vi.fn(async () => new Response('{"ok":true}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await new RelayProvider().send('hi', { nodes: scopedNodes, thread: [], scope })
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body))
+    expect(body.scope).toEqual(scope)
+    expect(body.scopeText).toBe(scopeBlock(scopedNodes, scope))
+    expect(body.nodeId).toBe('dock')
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('scopeLine — the dock hint', () => {
+  it('names the view, the selection, the docket count, the open document', () => {
+    expect(scopeLine(scopedNodes, { view: 'canvas' })).toBe('looking at: canvas')
+    expect(scopeLine(scopedNodes, { view: 'canvas', selectedId: 'b2' })).toBe('looking at: B2 — locked')
+    expect(scopeLine(scopedNodes, { view: 'docket', due })).toBe('looking at: docket · 1 overdue')
+    expect(scopeLine(scopedNodes, { view: 'docket', due: [due[1]] })).toBe('looking at: docket · 1 owed')
+    expect(scopeLine(scopedNodes, { view: 'docket', due: [] })).toBe('looking at: docket · nothing owed')
+    expect(scopeLine(scopedNodes, { view: 'ledger', selectedId: 'q1', openDocument: 'diff' })).toBe('looking at: Q1 — question · the diff open')
+  })
+})

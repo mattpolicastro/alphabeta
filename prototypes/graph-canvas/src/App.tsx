@@ -34,7 +34,8 @@ import type { LoopStepId } from './loop'
 import { exportBoard, importBoard, downloadEnvelope, readJsonFile } from './portable'
 import { IntakeTray } from './IntakeTray'
 import { isFunnelLanding, parseFunnel } from './funnel'
-import { providerFor } from './llm'
+import { providerFor, scopeLine, type Scope } from './llm'
+import { dueItems } from './docket-items'
 import { DocOverlay, type DocReq } from './Doc'
 import { Menu } from './Menu'
 
@@ -325,10 +326,14 @@ function Canvas() {
     let changed = false
     const next = nodes.map((n) => {
       const k = kindOf(n)
-      if (!k || (n.data as any)?.seq) return n
+      // first-seen stamp: the docket ages an open question from here when nothing declared it
+      const stamp = n.type === 'strat' && !(n.data as any)?.strat?.createdAt
+      if (!k || ((n.data as any)?.seq && !stamp)) return n
       changed = true
-      counters[k] = (counters[k] ?? 0) + 1
-      return { ...n, data: { ...n.data, seq: counters[k] } }
+      const data: any = { ...n.data }
+      if (!data.seq) { counters[k] = (counters[k] ?? 0) + 1; data.seq = counters[k] }
+      if (stamp) data.strat = { ...data.strat, createdAt: new Date().toISOString() }
+      return { ...n, data }
     })
     if (changed) setNodes(next)
   }, [nodes, loaded])
@@ -353,13 +358,18 @@ function Canvas() {
   // the user's own key in the static build (src/llm.ts). Direct replies land inline;
   // relay replies still arrive by polling below.
   const provider = useMemo(() => providerFor(STATIC), [])
-  const boardRef = useRef({ nodes, dockThread })
-  boardRef.current = { nodes, dockThread }
+  // what the user is looking at — the facilitator sees the same (src/llm.ts scopeBlock)
+  const scope = useMemo<Scope>(() => ({
+    view, selectedId: selectedId ?? undefined, openDocument: doc?.kind,
+    due: view === 'docket' ? dueItems(nodes, edges) : undefined,
+  }), [view, selectedId, doc, nodes, edges])
+  const boardRef = useRef({ nodes, dockThread, scope })
+  boardRef.current = { nodes, dockThread, scope }
   const sendDock = useCallback((text: string) => {
     const mid = mkId()
     setDockThread((t) => [...t, { id: mid, role: 'you', text, status: 'sending' }])
     setDockError(null)
-    provider.send(text, { nodes: boardRef.current.nodes, thread: boardRef.current.dockThread }).then((r) => {
+    provider.send(text, { nodes: boardRef.current.nodes, thread: boardRef.current.dockThread, scope: boardRef.current.scope }).then((r) => {
       setDockThread((t) => {
         const next = t.map((m) => (m.id === mid ? { ...m, status: r.captured ? ('captured' as const) : ('failed' as const) } : m))
         return r.reply ? [...next, { role: 'claude' as const, text: r.reply }] : next
@@ -564,7 +574,7 @@ function Canvas() {
   const placeIntake = useCallback((kind: StratKind, title: string) => {
     const id = `intake-${Date.now().toString(36)}`
     const lane = kind === 'goal' ? 'goal' : kind === 'problem' ? 'problem' : 'child'
-    const fresh: Node = { id, type: 'strat', position: orient === 'h' ? { x: LANE_X[lane], y: 0 } : { x: 0, y: LANE_Y[lane] }, data: { strat: { kind, title } } }
+    const fresh: Node = { id, type: 'strat', position: orient === 'h' ? { x: LANE_X[lane], y: 0 } : { x: 0, y: LANE_Y[lane] }, data: { strat: { kind, title, createdAt: new Date().toISOString() } } }
     setNodes((ns) => deoverlap([...ns, fresh], orient))
     setSelectedId(id); setView('canvas')
     setTimeout(() => fitView({ duration: 400, nodes: [{ id }], maxZoom: 1 }), 120)
@@ -798,7 +808,7 @@ function Canvas() {
         <MiniMap pannable zoomable nodeColor={(n) => (n.type === 'bet' ? TERRA : INK)} />
       </ReactFlow>
       ) : view === 'docket' ? (
-        <DocketView nodes={nodes} edges={edges} onOpen={(id) => setSelectedId(id)} />
+        <DocketView nodes={nodes} edges={edges} onOpen={(id) => setSelectedId(id)} onMoment={(kind, nodeId) => { setSelectedId(nodeId); setMoment({ kind, nodeId }) }} />
       ) : (
         <LedgerView nodes={nodes} onOpen={(id) => { setSelectedId(id) }}
           onMoment={(kind, nodeId) => setMoment({ kind, nodeId })}
@@ -838,7 +848,7 @@ function Canvas() {
 
       {doc && <DocOverlay req={doc} nodes={nodes} edges={edges} onClose={() => setDoc(null)} onOpen={(id) => { setDoc(null); setSelectedId(id) }} />}
 
-      <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} error={dockError} />
+      <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} error={dockError} scopeHint={scopeLine(nodes, scope)} />
     </div>
   )
 }

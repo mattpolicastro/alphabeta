@@ -682,3 +682,24 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 .contention-row .dtag { color:var(--incon) }
 .contention-row .dsub { color:var(--incon) }
 .gnote.default { font-style:italic }
+
+/* ── docket as a due-list: obligations by urgency; overdue in --incon, never accent ── */
+.docket-head { display:flex; align-items:baseline; gap:16px; max-width:760px; margin-bottom:6px }
+.due-group { margin-top:14px }
+.due-group-head { font-family:'Barlow Semi Condensed',sans-serif; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fade); display:flex; align-items:baseline; gap:8px; padding:0 0 6px; border-bottom:1px solid var(--line); max-width:760px }
+.due-group.u-overdue .due-group-head { color:var(--incon); border-bottom-color:var(--incon) }
+.due-count { font-size:10px; color:var(--fade); border:1px solid var(--line); padding:0 5px }
+.due-empty { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--fade); border-left:1px dashed var(--fade); padding:6px 0 4px 8px; margin-top:6px; max-width:760px }
+.due-row { align-items:center; margin-top:6px; margin-bottom:0 }
+.due-row:hover { border-color:var(--ink) }
+.due-row.u-overdue { border-color:var(--incon); color:var(--incon) }
+.due-row.u-overdue .dtag { color:var(--incon) }
+.due-row.u-overdue .due-reason { color:var(--incon) }
+.due-row.u-gated, .due-row.u-off-clock { border-style:dashed }
+.due-reason { display:block; font-size:10.5px; color:var(--fade); margin-top:2px }
+.due-act { margin:0; padding:5px 10px; font-size:10.5px; flex-shrink:0 }
+.due-row.u-overdue .due-act { border-color:var(--incon); color:var(--incon) }
+.due-row.u-overdue .due-act:hover { background:var(--incon); color:var(--paper) }
+
+/* the dock's scope hint: what the facilitator sees — pencil register */
+.dock-scope { flex:1 1 100%; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--fade); border-left:1px dashed var(--fade); padding-left:6px; line-height:1.4; margin-top:2px }

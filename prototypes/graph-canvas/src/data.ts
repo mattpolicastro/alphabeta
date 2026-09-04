@@ -5,9 +5,19 @@
 // own reflections, so the canvas has a live dependency chain to resolve against.
 // Elevation links are editorial — reassigned from the fixtures where the
 // fixture cardId didn't match the bet's content.
+//
+// The nag is visible on a fresh board: the two live bets and the two owned open
+// questions are dated relative to load time (bet-3 matured ~6 days ago, bet-4 is
+// due in 3 days, Q1 has been open 21 days, Q2 three) so the docket always has
+// something overdue to say. Resolved bets keep their absolute dates.
 
 import type { Edge, Node } from '@xyflow/react'
 import type { BetRecord, EdgeKind, StratRecord } from './model'
+
+const DAY = 86_400_000
+const NOW = Date.now()
+const daysAgo = (d: number) => new Date(NOW - d * DAY).toISOString()
+const daysAhead = (d: number) => new Date(NOW + d * DAY).toISOString()
 
 const strat = (
   id: string,
@@ -77,6 +87,25 @@ export const initialNodes: Node[] = [
   strat('sl-2', 'solution', 'Deploy EU data region (AWS Frankfurt)', 750, 340, 'Parallel stack in eu-central-1 with data isolation.'),
   strat('sl-4', 'solution', 'Localize for top 3 EU languages', 1050, 340, 'German, French, Spanish across site, docs, sales materials.'),
 
+  // ── Open questions, person-owned: off the clock, still owed ───────
+  {
+    ...strat('qn-1', 'question', 'Where do enterprise deals actually stall after the demo?', -110, 340),
+    data: { strat: {
+      kind: 'question', title: 'Where do enterprise deals actually stall after the demo?',
+      detail: 'Sales says pricing; CS says security review. Nobody has pulled the stage timestamps.',
+      owner: 'Priya', createdAt: daysAgo(21),
+    } satisfies StratRecord },
+  },
+  {
+    ...strat('qn-2', 'question', 'Do free-tier users hit the usage triggers we would prompt on?', 450, 460),
+    data: { strat: {
+      kind: 'question', title: 'Do free-tier users hit the usage triggers we would prompt on?',
+      detail: 'The screen on the upgrade-flow redesign; unanswered, it is an assumption.',
+      expectation: 'Most active free accounts cross at least one trigger in week one.',
+      owner: 'Sam', createdAt: daysAgo(3),
+    } satisfies StratRecord },
+  },
+
   // ── Bets ─────────────────────────────────────────────────────────
   bet('bet-1', 60, 580, {
     change: 'adding a self-serve interactive demo to the marketing site',
@@ -99,6 +128,7 @@ export const initialNodes: Node[] = [
     instrument: { type: 'ab', spec: '50/50 by visitor · 14 days' },
     confidence: '0.55',
     guardrails: 'checkout completion must hold; support tickets flat',
+    lockedAt: daysAgo(20), // 14-day spec → matured 6 days ago: the docket's overdue row
   }),
   bet('bet-7', 300, 580, {
     change: 'simplifying pricing from 5 tiers to 3 tiers',
@@ -150,7 +180,9 @@ export const initialNodes: Node[] = [
     instrument: { type: 'quasi', spec: 'by send cohort — no per-user split in the ESP' },
     confidence: '0.5',
     guardrails: 'unsubscribe rate must hold',
-    amendments: [{ ts: '2026-08-29T09:00:00.000Z', field: 'runtime', change: '14d → 21d', reason: 'send volume below forecast; need the extra week to reach the fold-if' }],
+    lockedAt: daysAgo(18),
+    expectedResolveBy: daysAhead(3), // the amended 21-day runtime, declared — due this week
+    amendments: [{ ts: daysAgo(5), field: 'runtime', change: '14d → 21d', reason: 'send volume below forecast; need the extra week to reach the fold-if' }],
   }),
 
   bet('bet-5', 1180, 580, {
@@ -254,6 +286,8 @@ export const initialEdges: Edge[] = [
   edge('e-p3-s3', 'pb-3', 'sl-3', 'lineage'),
   edge('e-p2-s2', 'pb-2', 'sl-2', 'lineage'),
   edge('e-p4-s4', 'pb-4', 'sl-4', 'lineage'),
+  edge('e-p1-q1', 'pb-1', 'qn-1', 'lineage'),
+  edge('e-p3-q2', 'pb-3', 'qn-2', 'lineage'),
 
   // elevation: solution → bet ("this bet tests this solution")
   edge('e-s1-b1', 'sl-1', 'bet-1', 'elevation'),

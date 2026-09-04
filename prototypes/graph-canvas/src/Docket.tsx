@@ -1,19 +1,103 @@
+// The docket: a due-list of obligations by urgency (default), the gantt behind a
+// timeline toggle. The due-list is src/docket-items.ts; every row carries the one
+// action that discharges it. Overdue rows sit in --incon; nothing here is accent.
 import { useState } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { deriveGates, type BetRecord, type StratRecord } from './model'
+import type { MomentKind } from './Moment'
 import { StatusChip } from './StatusChip'
 import { DAY, DEFAULT_MATURATION_DAYS, findContentions, maturationOf, type Maturation } from './contentions'
+import { URGENCIES, URGENCY_EMPTY, URGENCY_LABEL, countBy, dueItems, tagOf, type DueItem } from './docket-items'
 
 const RUNTIME_DAYS = DEFAULT_MATURATION_DAYS
 
-export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edge[]; onOpen: (id: string) => void }) {
-  const gates = deriveGates(nodes, edges)
-  const bet = (n: Node) => (n.data as any).bet as BetRecord
-  const strat = (n: Node) => (n.data as any).strat as StratRecord
-  const tag = (n: Node) => {
-    const s = (n.data as any).seq
-    return n.type === 'bet' ? `B${s ?? '·'}` : `${(strat(n)?.kind ?? '?')[0].toUpperCase()}${s ?? '·'}`
+const bet = (n: Node) => (n.data as any).bet as BetRecord
+const strat = (n: Node) => (n.data as any).strat as StratRecord
+const tag = tagOf
+
+const ACTION_LABEL: Record<DueItem['action'], string> = {
+  resolve: 'resolve…', answer: 'answer…', amend: 'amend…', unblock: 'see blocker', lock: 'lock…', revisit: 'open',
+}
+
+export function DocketView({ nodes, edges, onOpen, onMoment }: {
+  nodes: Node[]
+  edges: Edge[]
+  onOpen: (id: string) => void
+  onMoment?: (kind: MomentKind, id: string) => void
+}) {
+  const [mode, setMode] = useState<'due' | 'timeline'>('due')
+  const due = dueItems(nodes, edges)
+  const summary = URGENCIES.map((u) => [countBy(due, u), URGENCY_LABEL[u]] as const).filter(([n]) => n > 0).map(([n, l]) => `${n} ${l}`).join(' · ')
+
+  return (
+    <div className="ledger-view">
+      <div className="dimlbl">the docket — what is owed, by urgency<StatusChip id="docket" /></div>
+      <div className="docket-head">
+        <span className="sheet-meta">{summary || 'nothing owed'}</span>
+        <span style={{ flex: 1 }} />
+        <div className="segbtns">
+          <button className={mode === 'due' ? 'on' : ''} onClick={() => setMode('due')}>due</button>
+          <button className={mode === 'timeline' ? 'on' : ''} onClick={() => setMode('timeline')}>timeline</button>
+        </div>
+      </div>
+      {mode === 'due'
+        ? <DueList nodes={nodes} due={due} onOpen={onOpen} onMoment={onMoment} />
+        : <Timeline nodes={nodes} edges={edges} onOpen={onOpen} />}
+    </div>
+  )
+}
+
+// ── the due-list ─────────────────────────────────────────────────────
+function DueList({ nodes, due, onOpen, onMoment }: {
+  nodes: Node[]
+  due: DueItem[]
+  onOpen: (id: string) => void
+  onMoment?: (kind: MomentKind, id: string) => void
+}) {
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  const titleOf = (d: DueItem) => {
+    const n = byId.get(d.nodeId)
+    if (!n) return d.nodeId
+    if (d.kind === 'contention') {
+      const other = byId.get(d.id.split(':')[2])
+      return <>{bet(n).change} <span className="locked-note">and</span> {other ? bet(other).change : '?'}</>
+    }
+    return n.type === 'bet' ? bet(n).change : strat(n).title
   }
+  // the action does the thing: a moment where one exists, else selection
+  const act = (d: DueItem) => {
+    if (d.action === 'resolve' || d.action === 'answer' || d.action === 'lock' || d.action === 'amend') {
+      if (onMoment) return onMoment(d.action, d.nodeId)
+      return onOpen(d.nodeId)
+    }
+    if (d.action === 'unblock') return onOpen(d.blockedBy?.[0] ?? d.nodeId)
+    return onOpen(d.nodeId)
+  }
+  return (
+    <div className="due-list">
+      {URGENCIES.map((u) => {
+        const rows = due.filter((d) => d.urgency === u)
+        return (
+          <section key={u} className={`due-group u-${u}`}>
+            <div className="due-group-head">{URGENCY_LABEL[u]}{rows.length > 0 && <span className="mono due-count">{rows.length}</span>}</div>
+            {rows.length === 0 && <div className="due-empty">{URGENCY_EMPTY[u]}</div>}
+            {rows.map((d) => (
+              <div className={`docket-row due-row u-${d.urgency}`} key={d.id} onClick={() => onOpen(d.nodeId)}>
+                <span className="mono dtag">{byId.has(d.nodeId) ? tag(byId.get(d.nodeId)!) : '·'}</span>
+                <span className="dtitle">{titleOf(d)}<span className="mono due-reason">{d.reason}</span></span>
+                <button className="btn2 sm due-act" onClick={(e) => { e.stopPropagation(); act(d) }}>{ACTION_LABEL[d.action]}</button>
+              </div>
+            ))}
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── the timeline (the original gantt, kept as the secondary view) ────
+function Timeline({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edge[]; onOpen: (id: string) => void }) {
+  const gates = deriveGates(nodes, edges)
   const blockersOf = (id: string) =>
     edges.filter((e) => e.target === id && (e.data as any)?.kind === 'dependency')
       .map((e) => nodes.find((n) => n.id === e.source)).filter(Boolean) as Node[]
@@ -57,7 +141,6 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
   const firstWeek = new Date(t0); firstWeek.setHours(0, 0, 0, 0)
   for (let t = firstWeek.getTime(); t < t1; t += 7 * DAY) weeks.push(t)
 
-  const openQs = nodes.filter((n) => n.type === 'strat' && strat(n).kind === 'question' && !strat(n).answered)
   const contentions = findContentions(nodes, today)
   const mmdd = (t: number) => new Date(t).toISOString().slice(5, 10)
 
@@ -94,8 +177,7 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
     .filter((l) => l.src && l.tgt) as { src: Bar; tgt: Bar }[]
 
   return (
-    <div className="ledger-view">
-      <div className="dimlbl">the docket — obligations on the clock<StatusChip id="docket" /></div>
+    <>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, maxWidth: 900 }}>
         <span style={{ flex: 1 }} />
         <div className="segbtns">
@@ -141,7 +223,7 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
             const sx = pct(l.src.end), tx = pct(l.tgt.start)
             const mx = Math.min(sx + 1.5, (sx + tx) / 2)
             return (
-              <path key={i2} d={`M ${sx} ${sy} L ${mx} ${sy} L ${mx} ${ty} L ${tx} ${ty}`} 
+              <path key={i2} d={`M ${sx} ${sy} L ${mx} ${sy} L ${mx} ${ty} L ${tx} ${ty}`}
                 vectorEffect="non-scaling-stroke" className="gleader" />
             )
           })}
@@ -158,17 +240,6 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
           <span className="mono dright">overlap {mmdd(c.start)} → {mmdd(c.end)} · {Math.ceil((c.end - c.start) / DAY)}d</span>
         </div>
       ))}
-
-      <div className="dimlbl" style={{ marginTop: 26 }}>off the clock — open questions (no dates, still owed)</div>
-      {openQs.length === 0 && <div className="docket-empty">no open questions</div>}
-      {openQs.map((n) => (
-        <div className="docket-row" key={n.id} onClick={() => onOpen(n.id)}>
-          <span className="mono dtag">{tag(n)}</span>
-          <span className="dtitle">{strat(n).title}
-            {!strat(n).expectation && <span className="dsub">expectation not yet stated</span>}</span>
-          <span className="mono dright">{strat(n).owner ? `owner: ${strat(n).owner}` : 'unowned'}</span>
-        </div>
-      ))}
-    </div>
+    </>
   )
 }
