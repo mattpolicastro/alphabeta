@@ -80,6 +80,12 @@ Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` m
   - `/api/*` — Cloudflare Workers backend (LLM provider proxy, sync, rate-limit checks).
   - `/auth/*` — login / callback / logout. Both consumer auth (tier-3) and SSO/OIDC (tier-2 self-hosted).
   - `/share/*` — public read-only share tokens for locked bets (handoff §10).
+- **`alphabeta.tools/lab/*` — standalone analysis tools (settled 2026-08-28).** Stateless calculators on the *marketing* origin, a flat list **named by the practitioner's question** (method is a title qualifier, never the URL noun): `/lab/sample-size`, `/lab/detectable-lift`, `/lab/srm`, `/lab/pre-post`, `/lab/results`, `/lab/sequential`, `/lab/bayes`. Modeled on Kelly Wortham's `forwarddigital.org/tools` (five of these are ports of its R Shiny apps). Holdback and study are ceremony in the lock flow, not lab tools. Rules:
+  - **The URL is the contract.** Each tool has a versioned canonical query-string schema (`?v=1&…`); a sealed result is SHA-256 of the canonical string, shown as a receipt. Same provenance format as a locked bet.
+  - **"Lock as bet" is the only cross-origin hop**: `app.alphabeta.tools/bet/new?from=<tool>&v=1&…` mints a draft with the instrument pre-selected and inputs prefilled.
+  - Lab tools and in-bet instrument panels are the **same React component** — inputs from the URL vs. from the locked bet. Stats logic lives in a framework-free core (`packages/analysis`, TS closed-form + Pyodide engines), never in the component.
+  - Closed-form tools (sample-size, detectable-lift, srm) are TS and instant; Pyodide only where there is no formula. Reference engine/oracle is Python (`spotify-confidence`, Apache-2.0) with the original R Shiny sources as a second oracle. `pre-post` ships causal-impact-wasm as-is under the path — share its `py/` engine, don't port the UI.
+  - Build tools separately first; compose later. Full plan: `docs/roadmap-2026-09.md` §3.
 - **Multi-tenancy: flat URLs.** No `/org/<slug>/...` prefix. Ownership resolves via auth context + Dexie query scoping. Org switching is an in-app affordance, not a URL rewrite. URLs are portable across the tier-1 → tier-3 upgrade — local-only bookmarks resolve identically once the user signs in.
 - Chrome extension `externally_connectable` will pin the app domain once chosen; routing is otherwise extension-agnostic.
 
