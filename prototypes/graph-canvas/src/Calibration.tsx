@@ -5,7 +5,8 @@
 import type { Node } from '@xyflow/react'
 import { MIN_N, brier, calibrationBins, calibrationPoints, calibrationRead, type CalPoint } from './calibration-score'
 import { initialNodes } from './data'
-import { StatusChip } from './StatusChip'
+import { StatusChip, surfaceClass } from './StatusChip'
+import { Overlay } from './Overlay'
 
 // the fixture's bets carry no seq until the board assigns one — number them here so the tags read
 function withSeq(nodes: Node[]): Node[] {
@@ -17,20 +18,16 @@ const W = 380, H = 250, PL = 40, PB = 30, PT = 12, PR = 12
 const sx = (c: number) => PL + c * (W - PL - PR)
 const sy = (o: number) => PT + (1 - o) * (H - PT - PB)
 
-export function CalibrationDoc({ nodes }: { nodes: Node[] }) {
+export function CalibrationDoc({ nodes, onClose }: { nodes: Node[]; onClose: () => void }) {
   const real = calibrationPoints(nodes)
   const fixture = real.length === 0
   const pts = fixture ? calibrationPoints(withSeq(initialNodes)) : real
   const bins = calibrationBins(pts).filter((b) => b.n > 0)
   const score = brier(pts)
   return (
-    <>
-      <div className="doc-head">
-        <span className="panel-eyebrow">the calibration mirror</span>
-        <StatusChip id="doc-calibration" />
-        <span className="mono-line doc-meta">{fixture ? 'fixture data — this board has no resolved bet with a confidence' : `this board · ${pts.length} of ${MIN_N} needed`}</span>
-      </div>
-      <h3>What you said, against what happened.</h3>
+    <Overlay kind="doc" eyebrow="the calibration mirror" chip={<StatusChip id="doc-calibration" />} className={surfaceClass('doc-calibration')}
+      meta={fixture ? 'fixture data — this board has no resolved bet with a confidence' : `this board · ${pts.length} of ${MIN_N} needed`}
+      title="What you said, against what happened." onClose={onClose}>
       <svg className="cal-svg" viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label="confidence at lock against outcome">
         <line x1={sx(0)} y1={sy(0)} x2={sx(1)} y2={sy(0)} className="cal-axis" />
         <line x1={sx(0)} y1={sy(0)} x2={sx(0)} y2={sy(1)} className="cal-axis" />
@@ -64,7 +61,7 @@ export function CalibrationDoc({ nodes }: { nodes: Node[] }) {
         </dd>
       </dl>
       <p className="margin-note">binned means (squares) sit on the diagonal when you are calibrated. below n={MIN_N} the mirror shows the shape and refuses the verdict.</p>
-    </>
+    </Overlay>
   )
 }
 

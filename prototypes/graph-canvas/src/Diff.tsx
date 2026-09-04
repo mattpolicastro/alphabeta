@@ -4,8 +4,9 @@ import { useState } from 'react'
 import type { BetRecord } from './model'
 import { diffRows, diffText } from './diff-rows'
 import { StatusChip } from './StatusChip'
+import { Overlay } from './Overlay'
 
-export function DiffDoc({ tag, bet }: { tag: string; bet: BetRecord }) {
+export function DiffDoc({ tag, bet, onClose }: { tag: string; bet: BetRecord; onClose: () => void }) {
   const rows = diffRows(bet)
   const text = diffText(bet, tag)
   const [showText, setShowText] = useState(false)
@@ -14,18 +15,9 @@ export function DiffDoc({ tag, bet }: { tag: string; bet: BetRecord }) {
     try { await navigator.clipboard.writeText(text); setNote('copied') } catch { setShowText(true); setNote('clipboard unavailable — select the text below') }
     setTimeout(() => setNote(null), 2400)
   }
+  const meta = [bet.status === 'resolved' ? `resolved ${bet.outcome ?? ''}` : bet.status, bet.lockedAt && `locked ${bet.lockedAt.slice(0, 10)}`, bet.seal && `sha256 ${bet.seal.slice(0, 8)}…`].filter(Boolean).join(' · ')
   return (
-    <>
-      <div className="doc-head">
-        <span className="panel-eyebrow">{tag} · the diff</span>
-        <StatusChip id="doc-diff" />
-        <span className="mono-line doc-meta">
-          {bet.status === 'resolved' ? `resolved ${bet.outcome ?? ''}` : bet.status}
-          {bet.lockedAt && ` · locked ${bet.lockedAt.slice(0, 10)}`}
-          {bet.seal && ` · sha256 ${bet.seal.slice(0, 8)}…`}
-        </span>
-      </div>
-      <h3>{bet.change}</h3>
+    <Overlay kind="doc" eyebrow={`${tag} · the diff`} chip={<StatusChip id="doc-diff" />} meta={meta} title={bet.change} onClose={onClose}>
       <table className="diff">
         <thead><tr><th /><th>as planned</th><th>as reported</th><th /></tr></thead>
         <tbody>
@@ -46,6 +38,6 @@ export function DiffDoc({ tag, bet }: { tag: string; bet: BetRecord }) {
       </div>
       {showText && <pre className="doc-pre">{text}</pre>}
       <p className="margin-note">the left column is what was sealed; the right is what happened. nothing here edits either.</p>
-    </>
+    </Overlay>
   )
 }

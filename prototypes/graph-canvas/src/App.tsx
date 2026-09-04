@@ -36,6 +36,7 @@ import { IntakeTray } from './IntakeTray'
 import { isFunnelLanding, parseFunnel } from './funnel'
 import { providerFor } from './llm'
 import { DocOverlay, type DocReq } from './Doc'
+import { Menu } from './Menu'
 
 const nodeTypes = { strat: StratNode, bet: BetNode, openfield: OpenFieldNode }
 
@@ -738,6 +739,10 @@ function Canvas() {
   )
 
   const selectedNode = selectedId ? displayNodes.find((n) => n.id === selectedId) : null
+  // the diff is per bet and reads the sealed record — it needs a locked one selected
+  const selectedBet = (selectedNode?.data as any)?.bet as BetRecord | undefined
+  const diffable = !!selectedBet && selectedBet.status !== 'draft' && selectedBet.status !== 'ready'
+  const diffHint = selectedBet ? 'not locked yet' : 'open from a bet'
 
   return (
     <div className="frame">
@@ -748,15 +753,20 @@ function Canvas() {
         <button className={`tab ${view === 'docket' ? 'on' : ''}`} onClick={() => setView('docket')}>docket</button>
         <span className="right">
           {importError && <span className="import-err">{importError}</span>}
-          <button className="btn2 sm" onClick={doExport}>export</button>
-          <button className="btn2 sm" onClick={() => fileRef.current?.click()}>import</button>
+          {undo && <button className="btn2 sm" onClick={undoLast} title={`undo: ${undo.label}`}>↶ undo</button>}
+          <Menu label="board" items={[
+            { id: 'export', label: 'export', onSelect: doExport },
+            { id: 'import', label: 'import', onSelect: () => fileRef.current?.click() },
+            { id: 'clear', label: 'clear board', onSelect: clear },
+            { id: 'reset', label: 'reset demo', onSelect: reset },
+          ]} />
+          <Menu label="documents" items={[
+            { id: 'diff', label: 'the diff', cap: 'doc-diff', disabled: !diffable, hint: diffHint, onSelect: () => selectedId && setDoc({ kind: 'diff', nodeId: selectedId }) },
+            { id: 'calibration', label: 'calibration', cap: 'doc-calibration', onSelect: () => setDoc({ kind: 'calibration' }) },
+            { id: 'graveyard', label: 'graveyard', cap: 'doc-graveyard', onSelect: () => setDoc({ kind: 'graveyard' }) },
+          ]} />
           <input ref={fileRef} type="file" accept="application/json,.json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = '' }} />
-          {undo && <button className="btn2 sm" onClick={undoLast} title={`undo: ${undo.label}`}>↶ undo</button>}
-          <button className="btn2 sm" onClick={clear}>clear board</button>
-          <button className="btn2 sm" onClick={reset}>reset demo</button>
-          <button className={`btn2 sm ${doc?.kind === 'calibration' ? 'on' : ''}`} onClick={() => setDoc({ kind: 'calibration' })}>calibration</button>
-          <button className={`btn2 sm ${doc?.kind === 'graveyard' ? 'on' : ''}`} onClick={() => setDoc({ kind: 'graveyard' })}>graveyard</button>
           <button className={`btn2 sm ${intake ? 'on' : ''}`} onClick={() => { setIntake((v) => !v); if (!intake) closeTray() }}>intake</button>
           <button className={`btn2 sm ${tray ? 'on' : ''}`} onClick={() => { if (tray) closeTray(); else { setTray(true); setIntake(false) } }}>the loop</button>
         </span>

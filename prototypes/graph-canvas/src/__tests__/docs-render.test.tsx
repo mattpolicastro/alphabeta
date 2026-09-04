@@ -28,6 +28,7 @@ describe('documents render against the fixture', () => {
     expect(html).toContain('is-stub')
     expect(html).toContain('n=6 — too few to say')
     expect(html).toContain('<svg')
+    expect(html).toContain('class="sheet-scrim"')
   })
   it('the calibration mirror falls back to the fixture on an empty board', () => {
     const html = renderToStaticMarkup(<DocOverlay req={{ kind: 'calibration' }} nodes={[]} edges={[]} onClose={() => {}} onOpen={() => {}} />)

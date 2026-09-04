@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { StratKind } from './model'
 import { KIND_ORDER, classifyIntake, type Intake } from './intake'
 import { StatusChip, surfaceClass } from './StatusChip'
+import { Overlay } from './Overlay'
 
 export function IntakeTray({ onClose, onPlace }: { onClose: () => void; onPlace: (kind: StratKind, title: string) => void }) {
   const [text, setText] = useState('')
@@ -20,12 +21,7 @@ export function IntakeTray({ onClose, onPlace }: { onClose: () => void; onPlace:
     setText(''); setRead(null); setKind(null)
   }
   return (
-    <aside className={`tray intake ${surfaceClass('tray-intake')}`}>
-      <div className="panel-head">
-        <span><span className="panel-eyebrow">intake</span> <StatusChip id="tray-intake" /></span>
-        <button className="close" onClick={onClose}>×</button>
-      </div>
-      <h2 className="loop-title">Say it; the cues sort it.</h2>
+    <Overlay kind="tray" className={`intake ${surfaceClass('tray-intake')}`} eyebrow="intake" chip={<StatusChip id="tray-intake" />} title="Say it; the cues sort it." onClose={onClose}>
       <textarea className="finput" rows={5} value={text} onChange={(e) => { setText(e.target.value); setRead(null) }}
         placeholder="a goal, a gap, something to look up, or a change you want to try…" autoFocus
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); classify() } e.stopPropagation() }} />
@@ -51,6 +47,6 @@ export function IntakeTray({ onClose, onPlace }: { onClose: () => void; onPlace:
           </div>
         </div>
       )}
-    </aside>
+    </Overlay>
   )
 }

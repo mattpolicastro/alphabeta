@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LOOP, stepStatus, type LoopStepId } from './loop'
 import { StatusChip } from './StatusChip'
+import { Overlay } from './Overlay'
 
 export function LoopTray({
   onClose, onTry,
@@ -11,12 +12,7 @@ export function LoopTray({
 }) {
   const [notes, setNotes] = useState<Partial<Record<LoopStepId, string>>>({})
   return (
-    <aside className="tray loop">
-      <div className="panel-head">
-        <span className="panel-eyebrow">how it works</span>
-        <button className="close" onClick={onClose}>×</button>
-      </div>
-      <h2 className="loop-title">One loop, five moments.</h2>
+    <Overlay kind="tray" className="loop" eyebrow="how it works" title="One loop, five moments." onClose={onClose}>
       {LOOP.map((s, i) => {
         const { status, gap } = stepStatus(s)
         const notYet = status === 'planned'
@@ -37,6 +33,6 @@ export function LoopTray({
         )
       })}
       <a className="loop-all" href="https://alphabeta.tools/capabilities/" target="_blank" rel="noreferrer">everything, with status → /capabilities</a>
-    </aside>
+    </Overlay>
   )
 }

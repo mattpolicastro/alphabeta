@@ -1,7 +1,8 @@
 // The Graveyard — what died and what it cost. Read-only, pencil register while stub.
 import type { Edge, Node } from '@xyflow/react'
 import { graveyardOf, type GraveEntry } from './graveyard-entries'
-import { StatusChip } from './StatusChip'
+import { StatusChip, surfaceClass } from './StatusChip'
+import { Overlay } from './Overlay'
 
 const SECTIONS: { kind: GraveEntry['kind']; title: string; empty: string }[] = [
   { kind: 'problem', title: 'detonated problems', empty: 'none — no problem has been refuted' },
@@ -9,16 +10,11 @@ const SECTIONS: { kind: GraveEntry['kind']; title: string; empty: string }[] = [
   { kind: 'bet', title: 'bets lost or never run', empty: 'none' },
 ]
 
-export function GraveyardDoc({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edge[]; onOpen: (id: string) => void }) {
+export function GraveyardDoc({ nodes, edges, onOpen, onClose }: { nodes: Node[]; edges: Edge[]; onOpen: (id: string) => void; onClose: () => void }) {
   const entries = graveyardOf(nodes, edges)
   return (
-    <>
-      <div className="doc-head">
-        <span className="panel-eyebrow">the graveyard</span>
-        <StatusChip id="doc-graveyard" />
-        <span className="mono-line doc-meta">{entries.length} buried</span>
-      </div>
-      <h3>What died, priced.</h3>
+    <Overlay kind="doc" eyebrow="the graveyard" chip={<StatusChip id="doc-graveyard" />} className={surfaceClass('doc-graveyard')}
+      meta={`${entries.length} buried`} title="What died, priced." onClose={onClose}>
       {SECTIONS.map((s) => {
         const rows = entries.filter((e) => e.kind === s.kind)
         return (
@@ -36,6 +32,6 @@ export function GraveyardDoc({ nodes, edges, onOpen }: { nodes: Node[]; edges: E
         )
       })}
       <p className="margin-note">a loss that was called early cost less than one that ran to maturation; a pruned bet cost nothing — that is the point of the gate.</p>
-    </>
+    </Overlay>
   )
 }

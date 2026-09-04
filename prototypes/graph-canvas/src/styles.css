@@ -542,9 +542,27 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 .btn2.on { background:var(--ink); color:var(--paper) }
 .import-err { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--incon); align-self:center; max-width:380px }
 
-.tray { position:absolute; top:42px; right:0; bottom:0; width:380px; z-index:30; background:var(--paper-raised); border-left:1px solid var(--line); padding:16px 18px; overflow-y:auto; font-size:12px; line-height:1.5 }
-.tray .close { font-family:inherit; font-size:16px; background:none; border:none; cursor:pointer; color:var(--ink) }
-.loop-title { font-family:'Barlow Semi Condensed',sans-serif; font-size:19px; margin:8px 0 14px }
+/* ── the sheet: one shell for trays (ambient, at the side) and documents (centered on a scrim) ── */
+:root { --z-sheet: 30 }
+.sheet { font-size:12px; line-height:1.5; overflow-y:auto }
+.sheet.tray { position:absolute; top:42px; right:0; bottom:0; width:min(380px, 94vw); z-index:var(--z-sheet); background:var(--paper-raised); border-left:1px solid var(--line); padding:16px 18px }
+.sheet-scrim { position:fixed; inset:0; background:rgba(38,40,44,.45); z-index:var(--z-sheet); display:flex; align-items:center; justify-content:center }
+.sheet.doc { background:var(--paper); border:1.5px solid var(--ink); width:min(880px, 94vw); max-height:86vh; padding:22px 24px }
+.sheet-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap }
+.sheet-eyebrow { font-size:9px; text-transform:uppercase; letter-spacing:.14em; color:var(--terra) }
+.sheet-meta { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--fade) }
+.sheet-close { margin-left:auto; font-family:inherit; font-size:16px; line-height:1; background:none; border:none; cursor:pointer; color:var(--ink); padding:0 2px }
+.sheet-title { font-family:'Barlow Semi Condensed',sans-serif; font-size:19px; margin:8px 0 14px }
+.sheet.is-stub .sheet-eyebrow { color:var(--fade) }
+
+/* menus in the prodbar: btn2 opens a mono popover */
+.menu { position:relative; display:inline-block }
+.menu-pop { position:absolute; top:calc(100% + 4px); right:0; min-width:210px; background:var(--paper-raised); border:1px solid var(--ink); padding:4px 0; z-index:calc(var(--z-sheet) + 5); display:grid }
+.menu-item { font-family:'IBM Plex Mono',monospace; font-size:11px; text-align:left; background:none; border:none; border-left:2px solid transparent; color:var(--ink); padding:7px 12px; cursor:pointer; display:flex; gap:8px; align-items:center; width:100%; white-space:nowrap }
+.menu-item:hover, .menu-item:focus { outline:none; background:var(--paper); border-left-color:var(--ink) }
+.menu-item:disabled { color:var(--fade); cursor:default; background:none; border-left-color:transparent }
+.menu-item.is-stub { color:var(--fade); border-left-style:dashed; border-left-color:var(--fade) }
+.menu-hint { font-size:9px; color:var(--fade); margin-left:auto; padding-left:12px }
 .loopstep { display:grid; grid-template-columns:22px 1fr; gap:2px 8px; padding:10px 0; border-bottom:1px dashed var(--line) }
 .loop-n { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--fade); grid-row:span 3 }
 .loop-name { font-weight:600; display:flex; gap:8px; align-items:center; flex-wrap:wrap }
@@ -624,10 +642,6 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 .dock-err { color:var(--incon) }
 
 /* ── documents: read-only projections in an overlay (the diff, calibration, graveyard) ── */
-.moment.doc { width:min(880px,94vw); position:relative }
-.doc-close { position:absolute; top:10px; right:12px; font-family:inherit; font-size:16px; background:none; border:none; cursor:pointer; color:var(--ink) }
-.doc-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding-right:24px }
-.doc-meta { color:var(--fade); font-size:10.5px }
 .diff { width:100%; border-collapse:collapse; font-size:12px; margin-top:12px; background:var(--paper-raised); border:1px solid var(--line) }
 .diff th { font-family:'Barlow Semi Condensed',sans-serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--fade); text-align:left; padding:8px 10px; border-bottom:1px solid var(--line) }
 .diff td { padding:8px 10px; border-top:1px solid var(--line); vertical-align:top; line-height:1.5 }
