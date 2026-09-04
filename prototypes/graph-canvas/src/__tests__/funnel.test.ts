@@ -7,7 +7,7 @@ const Q = 'from=sample-size&v=1&baseline=0.02&mde=0.1&mdeKind=relative&variants=
 describe('parseFunnel — sample-size', () => {
   it('mints an ab draft with the inputs on the instrument and the MDE as magnitude', () => {
     const r = parseFunnel(Q)
-    if (!r.ok) throw new Error(r.error)
+    if (r.ok === false) throw new Error(r.error)
     expect(r.bet.status).toBe('draft')
     expect(r.bet.instrument).toEqual({ type: 'ab', spec: { from: 'sample-size', v: 1, params: { baseline: 0.02, mde: 0.1, mdeKind: 'relative', variants: 2, tails: 2, alpha: 0.05, power: 0.8 } } })
     expect(r.bet.magnitude).toBe('≥ 10% relative lift')
@@ -16,7 +16,7 @@ describe('parseFunnel — sample-size', () => {
   })
   it('sizes runtime when traffic is present', () => {
     const r = parseFunnel(Q + '&traffic=5000')
-    if (!r.ok) throw new Error(r.error)
+    if (r.ok === false) throw new Error(r.error)
     expect(r.bet.origin).toBe('sized in the lab · 80,682 per arm · 33 days at 5,000/day')
     expect(r.spec.params.traffic).toBe(5000)
   })
@@ -43,11 +43,11 @@ describe('parseFunnel — refusals', () => {
   it('missing v', () => {
     const r = parseFunnel(Q.replace('&v=1', ''))
     expect(r.ok).toBe(false)
-    expect(!r.ok && r.error).toMatch(/missing v=/)
+    expect(r.ok === false && r.error).toMatch(/missing v=/)
   })
   it('wrong v', () => {
     const r = parseFunnel(Q.replace('v=1', 'v=2'))
-    expect(!r.ok && r.error).toMatch(/v2 not supported/)
+    expect(r.ok === false && r.error).toMatch(/v2 not supported/)
   })
   it('unknown tool', () => {
     expect(parseFunnel('from=bayes&v=1')).toMatchObject({ ok: false, error: expect.stringMatching(/unknown tool "bayes"/) })
@@ -57,7 +57,7 @@ describe('parseFunnel — refusals', () => {
   })
   it('malformed numbers name the fields', () => {
     const r = parseFunnel(Q.replace('baseline=0.02', 'baseline=two').replace('power=0.8', 'power='))
-    expect(!r.ok && r.error).toMatch(/baseline, power/)
+    expect(r.ok === false && r.error).toMatch(/baseline, power/)
   })
   it('tails must be 1 or 2; traffic must be positive', () => {
     expect(parseFunnel(Q.replace('tails=2', 'tails=3'))).toMatchObject({ ok: false, error: expect.stringMatching(/tails/) })
