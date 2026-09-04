@@ -9,7 +9,7 @@
   "scripts": {
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "sync:landing": "npm run build && cp dist/power.js ../../apps/landing/lab/sample-size/analysis.js && cp dist/power.js ../../apps/landing/lab/detectable-lift/analysis.js && cp dist/srm.js ../../apps/landing/lab/srm/analysis.js"
+    "sync:landing": "npm run build && cp dist/power.js ../../apps/landing/lab/sample-size/analysis.js && cp dist/power.js ../../apps/landing/lab/detectable-lift/analysis.js && cp dist/srm.js ../../apps/landing/lab/srm/analysis.js && cp dist/results.js ../../apps/landing/lab/results/analysis.js && cp dist/special.js ../../apps/landing/lab/results/special.js && cp dist/bayes.js ../../apps/landing/lab/bayes/analysis.js && cp dist/special.js ../../apps/landing/lab/bayes/special.js && cp dist/sequential/index.js ../../apps/landing/lab/sequential/analysis.js"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
