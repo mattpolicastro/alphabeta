@@ -3,6 +3,8 @@ import type { BetRecord, InstrumentType, StratRecord, Outcome } from './model'
 import { StatusChip, surfaceClass } from './StatusChip'
 import { RUNGS, missingDemand, rung } from './instrument'
 import type { LockInput } from './lock'
+import { specLine } from './funnel'
+import { committedReference, suggestBucket } from './resolve'
 
 export type MomentKind = 'lock' | 'resolve' | 'answer' | 'amend'
 export interface MomentReq { kind: MomentKind; nodeId: string }
@@ -43,7 +45,8 @@ const DEMAND_LABEL = { foldIf: 'a fold-if', expectation: 'an expectation', evide
 function LockMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: LockInput) => void }) {
   const [premortem, setPremortem] = useState('')
   const [instrument, setInstrument] = useState<InstrumentType | null>(bet.instrument?.type ?? null)
-  const [spec, setSpec] = useState(bet.instrument?.spec ?? '')
+  const labSpec = typeof bet.instrument?.spec === 'object' ? bet.instrument.spec : null
+  const [spec, setSpec] = useState(labSpec ? labSpec.note ?? '' : (bet.instrument?.spec as string | undefined) ?? '')
   const [foldIf, setFoldIf] = useState(bet.foldIf.startsWith('(') ? '' : bet.foldIf)
   const [expectation, setExpectation] = useState(bet.expectation ?? '')
   const [evidenceBar, setEvidenceBar] = useState(bet.evidenceBar ?? '')
@@ -86,7 +89,8 @@ function LockMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: LockInput) =>
       </div>
       {r && (
         <>
-          <label>spec (optional — split, unit, sample, window)</label>
+          {labSpec && <div className="locked-note mono-line">{specLine(labSpec)} — sealed with the lock</div>}
+          <label>{labSpec ? 'spec note (optional — rides along with the lab inputs)' : 'spec (optional — split, unit, sample, window)'}</label>
           <input className="finput" value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="50/50 by visitor · 14 days · n ≥ 4,000/arm" />
           {r.demand === 'foldIf' && (
             <>
@@ -131,21 +135,29 @@ function ResolveMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: any) => vo
   const [outcome, setOutcome] = useState<Outcome>(null)
   const [call, setCall] = useState('')
   const [deviation, setDeviation] = useState('')
+  const ref = committedReference(bet)
+  const hint = actuals.trim() ? suggestBucket(bet, actuals) : null
   const expected = outcome ? BUCKET_CALL[outcome] : null
   const mismatch = !!(outcome && call && call !== expected)
   const ready = actuals.trim() && outcome && call && (!mismatch || deviation.trim())
   return (
     <>
       <h3>Resolve against the lock</h3>
-      <div className="sub mono" style={{ fontFamily: 'IBM Plex Mono' }}>locked fold-if: {bet.foldIf}</div>
+      <div className="sub mono" style={{ fontFamily: 'IBM Plex Mono' }}>locked {ref.label}: {ref.text}</div>
       <label>actuals (per metric, with confidence)</label>
       <textarea className="finput" rows={2} value={actuals} onChange={(e) => setActuals(e.target.value)} placeholder="recurring conv +3.1pp (95%) · total conv −0.4pp (n.s.)" autoFocus />
-      <label>bucket — computed against the fold-if, not the mood</label>
+      <label>bucket — read against the {ref.label}, not the mood</label>
       <div className="segbtns">
         {(['win', 'inconclusive', 'loss', 'invalid'] as const).map((b) => (
           <button key={b} className={outcome === b ? 'on' : ''} onClick={() => setOutcome(b)}>{b}</button>
         ))}
       </div>
+      {hint && (
+        <div className="locked-note mono-line" style={{ marginTop: 6 }}>
+          {hint.bucket ? `reads as ${hint.bucket} — ${hint.why}` : hint.why}
+          {hint.bucket && outcome !== hint.bucket && <button className="dock-toggle" onClick={() => setOutcome(hint.bucket)}>use it</button>}
+        </div>
+      )}
       <label>your call</label>
       <div className="segbtns">
         {['keep', 'revert', 'hold', 're-run'].map((c) => (

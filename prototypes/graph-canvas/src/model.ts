@@ -8,9 +8,18 @@ export type EdgeKind = 'lineage' | 'elevation' | 'dependency' | 'spawn' | 'evide
 
 // v0.3 instrument ladder — see shape/event-grammar-v0.3-addendum.md
 export type InstrumentType = 'ab' | 'quasi' | 'holdback' | 'study' | 'prepost' | 'none'
+// A bet minted from a lab tool carries the tool's inputs (the URL contract, src/funnel.ts)
+// instead of a typed spec line; `note` is what the lock moment adds on top.
+export interface LabSpec {
+  from: string
+  v: number
+  params: Record<string, number | string>
+  sealed?: string
+  note?: string
+}
 export interface Instrument {
   type: InstrumentType
-  spec?: string
+  spec?: string | LabSpec
 }
 
 // Compiled at lock from the criteria prose (src/criteria.ts). The prose is canonical;
@@ -48,6 +57,7 @@ export interface BetRecord {
   confidence?: string
   guardrails?: string
   instrument?: Instrument
+  origin?: string // where the draft came from (e.g. sized in the lab) — pencil, not committed
   expectation?: string // no-counterfactual rungs (prepost, none): what you think will happen
   evidenceBar?: string // study rung: what evidence would move you
   premortem?: string

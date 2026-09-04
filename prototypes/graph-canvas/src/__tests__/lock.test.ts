@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BetRecord } from '../model'
-import { committedFields, foldIfFor, lockPatch, sealOf } from '../lock'
+import { committedFields, foldIfFor, instrumentAtLock, lockPatch, sealOf } from '../lock'
 import { missingDemand, rung, rungLine } from '../instrument'
 
 const draft: BetRecord = {
@@ -39,6 +39,22 @@ describe('lockPatch', () => {
     expect(p.expectation).toBe('opens tick up a little')
     expect(p.foldIf).toMatch(/^\(none — prepost/)
     expect(foldIfFor('study', '')).toMatch(/evidence bar instead/)
+  })
+})
+
+describe('instrumentAtLock', () => {
+  const lab = { from: 'sample-size', v: 1, params: { baseline: 0.02, mde: 0.1 } }
+  it('keeps a lab spec through the lock and files the typed line as its note', () => {
+    expect(instrumentAtLock({ type: 'ab', spec: lab }, 'ab', '14 days')).toEqual({ type: 'ab', spec: { ...lab, note: '14 days' } })
+    expect(instrumentAtLock({ type: 'ab', spec: lab }, 'quasi', '  ')).toEqual({ type: 'quasi', spec: lab })
+  })
+  it('a typed spec is a string; blank is no spec', () => {
+    expect(instrumentAtLock(undefined, 'ab', ' 50/50 ')).toEqual({ type: 'ab', spec: '50/50' })
+    expect(instrumentAtLock({ type: 'ab', spec: 'old' }, 'ab', '')).toEqual({ type: 'ab' })
+  })
+  it('lockPatch seals the lab inputs', () => {
+    const p = lockPatch({ ...draft, instrument: { type: 'ab', spec: lab } }, { ...input, spec: 'by visitor' }, 'now')
+    expect(p.instrument).toEqual({ type: 'ab', spec: { ...lab, note: 'by visitor' } })
   })
 })
 

@@ -608,3 +608,17 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 .add-row .finput { flex:1; padding:5px 8px; font-size:11px }
 .add-row .sel { flex:0 0 auto; width:auto }
 .add-row .btn2 { margin:0 }
+
+/* ── intake tray + bring-your-own-key dock ─────────────────────────── */
+.tray.intake .finput { resize:vertical; margin-top:6px }
+.intake-actions { display:flex; gap:10px; align-items:center; margin-top:8px }
+.intake-read { margin-top:14px }
+.intake-why { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--fade); margin-top:8px; line-height:1.5 }
+.dock-row { flex-wrap:wrap }
+.dock-row textarea, .dock-row .key-field { flex:1 1 100%; min-width:0 }
+.dock-row .key-field { font-size:11px; padding:4px 8px; border-color:var(--fade) }
+.dock-keybtn { font-family:inherit; font-size:9px; background:none; border:none; color:var(--fade); cursor:pointer; white-space:nowrap; margin-left:auto }
+.dock-keybtn:hover { color:var(--terra) }
+.dock-keybtn:disabled { opacity:.4; cursor:default }
+.dock-privacy { font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--fade); padding:0 12px 6px; line-height:1.4 }
+.dock-err { color:var(--incon) }

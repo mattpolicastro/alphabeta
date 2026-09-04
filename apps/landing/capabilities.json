@@ -23,16 +23,17 @@
     { "id": "doc-graveyard",   "kind": "document", "name": "The Graveyard",      "status": "planned" },
     { "id": "doc-history",     "kind": "document", "name": "History scrubber",   "status": "planned", "note": "needs the event log persisted, not board state" },
 
-    { "id": "tray-openfield", "kind": "tray", "name": "Open Field (facilitator)", "status": "stub",    "gap": "compiled out of the public build; works under npm run dev with the relay. BYO-key facilitator planned." },
-    { "id": "tray-intake",    "kind": "tray", "name": "Intake / residue",        "status": "planned", "note": "typed intake with rules-based altitude classification" },
+    { "id": "tray-openfield", "kind": "tray", "name": "Open Field (facilitator)", "status": "partial", "gap": "bring your own Anthropic key in the public build; the relay facilitator needs npm run dev" },
+    { "id": "tray-intake",    "kind": "tray", "name": "Intake / residue",        "status": "partial", "gap": "classifies by cues, doesn't converse — the facilitator is the conversational version" },
     { "id": "tray-whats-here","kind": "tray", "name": "The loop (walkthrough)", "status": "live", "note": "this registry, rendered in-app" },
 
     { "id": "data-export", "kind": "data", "name": "Export / import board", "status": "live", "note": "versioned envelope with migration chain; the precondition for keeping real bets here" },
     { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock seals the committed fields (SHA-256) and the cockpit re-verifies; no shareable receipt yet" },
+    { "id": "funnel-lock-as-bet", "kind": "data", "name": "Lock as bet (from the lab)", "status": "live", "note": "app.alphabeta.tools/bet/new?from=<tool>&v=1&… mints a draft with the lab inputs on the instrument; supports sample-size (srm and detectable-lift are registered stubs that refuse rather than guess)" },
 
     { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "live",    "question": "How big does my test need to be?" },
-    { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "live", "question": "What can I detect with the traffic I have?" },
-    { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "live", "question": "Is my split broken?" },
+    { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "live",    "question": "What can I detect with the traffic I have?" },
+    { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "live",    "question": "Is my split broken?" },
     { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "planned", "question": "Did the change move the series?", "note": "causal-impact-wasm" },
     { "id": "lab-results",         "kind": "lab", "name": "Results",                "status": "planned", "question": "What do my results say?" },
     { "id": "lab-sequential",      "kind": "lab", "name": "Sequential",             "status": "planned", "question": "Can I peek, and when do I stop?" },

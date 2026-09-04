@@ -5,6 +5,7 @@ import type { MomentKind } from './Moment'
 import { StatusChip, surfaceClass } from './StatusChip'
 import { Cockpit } from './Cockpit'
 import { Admission } from './Admission'
+import { specLine } from './funnel'
 
 interface Props {
   node: Node
@@ -78,6 +79,8 @@ function BetFace({ id, bet, onEdit, onMoment }: { id: string; bet: BetRecord; on
       {draft ? (
         <>
           <div className="dimlbl">pencil register — draft, freely editable</div>
+          {bet.origin && <div className="locked-note mono-line">{bet.origin}</div>}
+          {typeof bet.instrument?.spec === 'object' && <div className="locked-note mono-line">{specLine(bet.instrument.spec)}</div>}
           <dl>
             {(['change', 'metric', 'magnitude', 'mechanism'] as const).map((f) => (
               <span key={f}><dt>{f}</dt><dd><input className="finput" value={(bet as any)[f]} onChange={(e) => onEdit(id, { [f]: e.target.value } as any)} /></dd></span>

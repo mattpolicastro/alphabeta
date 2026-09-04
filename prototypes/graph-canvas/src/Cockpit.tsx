@@ -10,6 +10,7 @@ import { compileCriteria, parseCriterion, ruleLine } from './criteria'
 import { rungLine } from './instrument'
 import { sealOf } from './lock'
 import { StatusChip } from './StatusChip'
+import { specLine } from './funnel'
 
 const CALL_FOR: Record<string, keyof BetRecord['criteria']> = { win: 'win', inconclusive: 'inconclusive', loss: 'loss' }
 
@@ -32,7 +33,7 @@ export function Cockpit({ id, bet, onMoment }: { id: string; bet: BetRecord; onM
         <dl>
           <dt>instrument</dt>
           <dd className="mono-line">{bet.instrument ? rungLine(bet.instrument.type) : <span className="locked-note">rung not declared — locked before the ladder</span>}
-            {bet.instrument?.spec && <div className="locked-note">{bet.instrument.spec}</div>}</dd>
+            {bet.instrument?.spec && <div className="locked-note">{specLine(bet.instrument.spec)}</div>}</dd>
           <dt>mechanism</dt><dd>{bet.mechanism || '—'}</dd>
           <dt>fold-if</dt>
           <dd className="fold-if-dd">{bet.foldIf}

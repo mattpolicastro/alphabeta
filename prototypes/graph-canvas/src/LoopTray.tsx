@@ -3,12 +3,11 @@ import { LOOP, stepStatus, type LoopStepId } from './loop'
 import { StatusChip } from './StatusChip'
 
 export function LoopTray({
-  onClose, onTry, facilitator,
+  onClose, onTry,
 }: {
   onClose: () => void
   // returns a note when there is nothing to open (e.g. no draft bet yet)
   onTry: (id: LoopStepId) => string | void
-  facilitator: boolean
 }) {
   const [notes, setNotes] = useState<Partial<Record<LoopStepId, string>>>({})
   return (
@@ -21,7 +20,6 @@ export function LoopTray({
       {LOOP.map((s, i) => {
         const { status, gap } = stepStatus(s)
         const notYet = status === 'planned'
-        const compiledOut = s.id === 'talk' && !facilitator
         return (
           <div key={s.id} className={`loopstep ${notYet ? 'st-planned' : ''}`}>
             <span className="loop-n">{i + 1}</span>
@@ -30,8 +28,6 @@ export function LoopTray({
             <span className="loop-try">
               {notYet ? (
                 <span className="capchip">not yet</span>
-              ) : compiledOut ? (
-                <span className="loop-note">the facilitator is compiled out of the public build — a bring-your-own-key version is planned</span>
               ) : (
                 <button className="btn2 sm" onClick={() => { const n = onTry(s.id); setNotes((m) => ({ ...m, [s.id]: n || undefined })) }}>try it →</button>
               )}

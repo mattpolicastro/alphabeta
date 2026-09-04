@@ -20,7 +20,7 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { initialNodes, initialEdges } from './data'
-import { deriveGates, type BetRecord, type EdgeKind, type Outcome } from './model'
+import { deriveGates, type BetRecord, type EdgeKind, type Outcome, type StratKind } from './model'
 import { BetNode, StratNode } from './nodes'
 import { Dock, type ThreadMsg } from './Dock'
 import { OpenFieldNode } from './OpenField'
@@ -32,6 +32,9 @@ import { lockPatch, sealOf, type LockInput } from './lock'
 import { LoopTray } from './LoopTray'
 import type { LoopStepId } from './loop'
 import { exportBoard, importBoard, downloadEnvelope, readJsonFile } from './portable'
+import { IntakeTray } from './IntakeTray'
+import { isFunnelLanding, parseFunnel } from './funnel'
+import { providerFor } from './llm'
 
 const nodeTypes = { strat: StratNode, bet: BetNode, openfield: OpenFieldNode }
 
@@ -183,8 +186,10 @@ function Canvas() {
   const [view, setView] = useState<'canvas' | 'ledger' | 'docket'>('canvas')
   const [moment, setMoment] = useState<MomentReq | null>(null)
   // the walkthrough opens itself on first visit and stays closed once dismissed
-  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') } catch { return false } })
+  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') && !isFunnelLanding(window.location) } catch { return false } })
   const closeTray = () => { setTray(false); try { localStorage.setItem('ab-loop-seen', '1') } catch {} }
+  const [intake, setIntake] = useState(false)
+  const [dockError, setDockError] = useState<string | null>(null)
   const [pulseId, setPulseId] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -202,18 +207,36 @@ function Canvas() {
   const lastSaved = useRef<string>('')
   const { screenToFlowPosition, fitView } = useReactFlow()
 
+  // ── the funnel: /bet/new?from=<tool>&v=1&… (the lab's "lock as bet →") mints a
+  //    draft onto the loaded board, then the URL goes back to / so a reload doesn't
+  //    re-mint. An empty board is seeded from the fixture first. Idempotent under
+  //    StrictMode's double effect: the second pass sees no funnel in the URL.
+  const landFunnel = (base: Node[]): Node[] => {
+    if (!isFunnelLanding(location.pathname, location.search)) return base
+    const r = parseFunnel(location.search)
+    history.replaceState(null, '', '/')
+    if (r.ok === false) { setImportError(r.error); return base }
+    const seeded = base.length ? base : deoverlap(relayout(initialNodes, initialEdges, orient), orient)
+    if (!base.length) setEdges(initialEdges)
+    const id = `funnel-${Date.now().toString(36)}`
+    const fresh: Node = { id, type: 'bet', position: orient === 'h' ? { x: BET_X0, y: 0 } : { x: 0, y: BET_Y0 }, data: { bet: r.bet } }
+    setSelectedId(id)
+    setTimeout(() => fitView({ duration: 400, nodes: [{ id }], maxZoom: 1 }), 120)
+    return deoverlap([...seeded, fresh], orient)
+  }
+
   // ── boot: server state is canonical; migrate old localStorage once ─
   useEffect(() => {
     if (STATIC) {
       const local = loadState()
       if (local?.nodes) {
-        setNodes(local.nodes)
         setEdges(local.edges ?? [])
+        setNodes(landFunnel(local.nodes))
       } else {
         // fixture positions are authored by hand, not laid out — run the tree
         // layout once on first load so a fresh visitor lands on a clean board
-        setNodes(deoverlap(relayout(initialNodes, initialEdges, orient), orient))
         setEdges(initialEdges)
+        setNodes(landFunnel(deoverlap(relayout(initialNodes, initialEdges, orient), orient)))
       }
       primed.current = true
       setLoaded(true)
@@ -224,8 +247,8 @@ function Canvas() {
         const res = await fetch('/api/state')
         const data = await res.json()
         if (data) {
-          setNodes(data.nodes ?? [])
           setEdges(data.edges ?? [])
+          setNodes(landFunnel(data.nodes ?? []))
           setDockThread(data.dockThread ?? [])
           seenReplies.current = new Set(data.seen ?? [])
           primed.current = true
@@ -238,11 +261,13 @@ function Canvas() {
         } else {
           const local = loadState()
           if (local) {
-            setNodes(local.nodes ?? [])
             setEdges(local.edges ?? [])
+            setNodes(landFunnel(local.nodes ?? []))
             setDockThread(local.dockThread ?? [])
             seenReplies.current = new Set(loadSeen())
             primed.current = localStorage.getItem('gc-seen') !== null
+          } else {
+            setNodes(landFunnel([]))
           }
         }
         setLoaded(true)
@@ -320,15 +345,24 @@ function Canvas() {
     }
   }
 
+  // the dock speaks to one seam: the relay under npm run dev, api.anthropic.com with
+  // the user's own key in the static build (src/llm.ts). Direct replies land inline;
+  // relay replies still arrive by polling below.
+  const provider = useMemo(() => providerFor(STATIC), [])
+  const boardRef = useRef({ nodes, dockThread })
+  boardRef.current = { nodes, dockThread }
   const sendDock = useCallback((text: string) => {
     const mid = mkId()
     setDockThread((t) => [...t, { id: mid, role: 'you', text, status: 'sending' }])
-    post('dock', text).then((ok) =>
-      setDockThread((t) =>
-        t.map((m) => (m.id === mid ? { ...m, status: ok ? 'captured' : 'failed' } : m)),
-      ),
-    )
-  }, [])
+    setDockError(null)
+    provider.send(text, { nodes: boardRef.current.nodes, thread: boardRef.current.dockThread }).then((r) => {
+      setDockThread((t) => {
+        const next = t.map((m) => (m.id === mid ? { ...m, status: r.captured ? ('captured' as const) : ('failed' as const) } : m))
+        return r.reply ? [...next, { role: 'claude' as const, text: r.reply }] : next
+      })
+      if (r.error) setDockError(r.error)
+    })
+  }, [provider])
 
   const sendField = useCallback((nodeId: string, text: string) => {
     const mid = mkId()
@@ -522,6 +556,16 @@ function Canvas() {
     })
   }, [])
 
+  // intake tray → a draft strat node in its altitude lane, pushed clear of neighbours
+  const placeIntake = useCallback((kind: StratKind, title: string) => {
+    const id = `intake-${Date.now().toString(36)}`
+    const lane = kind === 'goal' ? 'goal' : kind === 'problem' ? 'problem' : 'child'
+    const fresh: Node = { id, type: 'strat', position: orient === 'h' ? { x: LANE_X[lane], y: 0 } : { x: 0, y: LANE_Y[lane] }, data: { strat: { kind, title } } }
+    setNodes((ns) => deoverlap([...ns, fresh], orient))
+    setSelectedId(id); setView('canvas')
+    setTimeout(() => fitView({ duration: 400, nodes: [{ id }], maxZoom: 1 }), 120)
+  }, [orient, fitView])
+
   const onConnect = useCallback(
     (conn: Connection) => {
       const src = nodes.find((n) => n.id === conn.source)
@@ -590,7 +634,7 @@ function Canvas() {
     const betOf = (n: Node) => (n.data as any)?.bet as BetRecord | undefined
     if (id === 'talk') {
       closeTray()
-      setTimeout(() => document.querySelector<HTMLTextAreaElement>('.dock-row textarea')?.focus(), 50)
+      setTimeout(() => document.querySelector<HTMLElement>('.dock-row textarea, .dock-row .key-field')?.focus(), 50)
     } else if (id === 'map') {
       const goal = nodes.find((n) => (n.data as any)?.strat?.kind === 'goal') ?? nodes[0]
       closeTray()
@@ -706,7 +750,8 @@ function Canvas() {
           {undo && <button className="btn2 sm" onClick={undoLast} title={`undo: ${undo.label}`}>↶ undo</button>}
           <button className="btn2 sm" onClick={clear}>clear board</button>
           <button className="btn2 sm" onClick={reset}>reset demo</button>
-          <button className={`btn2 sm ${tray ? 'on' : ''}`} onClick={() => (tray ? closeTray() : setTray(true))}>the loop</button>
+          <button className={`btn2 sm ${intake ? 'on' : ''}`} onClick={() => { setIntake((v) => !v); if (!intake) closeTray() }}>intake</button>
+          <button className={`btn2 sm ${tray ? 'on' : ''}`} onClick={() => { if (tray) closeTray(); else { setTray(true); setIntake(false) } }}>the loop</button>
         </span>
       </div>
 
@@ -757,7 +802,8 @@ function Canvas() {
           onMoment={(kind, nodeId) => setMoment({ kind, nodeId })} />
       )}
 
-      {tray && <LoopTray onClose={closeTray} onTry={tryStep} facilitator={!STATIC} />}
+      {tray && <LoopTray onClose={closeTray} onTry={tryStep} />}
+      {intake && <IntakeTray onClose={() => setIntake(false)} onPlace={placeIntake} />}
 
       {moment && (
         <MomentOverlay
@@ -772,7 +818,7 @@ function Canvas() {
         />
       )}
 
-      {!STATIC && <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} />}
+      <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} error={dockError} />
     </div>
   )
 }

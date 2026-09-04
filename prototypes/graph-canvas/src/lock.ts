@@ -26,8 +26,17 @@ export function foldIfFor(type: InstrumentType, foldIf: string): string {
   return `(none — ${type} has no counterfactual; ${rung(type).demand === 'evidenceBar' ? 'evidence bar' : 'expectation'} instead)`
 }
 
+// A spec minted from a lab tool (src/funnel.ts) is kept as the sealed inputs; the
+// line typed at lock rides along as its note rather than replacing it.
+export function instrumentAtLock(prior: Instrument | undefined, type: InstrumentType, typed: string | undefined): Instrument {
+  const note = typed?.trim()
+  const labSpec = prior && typeof prior.spec === 'object' ? prior.spec : null
+  if (labSpec) return { type, spec: note ? { ...labSpec, note } : labSpec }
+  return note ? { type, spec: note } : { type }
+}
+
 export function lockPatch(bet: BetRecord, p: LockInput, lockedAt: string): Partial<BetRecord> {
-  const instrument: Instrument = p.spec?.trim() ? { type: p.instrument, spec: p.spec.trim() } : { type: p.instrument }
+  const instrument = instrumentAtLock(bet.instrument, p.instrument, p.spec)
   const criteria = { win: p.win, inconclusive: p.inconclusive, loss: p.loss }
   const patch: Partial<BetRecord> = {
     instrument,
