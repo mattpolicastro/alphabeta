@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta lab — how big does my test need to be?</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
+  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── the tool ── */
+  .tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
+  form { padding:24px }
+  .field { margin-bottom:16px }
+  .field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
+  .field input[type=number] { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+  .field input[type=number]:focus { outline:none; border-color:var(--ink) }
+  .field .unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); pointer-events:none }
+  .field .wrap { position:relative }
+  fieldset { border:0; margin:0; padding:0 }
+  .seg { display:flex; gap:0 }
+  .seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
+  .seg label + label { border-left:0 }
+  .seg input { position:absolute; opacity:0; width:0; height:0 }
+  .seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
+  .seg input:checked + label + input + label { border-left:0 }
+  .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
+
+  .result { padding:24px }
+  .big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(34px,5vw,46px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+  .stat { margin-bottom:18px }
+  .stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+  .assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
+  .err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
+  .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
+  .receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  .receipt .h { font-weight:600; color:var(--ink) }
+  .flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
+  details { margin-top:8px }
+  summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
+  details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
+  table { border-collapse:collapse; width:100%; margin:10px 0 }
+  td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
+  th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
+  @media (max-width:720px){ .tool { grid-template-columns:1fr } }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/" aria-current="page">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">Sample size</div>
+  <h1>How big does my test need to be?</h1>
+  <p class="lede">Given a baseline rate and the smallest lift worth detecting, how many visitors each variant needs before the test can say anything.</p>
+</section>
+
+<section style="padding-top:0">
+  <div class="tool">
+    <form class="tile" id="form" autocomplete="off" onsubmit="return false">
+      <div class="field">
+        <label for="baseline">Baseline conversion rate</label>
+        <div class="wrap"><input type="number" id="baseline" name="baseline" min="0" max="100" step="any" inputmode="decimal"><span class="unit">%</span></div>
+      </div>
+      <div class="field">
+        <label for="mde">Minimum detectable effect</label>
+        <div class="two">
+          <div class="wrap"><input type="number" id="mde" name="mde" step="any" inputmode="decimal"><span class="unit" id="mdeunit">%</span></div>
+          <fieldset class="seg" aria-label="MDE kind">
+            <input type="radio" name="mdeKind" id="mk-rel" value="relative"><label for="mk-rel">relative</label>
+            <input type="radio" name="mdeKind" id="mk-abs" value="absolute"><label for="mk-abs">absolute</label>
+          </fieldset>
+        </div>
+        <p class="help" id="mdehelp"></p>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="variants">Variants, incl. control</label>
+          <input type="number" id="variants" name="variants" min="2" max="20" step="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <fieldset><legend>Tails</legend>
+            <div class="seg">
+              <input type="radio" name="tails" id="t1" value="1"><label for="t1">one</label>
+              <input type="radio" name="tails" id="t2" value="2"><label for="t2">two</label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="alpha">Alpha (α)</label>
+          <input type="number" id="alpha" name="alpha" min="0" max="1" step="any" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="power">Power (1 − β)</label>
+          <input type="number" id="power" name="power" min="0" max="1" step="any" inputmode="decimal">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label for="traffic">Daily traffic <span style="text-transform:none;letter-spacing:0">(optional, all arms)</span></label>
+        <div class="wrap"><input type="number" id="traffic" name="traffic" min="0" step="1" inputmode="numeric" placeholder="—"><span class="unit">visitors / day</span></div>
+      </div>
+    </form>
+
+    <div class="tile result" id="result" aria-live="polite">
+      <div id="out"></div>
+      <div class="actions">
+        <button class="cta" type="button" id="sealbtn">Seal this result</button>
+        <button class="cta" type="button" id="copybtn">Copy link</button><span class="flash" id="flash"></span>
+        <a class="cta primary" id="lockbtn" href="#">Lock as bet →</a>
+        <div id="receipt" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>The URL is the contract — schema v1</summary>
+    <p class="muted" style="margin-top:10px">Every input lives in the query string, in this order, and nothing else does. A sealed result is <code>SHA-256</code> of the canonical string (everything after <code>?</code>), so the same inputs always produce the same receipt.</p>
+    <table>
+      <tr><th>key</th><th>value</th><th>notes</th></tr>
+      <tr><td><code>v</code></td><td><code>1</code></td><td>schema version; a breaking change bumps it</td></tr>
+      <tr><td><code>baseline</code></td><td>proportion in (0, 1)</td><td>2% is <code>0.02</code></td></tr>
+      <tr><td><code>mde</code></td><td>proportion, non-zero</td><td>relative: <code>0.1</code> = +10% lift; absolute: <code>0.002</code> = +0.2 points</td></tr>
+      <tr><td><code>mdeKind</code></td><td><code>relative</code> | <code>absolute</code></td><td></td></tr>
+      <tr><td><code>variants</code></td><td>integer ≥ 2</td><td>arms including control</td></tr>
+      <tr><td><code>tails</code></td><td><code>1</code> | <code>2</code></td><td></td></tr>
+      <tr><td><code>alpha</code></td><td>proportion in (0, 1)</td><td>family-wise; split across variants − 1 comparisons (Bonferroni)</td></tr>
+      <tr><td><code>power</code></td><td>proportion in (0, 1)</td><td></td></tr>
+      <tr><td><code>traffic</code></td><td>positive integer, optional</td><td>daily visitors across all arms; omitted when blank</td></tr>
+    </table>
+    <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.1</code>, not <code>0.10</code>); the parser accepts either. Method: two-proportion z-test, equal arms, no continuity correction — R's <code>power.prop.test</code>, the same convention as the reference calculator on forwarddigital.org/tools.</p>
+    <p class="mono">Example: <code id="example"></code></p>
+  </details>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script type="module">
+  import { sampleSize, runtimeDays } from './analysis.js'
+
+  const APP = 'https://app.alphabeta.tools/bet/new'
+  const KEYS = ['v', 'baseline', 'mde', 'mdeKind', 'variants', 'tails', 'alpha', 'power', 'traffic']
+  const DEFAULTS = { v: 1, baseline: 0.02, mde: 0.10, mdeKind: 'relative', variants: 2, tails: 2, alpha: 0.05, power: 0.8, traffic: null }
+
+  const $ = id => document.getElementById(id)
+  const form = $('form')
+
+  // ── state ⇄ URL ──
+  function num(s, fallback){ const n = Number(s); return s === null || s === '' || !Number.isFinite(n) ? fallback : n }
+  function parse(qs){
+    const p = new URLSearchParams(qs)
+    const s = { ...DEFAULTS }
+    s.baseline = num(p.get('baseline'), s.baseline)
+    s.mde = num(p.get('mde'), s.mde)
+    s.mdeKind = p.get('mdeKind') === 'absolute' ? 'absolute' : 'relative'
+    s.variants = Math.round(num(p.get('variants'), s.variants))
+    s.tails = num(p.get('tails'), s.tails) === 1 ? 1 : 2
+    s.alpha = num(p.get('alpha'), s.alpha)
+    s.power = num(p.get('power'), s.power)
+    const t = num(p.get('traffic'), null)
+    s.traffic = t && t > 0 ? Math.round(t) : null
+    return s
+  }
+  // Canonical: fixed key order, shortest exact decimal, traffic only when set.
+  function canonical(s){
+    return KEYS.filter(k => k !== 'traffic' || s.traffic).map(k => k + '=' + (k === 'mdeKind' ? s[k] : String(Number(s[k])))).join('&')
+  }
+
+  // ── state ⇄ form ──
+  // The form speaks percent; the URL and the core speak proportions.
+  const r = (x, d = 6) => String(Number(Number(x).toFixed(d)))
+  function toForm(s){
+    $('baseline').value = r(s.baseline * 100)
+    $('mde').value = r(s.mde * 100)
+    ;(s.mdeKind === 'absolute' ? $('mk-abs') : $('mk-rel')).checked = true
+    $('variants').value = s.variants
+    ;(s.tails === 1 ? $('t1') : $('t2')).checked = true
+    $('alpha').value = r(s.alpha)
+    $('power').value = r(s.power)
+    $('traffic').value = s.traffic ?? ''
+  }
+  function fromForm(){
+    const f = new FormData(form)
+    const g = k => f.get(k)
+    const t = num(g('traffic'), null)
+    return {
+      v: 1,
+      baseline: num(g('baseline'), NaN) / 100,
+      mde: num(g('mde'), NaN) / 100,
+      mdeKind: g('mdeKind') === 'absolute' ? 'absolute' : 'relative',
+      variants: Math.round(num(g('variants'), NaN)),
+      tails: g('tails') === '1' ? 1 : 2,
+      alpha: num(g('alpha'), NaN),
+      power: num(g('power'), NaN),
+      traffic: t && t > 0 ? Math.round(t) : null,
+    }
+  }
+
+  // ── render ──
+  const fmt = n => n.toLocaleString('en-US')
+  const pct = (x, d = 2) => (x * 100).toFixed(d).replace(/\.?0+$/, '') + '%'
+  function render(s){
+    const out = $('out')
+    const rel = s.mdeKind === 'relative'
+    $('mdeunit').textContent = rel ? '%' : 'pts'
+    $('mdehelp').textContent = rel
+      ? 'Lift over baseline: 10% takes 2% to 2.2%.'
+      : 'Difference in rate, in percentage points: 0.2 takes 2% to 2.2%.'
+    let res
+    try {
+      res = sampleSize(s)
+    } catch (e) {
+      out.innerHTML = ''
+      const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message
+      out.appendChild(p)
+      return null
+    }
+    const a = res.assumptions
+    const days = s.traffic ? runtimeDays({ total: res.total, dailyTraffic: s.traffic }) : null
+    const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="big">${v}</div></div>`
+    const assump = [
+      `test          ${a.test}`,
+      `baseline      ${pct(s.baseline, 4)}  →  treatment ${pct(a.treatmentRate, 4)}`,
+      `mde           ${pct(a.relativeMde, 3)} relative · ${(a.absoluteMde * 100).toFixed(4).replace(/\.?0+$/, '')} pts absolute`,
+      `comparisons   ${a.comparisons} (each arm vs control)${a.correction === 'bonferroni' ? ` · bonferroni: α/${a.comparisons} = ${r(a.alphaPerComparison)}` : ''}`,
+      `tails         ${s.tails}   α ${r(s.alpha)}   power ${r(s.power)}`,
+      `z_α ${a.zAlpha.toFixed(6)}   z_β ${a.zBeta.toFixed(6)}   n exact ${a.nExact.toFixed(2)}`,
+    ].join('\n')
+    out.innerHTML =
+      stat('Visitors per variant', fmt(res.perVariant)) +
+      stat(`Total, ${s.variants} arms`, fmt(res.total)) +
+      (days !== null
+        ? stat(`Runtime at ${fmt(s.traffic)}/day`, `${fmt(days)} day${days === 1 ? '' : 's'}`)
+        : `<div class="stat"><div class="k">Runtime</div><p class="muted" style="margin:6px 0 0">enter daily traffic to see days</p></div>`) +
+      `<pre class="assump">${assump}</pre>`
+    return res
+  }
+
+  // ── seal / copy / lock ──
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  function flash(msg){
+    const f = $('flash'); f.textContent = msg
+    setTimeout(() => { if (f.textContent === msg) f.textContent = '' }, 1800)
+  }
+  let state = parse(location.search)
+  let last = null
+
+  function sync(){
+    const q = canonical(state)
+    history.replaceState(null, '', location.pathname + '?' + q)
+    $('lockbtn').href = APP + '?from=sample-size&' + q
+    $('example').textContent = location.pathname + '?' + q
+    $('receipt').hidden = true
+  }
+  function update(){
+    state = fromForm()
+    last = render(state)
+    sync()
+  }
+
+  form.addEventListener('input', update)
+  form.addEventListener('change', update)
+
+  $('copybtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); flash('copied') }
+    catch (e) { flash('copy failed — select the URL bar') }
+  })
+
+  $('sealbtn').addEventListener('click', async () => {
+    if (!last) { flash('fix the inputs first'); return }
+    const q = canonical(state)
+    const hash = await sha256(q)
+    const when = new Date().toISOString()
+    const days = state.traffic ? runtimeDays({ total: last.total, dailyTraffic: state.traffic }) : null
+    const rc = $('receipt')
+    rc.className = 'receipt'
+    rc.textContent = ''
+    const h = document.createElement('div'); h.className = 'h'; h.textContent = 'sha256  ' + hash
+    rc.appendChild(h)
+    rc.appendChild(document.createTextNode(
+      `sealed  ${when}\n` +
+      `of      ?${q}\n` +
+      `result  ${fmt(last.perVariant)} per variant · ${fmt(last.total)} total` +
+      (days !== null ? ` · ${fmt(days)} days at ${fmt(state.traffic)}/day` : '') +
+      `\nlab     sample-size v1 · ${last.assumptions.test}`
+    ))
+    rc.hidden = false
+  })
+
+  toForm(state)
+  last = render(state)
+  sync()
+</script>
+</body>
+</html>

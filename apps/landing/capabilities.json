@@ -30,7 +30,7 @@
     { "id": "data-export", "kind": "data", "name": "Export / import board", "status": "live", "note": "versioned envelope with migration chain; the precondition for keeping real bets here" },
     { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock seals the committed fields (SHA-256) and the cockpit re-verifies; no shareable receipt yet" },
 
-    { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "planned",    "question": "How big does my test need to be?" },
+    { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "live",    "question": "How big does my test need to be?" },
     { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "planned", "question": "What can I detect with the traffic I have?" },
     { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "planned", "question": "Is my split broken?" },
     { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "planned", "question": "Did the change move the series?", "note": "causal-impact-wasm" },
