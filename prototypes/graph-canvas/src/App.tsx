@@ -186,7 +186,7 @@ function Canvas() {
   const [view, setView] = useState<'canvas' | 'ledger' | 'docket'>('canvas')
   const [moment, setMoment] = useState<MomentReq | null>(null)
   // the walkthrough opens itself on first visit and stays closed once dismissed
-  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') && !isFunnelLanding(window.location) } catch { return false } })
+  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') && !isFunnelLanding(location.pathname, location.search) } catch { return false } })
   const closeTray = () => { setTray(false); try { localStorage.setItem('ab-loop-seen', '1') } catch {} }
   const [intake, setIntake] = useState(false)
   const [dockError, setDockError] = useState<string | null>(null)
