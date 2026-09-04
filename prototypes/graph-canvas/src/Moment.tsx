@@ -4,7 +4,7 @@ import { StatusChip, surfaceClass } from './StatusChip'
 import { RUNGS, missingDemand, rung } from './instrument'
 import type { LockInput } from './lock'
 import { specLine } from './funnel'
-import { committedReference, suggestBucket } from './resolve'
+import { committedReference, evidenceHint, suggestBucket } from './resolve'
 
 export type MomentKind = 'lock' | 'resolve' | 'answer' | 'amend'
 export interface MomentReq { kind: MomentKind; nodeId: string }
@@ -136,7 +136,8 @@ function ResolveMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: any) => vo
   const [call, setCall] = useState('')
   const [deviation, setDeviation] = useState('')
   const ref = committedReference(bet)
-  const hint = actuals.trim() ? suggestBucket(bet, actuals) : null
+  const evidence = evidenceHint(bet)
+  const hint = actuals.trim() || evidence ? suggestBucket(bet, actuals) : null
   const expected = outcome ? BUCKET_CALL[outcome] : null
   const mismatch = !!(outcome && call && call !== expected)
   const ready = actuals.trim() && outcome && call && (!mismatch || deviation.trim())
@@ -144,6 +145,7 @@ function ResolveMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: any) => vo
     <>
       <h3>Resolve against the lock</h3>
       <div className="sub mono" style={{ fontFamily: 'IBM Plex Mono' }}>locked {ref.label}: {ref.text}</div>
+      {evidence && <div className="locked-note mono-line">{evidence}</div>}
       <label>actuals (per metric, with confidence)</label>
       <textarea className="finput" rows={2} value={actuals} onChange={(e) => setActuals(e.target.value)} placeholder="recurring conv +3.1pp (95%) · total conv −0.4pp (n.s.)" autoFocus />
       <label>bucket — read against the {ref.label}, not the mood</label>

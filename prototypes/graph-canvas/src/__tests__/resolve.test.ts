@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BetRecord } from '../model'
-import { committedReference, suggestBucket } from '../resolve'
+import { committedReference, evidenceHint, suggestBucket } from '../resolve'
 
 const base: BetRecord = {
   change: 'x', direction: 'lift', metric: 'conversion', magnitude: '2pp', mechanism: '', foldIf: 'fold if under +1pp',
@@ -64,5 +64,30 @@ describe('suggestBucket — expectation rungs compare against the expectation, n
 describe('suggestBucket — study', () => {
   it('an evidence bar is judged, not computed', () => {
     expect(suggestBucket(study, '5 of 6')).toMatchObject({ bucket: null, why: expect.stringMatching(/judged/) })
+  })
+})
+
+describe('suggestBucket — evidence on file (src/attach.ts)', () => {
+  const ev = (tool: any, verdict: any, ts = '2026-09-04T10:00:00.000Z') => ({ id: `ev-${tool}`, ts, tool, v: 1, params: {}, canonical: 'v=1', hash: 'h', summary: `${tool}: +2.1pp, p 0.003`, verdict })
+  it('an SRM mismatch reads as inconclusive whatever the actuals say', () => {
+    const b = { ...base, evidence: [ev('srm', 'mismatch')] }
+    expect(suggestBucket(b, 'conversion +3.1pp (95%)')).toMatchObject({ bucket: 'inconclusive', why: expect.stringMatching(/SRM mismatch on file \(09-04\)/) })
+    expect(suggestBucket(b, '')).toMatchObject({ bucket: 'inconclusive' })
+  })
+  it('an SRM ok changes nothing', () => {
+    expect(suggestBucket({ ...base, evidence: [ev('srm', 'ok')] }, 'conversion +3.1pp')).toMatchObject({ bucket: 'win' })
+  })
+  it('a results verdict fills in when the actuals give no bucket, and never overrides the fold-if', () => {
+    const b = { ...base, evidence: [ev('results', 'win')] }
+    expect(suggestBucket(b, '')).toMatchObject({ bucket: 'win', why: expect.stringMatching(/^results on file \(09-04\) reads win — no signed number/) })
+    expect(suggestBucket(b, 'conversion +0.4pp')).toMatchObject({ bucket: 'loss', why: expect.stringMatching(/under the fold-if.*results on file reads win — the fold-if decides/) })
+    expect(suggestBucket(b, 'conversion +3.1pp')).toMatchObject({ bucket: 'win', why: expect.not.stringMatching(/on file/) })
+  })
+  it('the latest results/bayes verdict wins; the hint lists every verdict', () => {
+    const b = { ...base, evidence: [ev('results', 'win', '2026-09-01T00:00:00.000Z'), ev('bayes', 'inconclusive', '2026-09-03T00:00:00.000Z')] }
+    expect(suggestBucket(b, '')).toMatchObject({ bucket: 'inconclusive' })
+    expect(evidenceHint(b)).toBe('evidence on file: results on 09-01: +2.1pp, p 0.003 · bayes on 09-03: +2.1pp, p 0.003')
+    expect(evidenceHint({ ...base, evidence: [ev('srm', 'mismatch')] })).toBe('evidence on file: SRM mismatch on 09-04 — resolve with caution')
+    expect(evidenceHint(base)).toBeNull()
   })
 })

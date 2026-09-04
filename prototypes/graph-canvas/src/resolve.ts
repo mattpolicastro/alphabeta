@@ -1,7 +1,7 @@
 // The resolve moment's arithmetic, pure: what did the lock commit to on this rung,
 // and which bucket do the actuals fall in against it. A suggestion, not a verdict —
 // the user still picks, and a deviation is recorded when the call differs.
-import type { BetRecord, Outcome } from './model'
+import type { BetRecord, EvidenceRecord, Outcome } from './model'
 import { parseCriterion } from './criteria'
 import { rung, type Demand } from './instrument'
 
@@ -28,7 +28,38 @@ export interface Suggestion {
 
 const NS = /\b(n\.?s\.?|not (statistically )?significant|no significant|inconclusive|within noise)\b/i
 
+const md = (ts: string) => ts.slice(5, 10)
+
+// Evidence on file with a verdict (src/attach.ts), as one pencil line for the resolve
+// moment. An SRM mismatch is the one that changes how the actuals should be read.
+export function evidenceHint(bet: BetRecord): string | null {
+  const es = (bet.evidence ?? []).filter((e) => e.verdict)
+  if (!es.length) return null
+  const line = (e: EvidenceRecord) => e.tool === 'srm'
+    ? `SRM ${e.verdict} on ${md(e.ts)}${e.verdict === 'mismatch' ? ' — resolve with caution' : ''}`
+    : `${e.tool} on ${md(e.ts)}: ${e.summary.replace(/^[^:]+:\s*/, '')}`
+  return `evidence on file: ${es.map(line).join(' · ')}`
+}
+
+const latest = (bet: BetRecord, pick: (e: EvidenceRecord) => boolean): EvidenceRecord | undefined =>
+  (bet.evidence ?? []).filter(pick).pop()
+
 export function suggestBucket(bet: BetRecord, actuals: string): Suggestion {
+  // a broken split invalidates the read regardless of what the actuals say
+  const srmBad = latest(bet, (e) => e.tool === 'srm' && e.verdict === 'mismatch')
+  if (srmBad) return { bucket: 'inconclusive', why: `SRM mismatch on file (${md(srmBad.ts)}) — the split was not the one configured, so the result cannot be trusted` }
+  const s = suggestFromActuals(bet, actuals)
+  // a results / bayes verdict fills in when the actuals give no bucket; it never
+  // overrides the fold-if comparison — that is the single thread
+  const ev = latest(bet, (e) => (e.tool === 'results' || e.tool === 'bayes') && (e.verdict === 'win' || e.verdict === 'loss' || e.verdict === 'inconclusive'))
+  if (!ev) return s
+  const bucket = ev.verdict as 'win' | 'loss' | 'inconclusive'
+  if (s.bucket === null) return { bucket, why: `${ev.tool} on file (${md(ev.ts)}) reads ${bucket} — ${s.why}` }
+  if (s.bucket !== bucket) return { ...s, why: `${s.why} · ${ev.tool} on file reads ${bucket} — the ${committedReference(bet).label} decides` }
+  return s
+}
+
+function suggestFromActuals(bet: BetRecord, actuals: string): Suggestion {
   const ref = committedReference(bet)
   if (ref.demand === 'evidenceBar') return { bucket: null, why: 'an evidence bar is judged, not computed — pick by hand' }
   const expected = bet.direction === 'reduce' ? 'decrease' : 'increase'

@@ -54,6 +54,8 @@ export function diffRows(bet: BetRecord): DiffRow[] {
   const rung = c.instrument ? `${rungLine(c.instrument.type)}${c.instrument.spec ? ` · ${specLine(c.instrument.spec)}` : ''}` : 'rung not declared'
   push('rung', rung, touched.has('rung') ? [amendedText('rung'), 'amended'] : [resolved ? 'as locked' : PENDING, resolved ? 'held' : 'pending'])
   if (c.expectation) push('expectation', c.expectation, base('expectation', bet.actuals || '—'))
+  // evidence arrives after the lock — nothing planned to hold it against, so it is never a deviation
+  if (bet.evidence?.length) rows.push({ label: 'evidence', planned: '— (after the lock)', reported: bet.evidence.map((e) => `${e.ts.slice(0, 10)} ${e.summary}`).join('\n'), mark: 'held' })
   if (bet.deviation) rows.push({ label: 'deviation', planned: '—', reported: bet.deviation, mark: 'deviated' })
   for (const a of amends) rows.push({ label: `amend · ${a.ts.slice(0, 10)}`, planned: `(as locked) ${a.field}`, reported: `${a.change} — “${a.reason}”`, mark: 'amended' })
   return rows

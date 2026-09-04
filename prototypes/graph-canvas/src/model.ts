@@ -47,6 +47,25 @@ export interface Amendment {
   reason: string
 }
 
+// Evidence attached from a lab tool (src/attach.ts) — append-only, like amendments.
+// It arrives after the lock by definition, so it is never a committed field and
+// never inside the seal. `hash` is the app's own SHA-256 of `canonical`; `seal` is
+// what the lab sent, kept so the cockpit can say whether the two agree.
+export type EvidenceTool = 'srm' | 'results' | 'bayes' | 'sequential' | 'pre-post'
+export type EvidenceVerdict = 'ok' | 'mismatch' | 'win' | 'loss' | 'inconclusive' | 'continue' | 'stop'
+export interface EvidenceRecord {
+  id: string
+  ts: string
+  tool: EvidenceTool
+  v: number
+  params: Record<string, number | string>
+  canonical: string
+  hash: string
+  seal?: string
+  summary: string
+  verdict?: EvidenceVerdict
+}
+
 export interface BetRecord {
   change: string
   direction: 'lift' | 'reduce'
@@ -69,6 +88,7 @@ export interface BetRecord {
   actuals?: string
   call?: string
   amendments?: Amendment[]
+  evidence?: EvidenceRecord[] // from the lab, after the lock — outside the seal (src/attach.ts)
   surface: string
   status: BetStatus
   outcome: Outcome

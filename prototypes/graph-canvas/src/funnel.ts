@@ -234,9 +234,9 @@ const notYet = (tool: string): ToolParser => ({
 export const TOOLS: Record<string, ToolParser> = {
   'sample-size': sampleSize,
   'detectable-lift': detectableLiftTool,
-  // STUB — /lab/srm: its funnel semantics are undecided ("attach as evidence" to a
-  // running bet, not "lock as bet"), so it refuses rather than mint a draft.
-  srm: notYet('srm'),
+  // /lab/srm is an evidence tool: it attaches to a bet (/bet/attach, src/attach.ts)
+  // rather than minting one, so lock-as-bet refuses it with the pointer.
+  srm: { v: 1, wired: false, parse: () => ({ ok: false, error: 'srm: a result is evidence, not a commitment — lock-as-bet is not wired for it; use "attach to a bet" (/bet/attach?from=srm…)' }) },
 }
 
 export const SUPPORTED_TOOLS = Object.keys(TOOLS).filter((k) => TOOLS[k].wired)

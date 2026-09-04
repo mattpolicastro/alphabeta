@@ -34,6 +34,8 @@ import type { LoopStepId } from './loop'
 import { exportBoard, importBoard, downloadEnvelope, readJsonFile } from './portable'
 import { IntakeTray } from './IntakeTray'
 import { isFunnelLanding, parseFunnel } from './funnel'
+import { isAttachLanding, mintEvidence, parseAttach, type AttachParsed } from './attach'
+import { AttachOverlay } from './AttachPicker'
 import { providerFor, scopeLine, type Scope } from './llm'
 import { dueItems } from './docket-items'
 import { DocOverlay, type DocReq } from './Doc'
@@ -191,9 +193,11 @@ function Canvas() {
   // documents are read-only projections opened in context — one overlay, never a route
   const [doc, setDoc] = useState<DocReq | null>(null)
   // the walkthrough opens itself on first visit and stays closed once dismissed
-  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') && !isFunnelLanding(location.pathname, location.search) } catch { return false } })
+  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') && !isFunnelLanding(location.pathname, location.search) && !isAttachLanding(location.pathname, location.search) } catch { return false } })
   const closeTray = () => { setTray(false); try { localStorage.setItem('ab-loop-seen', '1') } catch {} }
   const [intake, setIntake] = useState(false)
+  // a lab result waiting for a bet to be evidence for (/bet/attach, src/attach.ts)
+  const [attach, setAttach] = useState<AttachParsed | null>(null)
   const [dockError, setDockError] = useState<string | null>(null)
   const [pulseId, setPulseId] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
@@ -216,7 +220,15 @@ function Canvas() {
   //    draft onto the loaded board, then the URL goes back to / so a reload doesn't
   //    re-mint. An empty board is seeded from the fixture first. Idempotent under
   //    StrictMode's double effect: the second pass sees no funnel in the URL.
+  //    /bet/attach?from=<tool>&v=1&… (the lab's "attach to a bet →") parses the same
+  //    way but mints nothing: it opens the picker and the URL stays until a bet is
+  //    chosen or the picker is cancelled — a refusal goes to the prodbar notice.
   const landFunnel = (base: Node[]): Node[] => {
+    if (isAttachLanding(location.pathname, location.search)) {
+      const r = parseAttach(location.search)
+      if (r.ok === false) { setImportError(r.error); history.replaceState(null, '', '/') } else setAttach(r)
+      return base
+    }
     if (!isFunnelLanding(location.pathname, location.search)) return base
     const r = parseFunnel(location.search)
     history.replaceState(null, '', '/')
@@ -627,6 +639,18 @@ function Canvas() {
     patchBet(id, { amendments: [...(bet?.amendments ?? []), { ts: new Date().toISOString(), field: p.field, change: p.change, reason: p.reason }] } as any)
   }, [patchBet, nodes])
 
+  // attach: append the evidence record (hash computed here), open the bet's cockpit, URL back to /
+  const doAttach = useCallback(async (id: string) => {
+    if (!attach) return
+    const rec = await mintEvidence(attach)
+    setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, bet: { ...(n.data as any).bet, evidence: [...((n.data as any).bet?.evidence ?? []), rec] } } } : n)))
+    setAttach(null); history.replaceState(null, '', '/')
+    setView('canvas'); setSelectedId(id)
+    setTimeout(() => fitView({ duration: 400, nodes: [{ id }], maxZoom: 1 }), 120)
+  }, [attach, fitView])
+  const cancelAttach = useCallback(() => { setAttach(null); history.replaceState(null, '', '/') }, [])
+  const seedForAttach = useCallback(() => { setEdges(initialEdges); setNodes(deoverlap(relayout(initialNodes, initialEdges, orient), orient)) }, [orient])
+
   // destructive board actions keep one undo snapshot — a stray click on
   // "reset demo" replaced a real board on 2026-09-04 with no way back
   const [undo, setUndo] = useState<{ nodes: Node[]; edges: Edge[]; label: string } | null>(null)
@@ -847,6 +871,8 @@ function Canvas() {
       )}
 
       {doc && <DocOverlay req={doc} nodes={nodes} edges={edges} onClose={() => setDoc(null)} onOpen={(id) => { setDoc(null); setSelectedId(id) }} />}
+
+      {attach && <AttachOverlay parsed={attach} nodes={nodes} onPick={doAttach} onSeed={seedForAttach} onClose={cancelAttach} />}
 
       <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} error={dockError} scopeHint={scopeLine(nodes, scope)} />
     </div>

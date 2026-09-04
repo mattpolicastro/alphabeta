@@ -58,3 +58,14 @@ describe('diffText', () => {
     expect(wrap('', 4)).toEqual([''])
   })
 })
+
+describe('diffRows — evidence', () => {
+  it('lists the evidence summaries in order on the reported side, held', () => {
+    const ev = (id: string, ts: string, summary: string) => ({ id, ts, tool: 'srm' as const, v: 1, params: {}, canonical: 'v=1', hash: 'h', summary })
+    const rows = diffRows({ ...locked, evidence: [ev('a', '2026-09-01T00:00:00.000Z', 'SRM: first'), ev('b', '2026-09-03T00:00:00.000Z', 'SRM: second')] })
+    const row = rows.find((r) => r.label === 'evidence')!
+    expect(row).toMatchObject({ mark: 'held', reported: '2026-09-01 SRM: first\n2026-09-03 SRM: second' })
+    expect(rows.map((r) => r.label)).not.toContain('deviation')
+    expect(diffRows(locked).find((r) => r.label === 'evidence')).toBeUndefined()
+  })
+})

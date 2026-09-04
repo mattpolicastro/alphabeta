@@ -4,13 +4,14 @@
 // GuardrailRow @ 2d8aa2d, BucketResult @ 8c5ad1d, IntegrityCheck @ c27e3ab};
 // none of their CSS — skinned to src/styles.css tokens.
 import { useEffect, useState } from 'react'
-import type { BetRecord, DecisionRule } from './model'
+import type { BetRecord, DecisionRule, EvidenceRecord } from './model'
 import type { MomentKind } from './Moment'
 import { compileCriteria, parseCriterion, ruleLine } from './criteria'
 import { rungLine } from './instrument'
 import { sealOf } from './lock'
 import { StatusChip } from './StatusChip'
 import { specLine } from './funnel'
+import { LAB_LABEL, labUrl, sealState } from './attach'
 
 const CALL_FOR: Record<string, keyof BetRecord['criteria']> = { win: 'win', inconclusive: 'inconclusive', loss: 'loss' }
 
@@ -58,6 +59,10 @@ export function Cockpit({ id, bet, onMoment, onDiff }: { id: string; bet: BetRec
         <div className="guard-row" key={i}><span>{g}</span><span className="pill">declared</span></div>
       )) : <div className="locked-note">none declared</div>}
 
+      <div className="dimlbl">evidence</div>
+      {bet.evidence?.length ? bet.evidence.map((e) => <EvidenceRow key={e.id} e={e} />)
+        : <div className="locked-note">none attached — evidence tools in the lab end in “attach to a bet”</div>}
+
       <div className="dimlbl">amendments</div>
       {bet.amendments?.length ? bet.amendments.map((a, i) => (
         <div className="amend-row" key={i}><span className="k">{a.ts.slice(0, 10)}</span> {a.field}: {a.change} — “{a.reason}”</div>
@@ -71,6 +76,24 @@ export function Cockpit({ id, bet, onMoment, onDiff }: { id: string; bet: BetRec
         </div>
       )}
     </>
+  )
+}
+
+// Evidence from the lab (src/attach.ts): recomputed here, outside the seal, never accent.
+function EvidenceRow({ e }: { e: EvidenceRecord }) {
+  const s = sealState(e)
+  const sealText = s === 'verified' ? 'sealed · verified' : s === 'mismatch' ? 'unsealed — the lab seal does not match this hash' : 'unsealed'
+  return (
+    <div className="evid-row">
+      <div className="evid-head">
+        <span>{e.ts.slice(0, 10)}</span>
+        <span>{LAB_LABEL[e.tool]} v{e.v}</span>
+        {e.verdict && <span className="evid-verdict">{e.verdict}</span>}
+        <span className={`evid-seal ${s}`} title={`sha256 ${e.hash}`}>{sealText}</span>
+        <a href={labUrl(e)} target="_blank" rel="noopener noreferrer">view ↗</a>
+      </div>
+      <div>{e.summary}</div>
+    </div>
   )
 }
 
