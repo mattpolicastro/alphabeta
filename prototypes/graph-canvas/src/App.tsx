@@ -6,6 +6,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  Panel,
   MarkerType,
   addEdge,
   applyEdgeChanges,
@@ -635,9 +636,6 @@ function Canvas() {
         <button className={`tab ${view === 'ledger' ? 'on' : ''}`} onClick={() => setView('ledger')}>ledger</button>
         <button className={`tab ${view === 'docket' ? 'on' : ''}`} onClick={() => setView('docket')}>docket</button>
         <span className="right">
-          <button className="btn2 sm" onClick={flip} title="flip layout orientation">{orient === 'v' ? '⇆ horizontal' : '⇅ vertical'}</button>
-          <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(relayout(ns, edges, orient), orient))} title="tree auto-layout">re-layout</button>
-          <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(ns, orient))} title="resolve overlaps along the packing axis">tidy</button>
           <button className="btn2 sm" onClick={() => { setNodes([]); setEdges([]); setSelectedId(null) }}>clear board</button>
           <button className="btn2 sm" onClick={reset}>reset demo</button>
         </span>
@@ -658,6 +656,12 @@ function Canvas() {
         minZoom={0.2}
         proOptions={{ hideAttribution: true }}
       >
+        {/* layout controls belong to the canvas, not the global nav */}
+        <Panel position="top-right" className="canvastools">
+          <button className="btn2 sm" onClick={flip} title="flip layout orientation">{orient === 'v' ? '⇆ horizontal' : '⇅ vertical'}</button>
+          <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(relayout(ns, edges, orient), orient))} title="tree auto-layout">re-layout</button>
+          <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(ns, orient))} title="resolve overlaps along the packing axis">tidy</button>
+        </Panel>
         <Background variant={BackgroundVariant.Lines} gap={28} color="#e3e7ec" />
         <Controls />
         <MiniMap pannable zoomable nodeColor={(n) => (n.type === 'bet' ? TERRA : INK)} />

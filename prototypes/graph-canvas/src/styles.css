@@ -71,6 +71,17 @@ header .reset {
 }
 header .reset:hover { background: var(--terra); border-color: var(--terra); }
 
+/* canvas-only layout controls — live on the view they act on, not the global nav.
+   Positioned by React Flow's <Panel>, so no absolute offsets here. */
+.canvastools {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+}
+.canvastools .btn2 { margin-right: 0 }
+
 .legend {
   position: absolute;
   bottom: 14px;
