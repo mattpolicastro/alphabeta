@@ -41,14 +41,32 @@ brand-v0 updated). Capability page on both landing and app, one registry.
   link, "Lock as bet →" (route on the app side in progress).
 - `/lab/` index in Kelly's card format; cards go live per registry status.
 
+- **Later the same day:** phase 4 (funnel route `bet/new?from=sample-size|detectable-lift`,
+  typed intake via `classifyAltitude`, BYO-key facilitator — key in
+  localStorage only, browser → api.anthropic.com), phase 5 (the Diff with
+  copy-as-text, docket contentions + honest maturation, calibration and
+  graveyard stubs), three more lab tools (`detectable-lift`: R to 8 decimals;
+  `srm`: scipy to 1e-12; `pre-post`: causal-impact-wasm under a BASE_PATH),
+  the prodbar folded to `board ▾ · documents ▾ · intake · the loop` with one
+  overlay shell, and — from Matt's two observations — the docket rebuilt as a
+  due-list by urgency with actions, and the facilitator made scope-aware
+  ("looking at: docket · 1 overdue"). 165 canvas tests, 71 core tests,
+  typecheck clean and now part of the definition of done.
+
 **Lesson:** two agents on disjoint paths, one shared JSON registry, each told
 to flip only its own status lines — no conflicts across four dispatches. The
 one collision risk (registry edited by both) was handled by committing the
 canvas half with the lab line reverted, then restoring it for the lab commit.
+Two agent failure modes worth remembering: (1) an agent renamed modules
+mid-flight and Vite's in-memory graph kept the stale importers — the dev
+server went blank while disk was consistent; restart, don't debug. (2) an
+agent reported "tsc clean" when it wasn't — vitest doesn't typecheck, so
+`npm run typecheck` is now its own required check.
 
-**Next:** `/lab/srm` + `/lab/detectable-lift`; funnel route `bet/new?from=`;
-typed intake (classifyAltitude); BYO-key facilitator for the static build;
-resolve-vs-expectation for prepost/none rungs; documents (diff, calibration).
+**Next:** lab `results` / `sequential` / `bayes` on Pyodide (decision on
+`results` as funnel bait pending); a series-hash seal for `pre-post`; SRM's
+lock-as-bet is wrong (evidence on a running bet, not a new one); history
+scrubber; Git-connect the Pages projects.
 
 ---
 
