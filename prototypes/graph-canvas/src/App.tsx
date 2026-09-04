@@ -566,11 +566,22 @@ function Canvas() {
     patchBet(id, { amendments: [...(bet?.amendments ?? []), { ts: new Date().toISOString(), field: p.field, change: p.change, reason: p.reason }] } as any)
   }, [patchBet, nodes])
 
-  const reset = useCallback(() => {
-    setNodes(structuredClone(initialNodes))
-    setEdges(structuredClone(initialEdges))
-    setSelectedId(null)
-  }, [])
+  // destructive board actions keep one undo snapshot — a stray click on
+  // "reset demo" replaced a real board on 2026-09-04 with no way back
+  const [undo, setUndo] = useState<{ nodes: Node[]; edges: Edge[]; label: string } | null>(null)
+  const guarded = useCallback((label: string, apply: () => void) => {
+    if (nodes.length && !confirm(`${label}? The current board is kept for one undo.`)) return
+    if (nodes.length) setUndo({ nodes, edges, label })
+    apply(); setSelectedId(null)
+  }, [nodes, edges])
+  const reset = useCallback(() => guarded('Reset to the demo board', () => {
+    setNodes(structuredClone(initialNodes)); setEdges(structuredClone(initialEdges))
+  }), [guarded])
+  const clear = useCallback(() => guarded('Clear the board', () => { setNodes([]); setEdges([]) }), [guarded])
+  const undoLast = useCallback(() => {
+    if (!undo) return
+    setNodes(undo.nodes); setEdges(undo.edges); setSelectedId(null); setUndo(null)
+  }, [undo])
 
   const tryStep = (id: LoopStepId): string | void => {
     const betOf = (n: Node) => (n.data as any)?.bet as BetRecord | undefined
@@ -689,7 +700,8 @@ function Canvas() {
           <button className="btn2 sm" onClick={() => fileRef.current?.click()}>import</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = '' }} />
-          <button className="btn2 sm" onClick={() => { setNodes([]); setEdges([]); setSelectedId(null) }}>clear board</button>
+          {undo && <button className="btn2 sm" onClick={undoLast} title={`undo: ${undo.label}`}>↶ undo</button>}
+          <button className="btn2 sm" onClick={clear}>clear board</button>
           <button className="btn2 sm" onClick={reset}>reset demo</button>
           <button className={`btn2 sm ${tray ? 'on' : ''}`} onClick={() => (tray ? closeTray() : setTray(true))}>the loop</button>
         </span>
