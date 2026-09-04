@@ -557,3 +557,54 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 /* the Map step points at the first goal: an ink outline, never accent */
 .react-flow__node.pulse .node { outline:3px solid var(--ink); outline-offset:4px; animation:pulse-ink .6s 3 }
 @keyframes pulse-ink { 0%,100% { outline-color:transparent } 50% { outline-color:var(--ink) } }
+
+/* ── close the loop: cockpit, ladder, ledger filters, admission ──── */
+.seal-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+.seal-hash { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--fade); letter-spacing:.04em }
+.mono-line { font-family:'IBM Plex Mono',monospace; font-size:11.5px }
+.rule { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink); margin-top:2px; padding-left:8px; border-left:2px solid var(--ink) }
+.rule.pencil { color:var(--fade); border-left-style:dashed; border-left-color:var(--fade) }
+.crit-row { margin-bottom:7px }
+.guard-row { display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); font-size:12px }
+.guard-row .pill { margin-left:auto; color:var(--fade); border-color:var(--fade) }
+.integ { display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:8px 10px; border:1px solid var(--line); background:var(--paper-raised); font-size:12px }
+.integ-mark { font-family:'IBM Plex Mono',monospace; width:22px; height:22px; border:1.5px solid var(--ink); display:flex; align-items:center; justify-content:center; flex-shrink:0 }
+.integ-ok .integ-mark { color:var(--win); border-color:var(--win) }
+.integ-fail { border-color:var(--terra) } .integ-fail .integ-mark { color:var(--terra); border-color:var(--terra) }
+.integ-none, .integ-checking { border-style:dashed } .integ-none .integ-mark, .integ-checking .integ-mark { color:var(--fade); border-color:var(--fade); border-style:dashed }
+.bucket { margin-top:14px; padding:12px; border:1.5px solid var(--ink); background:var(--paper-raised) }
+.bucket-title { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:18px; letter-spacing:.06em }
+.bucket.s-win { border-color:var(--win) } .bucket.s-win .bucket-title { color:var(--win) }
+.bucket.s-loss { border-color:var(--terra) } .bucket.s-loss .bucket-title { color:var(--terra) }
+.bucket.s-inconclusive { border-color:var(--incon) } .bucket.s-inconclusive .bucket-title { color:var(--incon) }
+.bucket.s-invalid { border-style:dashed; border-color:var(--fade) } .bucket.s-invalid .bucket-title { color:var(--fade) }
+
+/* instrument ladder in the lock moment */
+.rungs { display:grid; gap:4px }
+.rung { display:grid; grid-template-columns:22px 1fr; gap:0 10px; text-align:left; font-family:'Barlow',sans-serif; background:var(--paper-raised); border:1px dashed var(--line); color:var(--ink); padding:6px 10px; cursor:pointer }
+.rung:hover { border-color:var(--fade) }
+.rung.on { border-style:solid; border-color:var(--ink); border-left:4px solid var(--terra) }
+.rung-n { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--fade); grid-row:span 2; align-self:center }
+.rung-label { font-size:12px; font-weight:600 }
+.rung-line { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--fade) }
+
+/* ledger filters */
+.ledger-filters { display:flex; flex-wrap:wrap; gap:6px 18px; align-items:center; margin:8px 0 12px }
+.chiprow { display:flex; flex-wrap:wrap; gap:4px; align-items:center }
+.chiprow-label { font-family:'Barlow Semi Condensed',sans-serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--fade); margin-right:4px }
+.chip { font-family:'IBM Plex Mono',monospace; font-size:10px; border:1px dashed var(--line); background:none; color:var(--fade); padding:2px 7px; cursor:pointer }
+.chip:hover { border-color:var(--fade) }
+.chip.on { border-style:solid; border-color:var(--ink); color:var(--ink) }
+
+/* admission face */
+.ground-row { display:flex; gap:8px; align-items:baseline; padding:5px 0; border-bottom:1px dashed var(--line); font-size:12px }
+.ground-row .x { font-family:inherit; background:none; border:none; color:var(--fade); cursor:pointer; font-size:13px; padding:0 2px }
+.ground-row .x:hover { color:var(--ink) }
+.tier { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.04em; border:1px solid var(--ink); padding:0 5px; white-space:nowrap }
+.tier-adjacent { border-style:dashed }
+.tier-cross-org-pattern { border-style:dotted }
+.tier-anecdotal { border-style:dashed; color:var(--fade); border-color:var(--fade) }
+.add-row { display:flex; gap:6px; margin-top:8px; align-items:stretch }
+.add-row .finput { flex:1; padding:5px 8px; font-size:11px }
+.add-row .sel { flex:0 0 auto; width:auto }
+.add-row .btn2 { margin:0 }

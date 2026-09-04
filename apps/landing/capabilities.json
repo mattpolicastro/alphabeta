@@ -4,16 +4,16 @@
   "updated": "2026-09-04",
   "surfaces": [
     { "id": "canvas",      "kind": "place",    "name": "The Canvas",        "status": "live",    "note": "goal → problem → question/solution → bet cascade; tree auto-layout; horizontal or vertical" },
-    { "id": "ledger",      "kind": "place",    "name": "The Ledger",        "status": "partial", "gap": "no filtering by tag, status, or validity yet" },
+    { "id": "ledger",      "kind": "place",    "name": "The Ledger",        "status": "live",    "note": "table + kanban; filter by status, surface, instrument rung" },
     { "id": "docket",      "kind": "place",    "name": "The Docket",        "status": "partial", "gap": "maturation defaults to 14 days; no contention detection" },
 
     { "id": "face-question", "kind": "face", "name": "Question dossier",       "status": "live",    "note": "record, expectation slot, answer history" },
-    { "id": "face-solution", "kind": "face", "name": "Solution admission",     "status": "partial", "gap": "shows rivals; no grounds tiers, screens, or arbitration yet" },
+    { "id": "face-solution", "kind": "face", "name": "Solution admission",     "status": "live",    "note": "grounds with provenance tiers, screens, rivals, arbitration — pencil register" },
     { "id": "face-draft",    "kind": "face", "name": "Bet, pre-lock",          "status": "live",    "note": "editable draft record, pencil register" },
-    { "id": "face-cockpit",  "kind": "face", "name": "Bet, post-lock (cockpit)", "status": "planned", "note": "sealed commitment, amendment timeline, guardrails, resolve entry" },
+    { "id": "face-cockpit",  "kind": "face", "name": "Bet, post-lock (cockpit)", "status": "live",    "note": "sealed commitment with compiled rules, seal re-verified on open, amendment timeline, guardrails, resolve entry" },
 
     { "id": "moment-admission", "kind": "moment", "name": "Admission",  "status": "planned" },
-    { "id": "moment-lock",      "kind": "moment", "name": "Lock",       "status": "partial", "gap": "premortem + fold-if + confidence; does not yet read the instrument ladder or compile criteria" },
+    { "id": "moment-lock",      "kind": "moment", "name": "Lock",       "status": "live",    "note": "premortem; instrument rung sets the ceremony (fold-if / expectation / evidence bar); criteria prose kept, rules compiled; committed fields sealed" },
     { "id": "moment-resolve",   "kind": "moment", "name": "Resolution", "status": "live",    "note": "bucket computed from the locked fold-if; deviation demanded when call ≠ bucket" },
     { "id": "moment-answer",    "kind": "moment", "name": "Answer",     "status": "live",    "note": "expectation before lookup" },
     { "id": "moment-amend",     "kind": "moment", "name": "Amendment",  "status": "live",    "note": "one field + reason, on the record" },
@@ -28,9 +28,9 @@
     { "id": "tray-whats-here","kind": "tray", "name": "The loop (walkthrough)", "status": "live", "note": "this registry, rendered in-app" },
 
     { "id": "data-export", "kind": "data", "name": "Export / import board", "status": "live", "note": "versioned envelope with migration chain; the precondition for keeping real bets here" },
-    { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock hash-chains fields; no shareable receipt yet" },
+    { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock seals the committed fields (SHA-256) and the cockpit re-verifies; no shareable receipt yet" },
 
-    { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "planned", "question": "How big does my test need to be?" },
+    { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "planned",    "question": "How big does my test need to be?" },
     { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "planned", "question": "What can I detect with the traffic I have?" },
     { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "planned", "question": "Is my split broken?" },
     { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "planned", "question": "Did the change move the series?", "note": "causal-impact-wasm" },

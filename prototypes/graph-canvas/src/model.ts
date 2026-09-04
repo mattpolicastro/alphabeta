@@ -6,6 +6,31 @@ export type Outcome = 'win' | 'loss' | 'inconclusive' | 'invalid' | null
 export type Gate = 'open' | 'gated' | 'pruned'
 export type EdgeKind = 'lineage' | 'elevation' | 'dependency' | 'spawn' | 'evidence' | 'refute'
 
+// v0.3 instrument ladder — see shape/event-grammar-v0.3-addendum.md
+export type InstrumentType = 'ab' | 'quasi' | 'holdback' | 'study' | 'prepost' | 'none'
+export interface Instrument {
+  type: InstrumentType
+  spec?: string
+}
+
+// Compiled at lock from the criteria prose (src/criteria.ts). The prose is canonical;
+// this is a machine-readable shadow of it, nulls where the prose gave no number.
+export interface DecisionRule {
+  bucket: 'win' | 'inconclusive' | 'loss'
+  prose: string
+  metric: string
+  direction: 'increase' | 'decrease'
+  threshold: number | null
+  unit: string | null
+  comparator: 'gte' | 'lte' | 'gt' | 'lt' | null
+}
+
+export type GroundTier = 'local-observed' | 'adjacent' | 'cross-org-pattern' | 'anecdotal'
+export interface Ground {
+  text: string
+  tier: GroundTier
+}
+
 export interface Amendment {
   ts: string
   field: string
@@ -22,7 +47,13 @@ export interface BetRecord {
   foldIf: string
   confidence?: string
   guardrails?: string
+  instrument?: Instrument
+  expectation?: string // no-counterfactual rungs (prepost, none): what you think will happen
+  evidenceBar?: string // study rung: what evidence would move you
+  premortem?: string
+  decisionRules?: DecisionRule[]
   lockedAt?: string
+  seal?: string // SHA-256 of the committed fields at lock (src/lock.ts)
   actuals?: string
   call?: string
   amendments?: Amendment[]
@@ -43,6 +74,10 @@ export interface StratRecord {
   expectation?: string
   owner?: string
   validity?: string
+  // solution admission paperwork
+  grounds?: Ground[]
+  screens?: string[]
+  arbitration?: string
 }
 
 export function wagerSentence(b: BetRecord): string {

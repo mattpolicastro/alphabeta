@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import type { BetRecord, StratRecord, Outcome } from './model'
+import type { BetRecord, InstrumentType, StratRecord, Outcome } from './model'
 import { StatusChip, surfaceClass } from './StatusChip'
+import { RUNGS, missingDemand, rung } from './instrument'
+import type { LockInput } from './lock'
 
 export type MomentKind = 'lock' | 'resolve' | 'answer' | 'amend'
 export interface MomentReq { kind: MomentKind; nodeId: string }
@@ -18,7 +20,7 @@ export function MomentOverlay({
   bet?: BetRecord
   strat?: StratRecord
   onClose: () => void
-  onLock: (id: string, p: { foldIf: string; confidence: string; guardrails: string; win: string; inconclusive: string; loss: string }) => void
+  onLock: (id: string, p: LockInput) => void
   onResolve: (id: string, p: { actuals: string; outcome: Outcome; call: string; deviation: string }) => void
   onAnswer: (id: string, p: { expectation: string; answer: string; takeaway: string; validity: string }) => void
   onAmend: (id: string, p: { field: string; change: string; reason: string }) => void
@@ -36,16 +38,27 @@ export function MomentOverlay({
   )
 }
 
-function LockMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: any) => void }) {
+const DEMAND_LABEL = { foldIf: 'a fold-if', expectation: 'an expectation', evidenceBar: 'an evidence bar' } as const
+
+function LockMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: LockInput) => void }) {
   const [premortem, setPremortem] = useState('')
+  const [instrument, setInstrument] = useState<InstrumentType | null>(bet.instrument?.type ?? null)
+  const [spec, setSpec] = useState(bet.instrument?.spec ?? '')
   const [foldIf, setFoldIf] = useState(bet.foldIf.startsWith('(') ? '' : bet.foldIf)
+  const [expectation, setExpectation] = useState(bet.expectation ?? '')
+  const [evidenceBar, setEvidenceBar] = useState(bet.evidenceBar ?? '')
   const [confidence, setConfidence] = useState(bet.confidence ?? '')
   const [guardrails, setGuardrails] = useState(bet.guardrails ?? '')
   const [win, setWin] = useState(bet.criteria.win.startsWith('(') ? '' : bet.criteria.win)
   const [inconclusive, setInc] = useState(bet.criteria.inconclusive.startsWith('(') ? '' : bet.criteria.inconclusive)
   const [loss, setLoss] = useState(bet.criteria.loss.startsWith('(') ? '' : bet.criteria.loss)
   const [step, setStep] = useState(0)
-  const ready = foldIf.trim() && win.trim() && loss.trim()
+  const r = instrument ? rung(instrument) : null
+  const missing = instrument ? missingDemand(instrument, { foldIf, expectation, evidenceBar }) : null
+  const ready = !!instrument && !missing && win.trim() && loss.trim()
+  const refusal = !instrument ? 'pick the rung — the ceremony depends on it'
+    : missing ? `${instrument} demands ${DEMAND_LABEL[missing]}; win and loss actions too — the lock refuses blanks`
+    : !ready ? 'win and loss actions are required — the lock refuses blanks' : null
   return step === 0 ? (
     <>
       <h3>Lock — but first, the premortem</h3>
@@ -61,20 +74,53 @@ function LockMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: any) => void 
     <>
       <h3>Lock the commitment</h3>
       <div className="sub">Ink register from here on: this content freezes, timestamped. Changes after lock are amendments — recorded, never hidden.</div>
-      <label>fold if (the mind-changer — one falsifiable line)</label>
-      <input className="finput" value={foldIf} onChange={(e) => setFoldIf(e.target.value)} placeholder="fold if…" />
+      <label>instrument — the rung sets the ceremony and the validity ceiling</label>
+      <div className="rungs">
+        {RUNGS.map((x) => (
+          <button key={x.type} className={`rung ${instrument === x.type ? 'on' : ''}`} onClick={() => setInstrument(x.type)}>
+            <span className="rung-n">{x.rung}</span>
+            <span className="rung-label">{x.label}</span>
+            <span className="rung-line">{x.ceremony} · {x.ceiling}</span>
+          </button>
+        ))}
+      </div>
+      {r && (
+        <>
+          <label>spec (optional — split, unit, sample, window)</label>
+          <input className="finput" value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="50/50 by visitor · 14 days · n ≥ 4,000/arm" />
+          {r.demand === 'foldIf' && (
+            <>
+              <label>fold if (the mind-changer — one falsifiable line)</label>
+              <input className="finput" value={foldIf} onChange={(e) => setFoldIf(e.target.value)} placeholder="fold if…" autoFocus />
+            </>
+          )}
+          {r.demand === 'expectation' && (
+            <>
+              <label>expectation — no counterfactual, so say what you think will happen</label>
+              <input className="finput" value={expectation} onChange={(e) => setExpectation(e.target.value)} placeholder="I expect…" autoFocus />
+            </>
+          )}
+          {r.demand === 'evidenceBar' && (
+            <>
+              <label>evidence bar — what you would need to hear or see to be moved</label>
+              <input className="finput" value={evidenceBar} onChange={(e) => setEvidenceBar(e.target.value)} placeholder="4 of 6 interviewees, unprompted, …" autoFocus />
+            </>
+          )}
+        </>
+      )}
       <div className="row2">
         <div><label>confidence (0–1)</label><input className="finput" value={confidence} onChange={(e) => setConfidence(e.target.value)} placeholder="0.6" /></div>
-        <div><label>guardrails</label><input className="finput" value={guardrails} onChange={(e) => setGuardrails(e.target.value)} placeholder="conversion must hold" /></div>
+        <div><label>guardrails (; separated)</label><input className="finput" value={guardrails} onChange={(e) => setGuardrails(e.target.value)} placeholder="conversion must hold" /></div>
       </div>
       <label>on win</label><input className="finput" value={win} onChange={(e) => setWin(e.target.value)} placeholder="keep — roll out" />
       <label>on inconclusive</label><input className="finput" value={inconclusive} onChange={(e) => setInc(e.target.value)} placeholder="hold — …" />
       <label>on loss</label><input className="finput" value={loss} onChange={(e) => setLoss(e.target.value)} placeholder="revert — …" />
+      <div className="locked-note" style={{ marginTop: 6, fontSize: 11 }}>prose stays as typed; a machine-checkable shadow is compiled at lock where a number is marked (≥ 1pp, +2pp, at least 3%)</div>
       <div style={{ marginTop: 16 }}>
-        <button className="btn2 pri" disabled={!ready} onClick={() => onDone({ foldIf, confidence, guardrails, win, inconclusive, loss, premortem })}>
+        <button className="btn2 pri" disabled={!ready} onClick={() => instrument && onDone({ instrument, spec, foldIf, expectation, evidenceBar, confidence, guardrails, win, inconclusive, loss, premortem })}>
           Lock it
         </button>
-        {!ready && <span className="warn">fold-if, win, and loss actions are required — the lock refuses blanks</span>}
+        {refusal && <span className="warn">{refusal}</span>}
       </div>
     </>
   )

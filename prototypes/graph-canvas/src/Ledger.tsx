@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { Node } from '@xyflow/react'
-import type { BetRecord, BetStatus } from './model'
+import type { BetRecord, BetStatus, InstrumentType } from './model'
 import type { MomentKind } from './Moment'
 import { StatusChip } from './StatusChip'
+import { RUNGS } from './instrument'
+import { ALL_STATUSES, EMPTY_FILTER, UNSET, betOf, distinctSurfaces, filterBets, groupBetsByStatus, toggle, type LedgerFilter } from './ledger-filters'
 
 const COLS: { id: BetStatus; title: string }[] = [
   { id: 'draft', title: 'draft' },
@@ -38,12 +40,18 @@ export function LedgerView({
   const [mode, setMode] = useState<'table' | 'kanban'>('table')
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<string | null>(null)
-  const bets = nodes.filter((n) => n.type === 'bet')
+  const [filter, setFilter] = useState<LedgerFilter>(EMPTY_FILTER)
+  const all = nodes.filter((n) => n.type === 'bet')
+  const bets = filterBets(all, filter)
+  const groups = groupBetsByStatus(bets)
+  const filtering = bets !== all
+  const flip = <K extends keyof LedgerFilter>(k: K, v: LedgerFilter[K][number]) =>
+    setFilter((f) => ({ ...f, [k]: toggle(f[k] as any[], v) }))
 
   const drop = (col: BetStatus) => {
     setOverCol(null)
     if (!dragId) return
-    const b = (bets.find((n) => n.id === dragId)?.data as any)?.bet as BetRecord
+    const b = betOf(all.find((n) => n.id === dragId)!)
     if (!b || b.status === col) return
     if (FREE[b.status]?.includes(col)) onStatus(dragId, col)
     else if (CEREMONY[b.status]?.[col]) onMoment(CEREMONY[b.status]![col]!, dragId)
@@ -54,16 +62,23 @@ export function LedgerView({
   return (
     <div className="ledger-view">
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-        <div className="dimlbl" style={{ flex: 1 }}>the ledger — every bet, no exceptions ({bets.length})<StatusChip id="ledger" /></div>
+        <div className="dimlbl" style={{ flex: 1 }}>the ledger — every bet, no exceptions ({filtering ? `${bets.length} of ${all.length}` : all.length})<StatusChip id="ledger" /></div>
         <div className="segbtns">
           <button className={mode === 'table' ? 'on' : ''} onClick={() => setMode('table')}>table</button>
           <button className={mode === 'kanban' ? 'on' : ''} onClick={() => setMode('kanban')}>kanban</button>
         </div>
       </div>
 
+      <div className="ledger-filters">
+        <FilterRow label="status" values={ALL_STATUSES} on={filter.statuses} pick={(v) => flip('statuses', v)} />
+        <FilterRow label="surface" values={distinctSurfaces(all)} on={filter.surfaces} pick={(v) => flip('surfaces', v)} />
+        <FilterRow label="instrument" values={[...RUNGS.map((r) => r.type), UNSET]} on={filter.instruments} pick={(v) => flip('instruments', v as InstrumentType)} />
+        {filtering && <button className="btn2 sm" onClick={() => setFilter(EMPTY_FILTER)}>clear</button>}
+      </div>
+
       {mode === 'table' ? (
         <table className="ledger-table">
-          <thead><tr><th>tag</th><th>wager</th><th>status</th><th>fold-if</th><th>surface</th><th>call</th></tr></thead>
+          <thead><tr><th>tag</th><th>wager</th><th>status</th><th>instrument</th><th>fold-if</th><th>surface</th><th>call</th></tr></thead>
           <tbody>
             {bets.map((n) => {
               const b = (n.data as any).bet as BetRecord
@@ -73,6 +88,7 @@ export function LedgerView({
                   <td className="mono">B{(n.data as any).seq ?? '·'}</td>
                   <td>{b.change}</td>
                   <td><span className={`pill s-${b.status === 'resolved' ? b.outcome : b.status}`}>{status}</span></td>
+                  <td className="mono">{b.instrument?.type ?? <span style={{ color: 'var(--fade)' }}>—</span>}</td>
                   <td className="mono">{b.foldIf}</td>
                   <td className="mono">{b.surface || '—'}</td>
                   <td className="mono">{b.call ?? ''}</td>
@@ -84,7 +100,7 @@ export function LedgerView({
       ) : (
         <div className="kanban">
           {COLS.map((col) => {
-            const items = bets.filter((n) => ((n.data as any).bet as BetRecord).status === col.id)
+            const items = groups[col.id]
             return (
               <div key={col.id}
                 className={`kcol ${overCol === col.id ? 'over' : ''}`}
@@ -117,6 +133,17 @@ export function LedgerView({
           drag draft ⇄ ready freely · dropping on <b>locked</b> or <b>resolved</b> opens the ceremony — the lifecycle only runs forward
         </p>
       )}
+    </div>
+  )
+}
+
+function FilterRow<T extends string>({ label, values, on, pick }: { label: string; values: readonly T[]; on: readonly T[]; pick: (v: T) => void }) {
+  return (
+    <div className="chiprow">
+      <span className="chiprow-label">{label}</span>
+      {values.map((v) => (
+        <button key={v} className={`chip ${on.includes(v) ? 'on' : ''}`} onClick={() => pick(v)}>{v}</button>
+      ))}
     </div>
   )
 }

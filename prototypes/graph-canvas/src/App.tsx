@@ -28,6 +28,7 @@ import { RecordPanel } from './Panel'
 import { LedgerView } from './Ledger'
 import { DocketView } from './Docket'
 import { MomentOverlay, type MomentReq } from './Moment'
+import { lockPatch, sealOf, type LockInput } from './lock'
 import { LoopTray } from './LoopTray'
 import type { LoopStepId } from './loop'
 import { exportBoard, importBoard, downloadEnvelope, readJsonFile } from './portable'
@@ -548,11 +549,13 @@ function Canvas() {
   const patchStrat = useCallback((id: string, patch: any) => {
     setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, strat: { ...(n.data as any).strat, ...patch } } } : n)))
   }, [])
-  const doLock = useCallback((id: string, p: any) => {
-    patchBet(id, { foldIf: p.foldIf, confidence: p.confidence, guardrails: p.guardrails,
-      criteria: { win: p.win, inconclusive: p.inconclusive, loss: p.loss },
-      status: 'locked', lockedAt: new Date().toISOString() } as any)
-  }, [patchBet])
+  const doLock = useCallback((id: string, p: LockInput) => {
+    const bet = (nodes.find((n) => n.id === id)?.data as any)?.bet as BetRecord
+    const patch = lockPatch(bet, p, new Date().toISOString())
+    patchBet(id, patch)
+    // seal the committed fields; the cockpit re-verifies this hash on every open
+    sealOf({ ...bet, ...patch }).then((seal) => patchBet(id, { seal }))
+  }, [patchBet, nodes])
   const doResolve = useCallback((id: string, p: any) => {
     patchBet(id, { status: 'resolved', outcome: p.outcome, actuals: p.actuals, call: p.call,
       deviation: p.deviation || null } as any)
@@ -750,7 +753,7 @@ function Canvas() {
       </div>}
 
       {selectedNode && (
-        <RecordPanel node={selectedNode} nodes={nodes} edges={edges} onClose={() => setSelectedId(null)} onEdit={editBet}
+        <RecordPanel node={selectedNode} nodes={nodes} edges={edges} onClose={() => setSelectedId(null)} onEdit={editBet} onEditStrat={patchStrat}
           onMoment={(kind, nodeId) => setMoment({ kind, nodeId })} />
       )}
 

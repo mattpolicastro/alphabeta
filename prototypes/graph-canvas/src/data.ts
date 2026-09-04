@@ -63,7 +63,17 @@ export const initialNodes: Node[] = [
   strat('pb-4', 'problem', 'No localized marketing for EU markets', 1050, 170, 'English-only site and collateral; competitors localize in 5+ languages.'),
 
   strat('sl-1', 'solution', 'Product-led growth with interactive demo', 150, 340, 'Self-serve demo so prospects experience value before engaging sales.'),
-  strat('sl-3', 'solution', 'Redesign free-to-paid upgrade flow', 450, 340, 'Contextual upgrade prompts on usage triggers, not trial timers.'),
+  {
+    ...strat('sl-3', 'solution', 'Redesign free-to-paid upgrade flow', 450, 340, 'Contextual upgrade prompts on usage triggers, not trial timers.'),
+    data: { strat: {
+      kind: 'solution', title: 'Redesign free-to-paid upgrade flow', detail: 'Contextual upgrade prompts on usage triggers, not trial timers.',
+      grounds: [
+        { text: 'Simplifying to 3 tiers won +4.8pp on demo requests (B7)', tier: 'local-observed' },
+        { text: 'Usage-triggered prompts outperform timer prompts in PLG benchmarks', tier: 'cross-org-pattern' },
+      ],
+      screens: ['Free-tier users actually hit the usage triggers we would prompt on'],
+    } satisfies StratRecord },
+  },
   strat('sl-2', 'solution', 'Deploy EU data region (AWS Frankfurt)', 750, 340, 'Parallel stack in eu-central-1 with data isolation.'),
   strat('sl-4', 'solution', 'Localize for top 3 EU languages', 1050, 340, 'German, French, Spanish across site, docs, sales materials.'),
 
@@ -86,6 +96,9 @@ export const initialNodes: Node[] = [
     mechanism: 'High-contrast CTA draws attention away from the testimonial band.',
     surface: 'pricing',
     status: 'locked',
+    instrument: { type: 'ab', spec: '50/50 by visitor · 14 days' },
+    confidence: '0.55',
+    guardrails: 'checkout completion must hold; support tickets flat',
   }),
   bet('bet-7', 300, 580, {
     change: 'simplifying pricing from 5 tiers to 3 tiers',
@@ -96,6 +109,7 @@ export const initialNodes: Node[] = [
     surface: 'pricing',
     status: 'resolved',
     outcome: 'win',
+    instrument: { type: 'ab' },
     learning: 'Expected +4pp; got +4.8pp. Decision paralysis was real. Test whether the mechanism holds on plan feature comparisons too.',
   }),
   bet('bet-8', 640, 580, {
@@ -107,6 +121,7 @@ export const initialNodes: Node[] = [
     surface: 'pricing',
     status: 'resolved',
     outcome: 'loss',
+    instrument: { type: 'ab' },
     learning: 'Expected +8pp; got +0.4pp. Position wasn’t the problem — the testimonial band intercepts attention. Target the band directly next.',
   }),
   bet('bet-2', 1740, 900, {
@@ -126,6 +141,10 @@ export const initialNodes: Node[] = [
     mechanism: 'Action visible before the user decides to bail.',
     surface: 'email',
     status: 'running',
+    instrument: { type: 'quasi', spec: 'by send cohort — no per-user split in the ESP' },
+    confidence: '0.5',
+    guardrails: 'unsubscribe rate must hold',
+    amendments: [{ ts: '2026-08-29T09:00:00.000Z', field: 'runtime', change: '14d → 21d', reason: 'send volume below forecast; need the extra week to reach the fold-if' }],
   }),
 
   bet('bet-5', 1180, 580, {
@@ -137,6 +156,7 @@ export const initialNodes: Node[] = [
     surface: 'email',
     status: 'resolved',
     outcome: 'win',
+    instrument: { type: 'ab' },
     learning: 'Expected +3pp; got +4.2pp. Apply the same principle to push notification copy next.',
   }),
   bet('bet-10', 920, 580, {
@@ -148,6 +168,8 @@ export const initialNodes: Node[] = [
     surface: 'pricing',
     status: 'resolved',
     outcome: 'inconclusive',
+    instrument: { type: 'prepost' },
+    expectation: 'demo requests up noticeably within two weeks of the change',
     deviation: '+1.8pp is below the +3pp fold-if, but sales feedback is unanimously positive. Shipping as the new default — logged as a deviation.',
     learning: 'Direction right, magnitude wildly overestimated. Pair quant with a qualitative instrument from the start.',
   }),
@@ -171,6 +193,7 @@ export const initialNodes: Node[] = [
     surface: 'onboarding',
     status: 'resolved',
     outcome: 'win',
+    instrument: { type: 'holdback', spec: '10% held on the old flow for 3 weeks' },
     learning: 'Expected +12pp; got +14pp. Step count is the dominant lever; progress indicators are cosmetic by comparison.',
   }),
 

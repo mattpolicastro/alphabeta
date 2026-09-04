@@ -3,6 +3,8 @@ import type { BetRecord, StratRecord } from './model'
 import { wagerSentence } from './model'
 import type { MomentKind } from './Moment'
 import { StatusChip, surfaceClass } from './StatusChip'
+import { Cockpit } from './Cockpit'
+import { Admission } from './Admission'
 
 interface Props {
   node: Node
@@ -10,10 +12,11 @@ interface Props {
   edges: Edge[]
   onClose: () => void
   onEdit: (id: string, patch: Partial<BetRecord>) => void
+  onEditStrat: (id: string, patch: Partial<StratRecord>) => void
   onMoment: (kind: MomentKind, nodeId: string) => void
 }
 
-export function RecordPanel({ node, nodes, edges, onClose, onEdit, onMoment }: Props) {
+export function RecordPanel({ node, nodes, edges, onClose, onEdit, onEditStrat, onMoment }: Props) {
   const bet = (node.data as any).bet as BetRecord | undefined
   const strat = (node.data as any).strat as StratRecord | undefined
   const seq = (node.data as any).seq
@@ -28,13 +31,13 @@ export function RecordPanel({ node, nodes, edges, onClose, onEdit, onMoment }: P
         <span><span className="panel-eyebrow">{tag} · {bet ? `bet — ${bet.status}` : strat?.kind}</span> {faceId && <StatusChip id={faceId} />}</span>
         <button className="close" onClick={onClose}>×</button>
       </div>
-      {strat && <StratFace id={node.id} strat={strat} nodes={nodes} edges={edges} onMoment={onMoment} />}
+      {strat && <StratFace id={node.id} strat={strat} nodes={nodes} edges={edges} onMoment={onMoment} onEditStrat={onEditStrat} />}
       {bet && <BetFace id={node.id} bet={bet} onEdit={onEdit} onMoment={onMoment} />}
     </aside>
   )
 }
 
-function StratFace({ id, strat, nodes, edges, onMoment }: { id: string; strat: StratRecord; nodes: Node[]; edges: Edge[]; onMoment: Props['onMoment'] }) {
+function StratFace({ id, strat, nodes, edges, onMoment, onEditStrat }: { id: string; strat: StratRecord; nodes: Node[]; edges: Edge[]; onMoment: Props['onMoment']; onEditStrat: Props['onEditStrat'] }) {
   // rivals: sibling solutions under the same problem
   const rivals =
     strat.kind === 'solution'
@@ -57,9 +60,8 @@ function StratFace({ id, strat, nodes, edges, onMoment }: { id: string; strat: S
         </dl>
       )}
       {strat.detail && (<><div className="dimlbl">record</div><p className="detail">{strat.detail}</p></>)}
-      {rivals.length > 0 && (
-        <><div className="dimlbl">⚔ rivals under the same problem</div>
-          <ul style={{ paddingLeft: 18, fontSize: 12 }}>{rivals.map((r) => <li key={r!.id}>{(r!.data as any).strat.title}</li>)}</ul></>
+      {strat.kind === 'solution' && (
+        <Admission id={id} strat={strat} rivals={rivals.map((r) => (r!.data as any).strat.title as string)} onEdit={onEditStrat} />
       )}
       {strat.kind === 'question' && !strat.answered && (
         <button className="btn2 pri" style={{ marginTop: 14 }} onClick={() => onMoment('answer', id)}>Answer…</button>
@@ -86,39 +88,7 @@ function BetFace({ id, bet, onEdit, onMoment }: { id: string; bet: BetRecord; on
           <button className="btn2 pri" style={{ marginTop: 14 }} onClick={() => onMoment('lock', id)}>Lock…</button>
         </>
       ) : (
-        <>
-          <div className="dimlbl">ink register — locked{bet.lockedAt ? ` ${bet.lockedAt.slice(0, 10)}` : ''}</div>
-          <div className="lockbox2">
-            <span className="seal">LOCKED{bet.lockedAt ? ` · ${bet.lockedAt.slice(0, 10)}` : ''}</span>
-            <dl>
-              <dt>mechanism</dt><dd>{bet.mechanism || '—'}</dd>
-              <dt>fold-if</dt><dd className="fold-if-dd">{bet.foldIf}</dd>
-              {bet.confidence && <><dt>confidence</dt><dd>{bet.confidence}</dd></>}
-              {bet.guardrails && <><dt>guardrails</dt><dd>{bet.guardrails}</dd></>}
-              <dt>pre-registered actions</dt>
-              <dd><span className="crit">win</span> {bet.criteria.win}<br /><span className="crit">incon.</span> {bet.criteria.inconclusive}<br /><span className="crit">loss</span> {bet.criteria.loss}</dd>
-            </dl>
-          </div>
-          {(bet.amendments?.length ?? 0) > 0 && (
-            <><div className="dimlbl">amendments</div>
-              {bet.amendments!.map((a, i) => (
-                <div className="amend-row" key={i}><span className="k">{a.ts.slice(5, 10)}</span> {a.field}: {a.change} — “{a.reason}”</div>
-              ))}</>
-          )}
-          {bet.status === 'resolved' ? (
-            <dl>
-              <dt>actuals</dt><dd>{bet.actuals || '—'}</dd>
-              <dt>call</dt><dd>{bet.call || '—'}</dd>
-              {bet.deviation && <><dt>deviation</dt><dd className="deviation">{bet.deviation}</dd></>}
-              {bet.learning && <><dt>learning</dt><dd>{bet.learning}</dd></>}
-            </dl>
-          ) : (
-            <div style={{ marginTop: 14 }}>
-              <button className="btn2 pri" onClick={() => onMoment('resolve', id)}>Resolve…</button>
-              <button className="btn2" onClick={() => onMoment('amend', id)}>Amend…</button>
-            </div>
-          )}
-        </>
+        <Cockpit id={id} bet={bet} onMoment={onMoment} />
       )}
       <p className="margin-note">{draft ? 'content is yours until the lock; then it is history' : 'the lock is structural, not polite'}</p>
     </>
