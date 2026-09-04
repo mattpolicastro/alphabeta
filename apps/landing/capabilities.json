@@ -5,7 +5,7 @@
   "surfaces": [
     { "id": "canvas",      "kind": "place",    "name": "The Canvas",        "status": "live",    "note": "goal → problem → question/solution → bet cascade; tree auto-layout; horizontal or vertical" },
     { "id": "ledger",      "kind": "place",    "name": "The Ledger",        "status": "live",    "note": "table + kanban; filter by status, surface, instrument rung" },
-    { "id": "docket",      "kind": "place",    "name": "The Docket",        "status": "partial", "gap": "maturation defaults to 14 days; no contention detection" },
+    { "id": "docket",      "kind": "place",    "name": "The Docket",        "status": "live",    "note": "what is on the clock; maturation read from the lock (declared, lab runtime, or the spec line — the 14-day default is labelled as such); contention rows when two live bets share a surface" },
 
     { "id": "face-question", "kind": "face", "name": "Question dossier",       "status": "live",    "note": "record, expectation slot, answer history" },
     { "id": "face-solution", "kind": "face", "name": "Solution admission",     "status": "live",    "note": "grounds with provenance tiers, screens, rivals, arbitration — pencil register" },
@@ -18,9 +18,9 @@
     { "id": "moment-answer",    "kind": "moment", "name": "Answer",     "status": "live",    "note": "expectation before lookup" },
     { "id": "moment-amend",     "kind": "moment", "name": "Amendment",  "status": "live",    "note": "one field + reason, on the record" },
 
-    { "id": "doc-diff",        "kind": "document", "name": "The Diff",           "status": "planned", "note": "as-planned vs as-reported, per bet" },
-    { "id": "doc-calibration", "kind": "document", "name": "Calibration mirror", "status": "planned", "note": "expected vs actual, Brier trend — needs resolved bets" },
-    { "id": "doc-graveyard",   "kind": "document", "name": "The Graveyard",      "status": "planned" },
+    { "id": "doc-diff",        "kind": "document", "name": "The Diff",           "status": "live",    "note": "as-planned vs as-reported, per bet, each row held / amended / deviated; copy as plain text (≤ 80 cols) — the share artifact" },
+    { "id": "doc-calibration", "kind": "document", "name": "Calibration mirror", "status": "stub",    "note": "confidence at lock vs outcome, Brier score, one-line read", "gap": "needs ≥ 10 resolved bets to mean anything; showing the shape" },
+    { "id": "doc-graveyard",   "kind": "document", "name": "The Graveyard",      "status": "stub",    "note": "detonated problems, mooted questions, lost and pruned bets", "gap": "priced only in days on the clock and solutions gated — no avoided-spend model; nothing on the demo board detonates, so the problem/question sections show empty" },
     { "id": "doc-history",     "kind": "document", "name": "History scrubber",   "status": "planned", "note": "needs the event log persisted, not board state" },
 
     { "id": "tray-openfield", "kind": "tray", "name": "Open Field (facilitator)", "status": "partial", "gap": "bring your own Anthropic key in the public build; the relay facilitator needs npm run dev" },
@@ -29,7 +29,7 @@
 
     { "id": "data-export", "kind": "data", "name": "Export / import board", "status": "live", "note": "versioned envelope with migration chain; the precondition for keeping real bets here" },
     { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock seals the committed fields (SHA-256) and the cockpit re-verifies; no shareable receipt yet" },
-    { "id": "funnel-lock-as-bet", "kind": "data", "name": "Lock as bet (from the lab)", "status": "live", "note": "app.alphabeta.tools/bet/new?from=<tool>&v=1&… mints a draft with the lab inputs on the instrument; supports sample-size (srm and detectable-lift are registered stubs that refuse rather than guess)" },
+    { "id": "funnel-lock-as-bet", "kind": "data", "name": "Lock as bet (from the lab)", "status": "live", "note": "app.alphabeta.tools/bet/new?from=<tool>&v=1&… mints a draft with the lab inputs on the instrument; supports sample-size and detectable-lift (srm is a registered stub that refuses rather than guess — its funnel is attach-as-evidence, undecided)" },
 
     { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "live",    "question": "How big does my test need to be?" },
     { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "live",    "question": "What can I detect with the traffic I have?" },

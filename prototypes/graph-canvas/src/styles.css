@@ -622,3 +622,49 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 .dock-keybtn:disabled { opacity:.4; cursor:default }
 .dock-privacy { font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--fade); padding:0 12px 6px; line-height:1.4 }
 .dock-err { color:var(--incon) }
+
+/* ── documents: read-only projections in an overlay (the diff, calibration, graveyard) ── */
+.moment.doc { width:min(880px,94vw); position:relative }
+.doc-close { position:absolute; top:10px; right:12px; font-family:inherit; font-size:16px; background:none; border:none; cursor:pointer; color:var(--ink) }
+.doc-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding-right:24px }
+.doc-meta { color:var(--fade); font-size:10.5px }
+.diff { width:100%; border-collapse:collapse; font-size:12px; margin-top:12px; background:var(--paper-raised); border:1px solid var(--line) }
+.diff th { font-family:'Barlow Semi Condensed',sans-serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--fade); text-align:left; padding:8px 10px; border-bottom:1px solid var(--line) }
+.diff td { padding:8px 10px; border-top:1px solid var(--line); vertical-align:top; line-height:1.5 }
+.diff .lbl { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--fade); white-space:nowrap; width:1% }
+.diff .planned { border-left:2px solid var(--ink); width:38% }
+.diff .reported { border-left:1px dashed var(--line); width:38% }
+.diff .mark { font-family:'IBM Plex Mono',monospace; font-size:10.5px; white-space:nowrap; text-align:right; width:1% }
+.diff .m-held { color:var(--fade) }
+.diff .m-amended { color:var(--incon) }
+.diff .m-deviated { color:var(--terra); font-weight:600 }
+.diff .m-pending { color:var(--fade); font-style:italic }
+.doc-actions { display:flex; gap:8px; align-items:center; margin-top:12px }
+.doc-pre { font-family:'IBM Plex Mono',monospace; font-size:10.5px; line-height:1.45; background:var(--paper-raised); border:1px solid var(--line); padding:10px 12px; margin:10px 0 0; overflow-x:auto; white-space:pre }
+.is-stub .diff, .is-stub .doc-pre { border-style:dashed }
+
+/* calibration mirror */
+.cal-svg { display:block; max-width:100%; height:auto; margin-top:8px; background:var(--paper-raised); border:1px solid var(--line) }
+.is-stub .cal-svg { border-style:dashed }
+.cal-axis { stroke:var(--ink); stroke-width:1 }
+.cal-diag { stroke:var(--fade); stroke-width:1; stroke-dasharray:4 3 }
+.cal-tick { font-family:'IBM Plex Mono',monospace; font-size:9px; fill:var(--fade) }
+.cal-lbl { font-family:'Barlow Semi Condensed',sans-serif; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; fill:var(--fade) }
+.cal-pt { stroke:var(--ink); stroke-width:1.2 } .cal-pt.won { fill:var(--ink) } .cal-pt.lost { fill:var(--paper-raised) }
+.cal-bin { fill:none; stroke:var(--incon); stroke-width:1.4 }
+.cal-binline { fill:none; stroke:var(--incon); stroke-width:1; stroke-dasharray:3 3 }
+.cal-read { margin-top:10px; padding:8px 10px; border-left:2px solid var(--ink); background:var(--paper-raised) }
+.is-stub .cal-read { border-left-style:dashed; border-left-color:var(--fade); color:var(--fade) }
+.cal-stats dt { font-size:9px; text-transform:uppercase; letter-spacing:.14em; color:var(--fade); margin-top:12px }
+.cal-stats dd { margin:3px 0 0 }
+.cal-row { display:flex; gap:10px; align-items:baseline; padding:4px 0; border-bottom:1px dashed var(--line); font-size:12px }
+
+/* graveyard */
+.grave-row { max-width:none } .grave-fate { color:var(--fade) }
+.is-stub .docket-row { border-style:dashed }
+
+/* docket: contentions + honest maturation */
+.contention-row { border-color:var(--incon); color:var(--ink) }
+.contention-row .dtag { color:var(--incon) }
+.contention-row .dsub { color:var(--incon) }
+.gnote.default { font-style:italic }

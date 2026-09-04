@@ -30,12 +30,13 @@ const CEREMONY: Record<string, Partial<Record<BetStatus, MomentKind>>> = {
 }
 
 export function LedgerView({
-  nodes, onOpen, onMoment, onStatus,
+  nodes, onOpen, onMoment, onStatus, onDiff,
 }: {
   nodes: Node[]
   onOpen: (id: string) => void
   onMoment: (kind: MomentKind, id: string) => void
   onStatus: (id: string, status: BetStatus) => void
+  onDiff?: (id: string) => void
 }) {
   const [mode, setMode] = useState<'table' | 'kanban'>('table')
   const [dragId, setDragId] = useState<string | null>(null)
@@ -78,7 +79,7 @@ export function LedgerView({
 
       {mode === 'table' ? (
         <table className="ledger-table">
-          <thead><tr><th>tag</th><th>wager</th><th>status</th><th>instrument</th><th>fold-if</th><th>surface</th><th>call</th></tr></thead>
+          <thead><tr><th>tag</th><th>wager</th><th>status</th><th>instrument</th><th>fold-if</th><th>surface</th><th>call</th><th /></tr></thead>
           <tbody>
             {bets.map((n) => {
               const b = (n.data as any).bet as BetRecord
@@ -92,6 +93,7 @@ export function LedgerView({
                   <td className="mono">{b.foldIf}</td>
                   <td className="mono">{b.surface || '—'}</td>
                   <td className="mono">{b.call ?? ''}</td>
+                  <td>{b.status === 'resolved' && onDiff && <button className="btn2 sm" style={{ margin: 0 }} onClick={(e) => { e.stopPropagation(); onDiff(n.id) }}>diff</button>}</td>
                 </tr>
               )
             })}

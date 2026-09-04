@@ -2,9 +2,9 @@ import { useState } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { deriveGates, type BetRecord, type StratRecord } from './model'
 import { StatusChip } from './StatusChip'
+import { DAY, DEFAULT_MATURATION_DAYS, findContentions, maturationOf, type Maturation } from './contentions'
 
-const RUNTIME_DAYS = 14
-const DAY = 86_400_000
+const RUNTIME_DAYS = DEFAULT_MATURATION_DAYS
 
 export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edge[]; onOpen: (id: string) => void }) {
   const gates = deriveGates(nodes, edges)
@@ -19,19 +19,22 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
       .map((e) => nodes.find((n) => n.id === e.source)).filter(Boolean) as Node[]
 
   const today = Date.now()
-  interface Bar { n: Node; start: number; end: number; kind: 'live' | 'overdue' | 'ghost' | 'gated' | 'done'; note?: string }
+  interface Bar { n: Node; start: number; end: number; kind: 'live' | 'overdue' | 'ghost' | 'gated' | 'done'; note?: string; isDefault?: boolean }
   const bars: Bar[] = []
+  // the maturation is read from the lock when it can be; the 14-day fallback says so
+  const matNote = (m: Maturation) => (m.source === 'default' ? `${m.days}d default` : `${m.days}d ${m.source === 'declared' ? 'declared' : m.source === 'lab' ? 'from the lab' : 'from the spec'}`)
 
   for (const n of nodes.filter((x) => x.type === 'bet')) {
     const b = bet(n)
     const lock = b.lockedAt ? new Date(b.lockedAt).getTime() : null
+    const m = maturationOf(b, today)
     if ((b.status === 'locked' || b.status === 'running') && lock) {
-      const due = lock + RUNTIME_DAYS * DAY
+      const due = lock + m.days * DAY
       bars.push(today > due
-        ? { n, start: lock, end: today, kind: 'overdue', note: `OVERDUE +${Math.floor((today - due) / DAY)}d` }
-        : { n, start: lock, end: due, kind: 'live' })
+        ? { n, start: lock, end: today, kind: 'overdue', note: `OVERDUE +${Math.floor((today - due) / DAY)}d · ${matNote(m)}`, isDefault: m.source === 'default' }
+        : { n, start: lock, end: due, kind: 'live', note: matNote(m), isDefault: m.source === 'default' })
     } else if (b.status === 'locked' || b.status === 'running') {
-      bars.push({ n, start: today, end: today + RUNTIME_DAYS * DAY, kind: 'live', note: 'no lock date' })
+      bars.push({ n, start: today, end: today + m.days * DAY, kind: 'live', note: `no lock date · ${matNote(m)}`, isDefault: m.source === 'default' })
     } else if (b.status === 'ready' || b.status === 'draft') {
       const g = gates.get(n.id)
       if (g && g !== 'open') {
@@ -41,7 +44,8 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
         bars.push({ n, start: today, end: today + RUNTIME_DAYS * DAY, kind: 'ghost', note: 'ready — unlaunched' })
       }
     } else if (b.status === 'resolved' && lock) {
-      bars.push({ n, start: lock, end: Math.min(lock + RUNTIME_DAYS * DAY, today), kind: 'done', note: b.outcome ?? undefined })
+      const done = b.resolvedAt ? new Date(b.resolvedAt).getTime() : lock + m.days * DAY
+      bars.push({ n, start: lock, end: Math.min(done, today), kind: 'done', note: b.outcome ?? undefined })
     }
   }
   bars.sort((a, b2) => a.start - b2.start)
@@ -54,6 +58,8 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
   for (let t = firstWeek.getTime(); t < t1; t += 7 * DAY) weeks.push(t)
 
   const openQs = nodes.filter((n) => n.type === 'strat' && strat(n).kind === 'question' && !strat(n).answered)
+  const contentions = findContentions(nodes, today)
+  const mmdd = (t: number) => new Date(t).toISOString().slice(5, 10)
 
   // ── grouping + row geometry (for leader lines) ────────────────────
   const [grouping, setGrouping] = useState<'flat' | 'surface'>('flat')
@@ -122,7 +128,7 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
                 {weeks.map((w) => <span key={w} className="gtick" style={{ left: `${pct(w)}%` }} />)}
                 <span className="gtoday" style={{ left: `${pct(today)}%` }} />
                 <span className={`gbar ${it.b.kind}`} style={{ left: `${pct(it.b.start)}%`, width: `${Math.max(pct(it.b.end) - pct(it.b.start), 1.2)}%` }}>
-                  {it.b.note && <span className="gnote">{it.b.note}</span>}
+                  {it.b.note && <span className={`gnote ${it.b.isDefault ? 'default' : ''}`}>{it.b.note}</span>}
                 </span>
               </div>
             </div>
@@ -141,6 +147,17 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
           })}
         </svg>
       </div>
+
+      <div className="dimlbl" style={{ marginTop: 26 }}>contentions — two bets on one surface, on the clock at once</div>
+      {contentions.length === 0 && <div className="docket-empty">none — every live bet has its surface to itself</div>}
+      {contentions.map((c) => (
+        <div className="docket-row contention-row" key={`${c.a.id}-${c.b.id}`} onClick={() => onOpen(c.a.id)}>
+          <span className="mono dtag">{tag(c.a)} × {tag(c.b)}</span>
+          <span className="dtitle">{bet(c.a).change} <span className="locked-note">and</span> {bet(c.b).change}
+            <span className="dsub">both read {c.surface} — neither can be read cleanly while the other runs</span></span>
+          <span className="mono dright">overlap {mmdd(c.start)} → {mmdd(c.end)} · {Math.ceil((c.end - c.start) / DAY)}d</span>
+        </div>
+      ))}
 
       <div className="dimlbl" style={{ marginTop: 26 }}>off the clock — open questions (no dates, still owed)</div>
       {openQs.length === 0 && <div className="docket-empty">no open questions</div>}

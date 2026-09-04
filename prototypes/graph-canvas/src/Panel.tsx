@@ -15,9 +15,10 @@ interface Props {
   onEdit: (id: string, patch: Partial<BetRecord>) => void
   onEditStrat: (id: string, patch: Partial<StratRecord>) => void
   onMoment: (kind: MomentKind, nodeId: string) => void
+  onDiff: (nodeId: string) => void
 }
 
-export function RecordPanel({ node, nodes, edges, onClose, onEdit, onEditStrat, onMoment }: Props) {
+export function RecordPanel({ node, nodes, edges, onClose, onEdit, onEditStrat, onMoment, onDiff }: Props) {
   const bet = (node.data as any).bet as BetRecord | undefined
   const strat = (node.data as any).strat as StratRecord | undefined
   const seq = (node.data as any).seq
@@ -33,7 +34,7 @@ export function RecordPanel({ node, nodes, edges, onClose, onEdit, onEditStrat, 
         <button className="close" onClick={onClose}>×</button>
       </div>
       {strat && <StratFace id={node.id} strat={strat} nodes={nodes} edges={edges} onMoment={onMoment} onEditStrat={onEditStrat} />}
-      {bet && <BetFace id={node.id} bet={bet} onEdit={onEdit} onMoment={onMoment} />}
+      {bet && <BetFace id={node.id} bet={bet} onEdit={onEdit} onMoment={onMoment} onDiff={onDiff} />}
     </aside>
   )
 }
@@ -71,7 +72,7 @@ function StratFace({ id, strat, nodes, edges, onMoment, onEditStrat }: { id: str
   )
 }
 
-function BetFace({ id, bet, onEdit, onMoment }: { id: string; bet: BetRecord; onEdit: Props['onEdit']; onMoment: Props['onMoment'] }) {
+function BetFace({ id, bet, onEdit, onMoment, onDiff }: { id: string; bet: BetRecord; onEdit: Props['onEdit']; onMoment: Props['onMoment']; onDiff: Props['onDiff'] }) {
   const draft = bet.status === 'draft' || bet.status === 'ready'
   return (
     <>
@@ -91,7 +92,7 @@ function BetFace({ id, bet, onEdit, onMoment }: { id: string; bet: BetRecord; on
           <button className="btn2 pri" style={{ marginTop: 14 }} onClick={() => onMoment('lock', id)}>Lock…</button>
         </>
       ) : (
-        <Cockpit id={id} bet={bet} onMoment={onMoment} />
+        <Cockpit id={id} bet={bet} onMoment={onMoment} onDiff={onDiff} />
       )}
       <p className="margin-note">{draft ? 'content is yours until the lock; then it is history' : 'the lock is structural, not polite'}</p>
     </>

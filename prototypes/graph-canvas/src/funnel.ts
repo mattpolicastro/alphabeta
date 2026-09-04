@@ -84,7 +84,10 @@ export function probit(p: number): number {
 
 // Per-arm n for a two-proportion z-test (R power.prop.test: pooled under H0,
 // unpooled under H1, no continuity correction, Bonferroni across arms).
-export function perArm(s: SampleSizeParams): number {
+export const perArm = (s: SampleSizeParams): number => Math.ceil(perArmExact(s))
+
+// The un-ceiled n — what detectableLift bisects on.
+export function perArmExact(s: SampleSizeParams): number {
   const p1 = s.baseline
   const p2 = s.mdeKind === 'relative' ? p1 * (1 + s.mde) : p1 + s.mde
   if (!(p1 > 0 && p1 < 1) || !(p2 > 0 && p2 < 1) || !(s.alpha > 0 && s.alpha < 1) || !(s.power > 0 && s.power < 1)) return NaN
@@ -95,7 +98,7 @@ export function perArm(s: SampleSizeParams): number {
   const delta = Math.abs(p2 - p1), pSum = p1 + p2
   const sdNull = Math.sqrt(pSum * (1 - pSum / 2))
   const sdAlt = Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))
-  return Math.ceil(((zA * sdNull + zB * sdAlt) / delta) ** 2)
+  return ((zA * sdNull + zB * sdAlt) / delta) ** 2
 }
 
 const fmt = (n: number) => n.toLocaleString('en-US')
@@ -133,6 +136,92 @@ const sampleSize: ToolParser = {
   },
 }
 
+// ── detectable-lift ──────────────────────────────────────────────────
+// The inverse of sample-size: the traffic is fixed, solve for the smallest lift.
+
+export interface DetectableLiftParams {
+  baseline: number
+  traffic: number // visitors per day, all arms
+  days: number
+  variants: number
+  tails: 1 | 2
+  alpha: number
+  power: number
+}
+
+export interface DetectableLiftResult {
+  mdeRelative: number
+  mdeAbsolute: number
+  perVariant: number
+  total: number
+}
+
+// Ported from packages/analysis/src/power.ts @ 25ec610 (detectableLift): bisection
+// on the relative lift, since the exact per-arm n is strictly decreasing in it.
+// Bracket (0, (1 − p1)/p1); closes at 1e-12 relative-lift units. Returns null where
+// the package throws (invalid inputs, or traffic that cannot detect any lift).
+export function detectableLift(d: DetectableLiftParams): DetectableLiftResult | null {
+  if (!(d.traffic > 0) || !(d.days > 0) || !(d.baseline > 0 && d.baseline < 1)) return null
+  const base: SampleSizeParams = { baseline: d.baseline, mde: 0.5, mdeKind: 'relative', variants: d.variants, tails: d.tails, alpha: d.alpha, power: d.power }
+  const maxLift = (1 - d.baseline) / d.baseline
+  if (Number.isNaN(perArmExact({ ...base, mde: Math.min(0.5, maxLift / 2) }))) return null
+  const perVariant = Math.ceil((d.traffic * d.days) / d.variants)
+  const nAt = (lift: number) => perArmExact({ ...base, mde: lift })
+  let hi = maxLift * (1 - 1e-12)
+  if (nAt(hi) > perVariant) return null
+  let lo = 0
+  for (let i = 0; i < 200 && hi - lo > 1e-12; i++) {
+    const mid = (lo + hi) / 2
+    if (nAt(mid) > perVariant) lo = mid
+    else hi = mid
+  }
+  return { mdeRelative: hi, mdeAbsolute: d.baseline * hi, perVariant, total: perVariant * d.variants }
+}
+
+function readDetectableLift(p: URLSearchParams): { ok: true; params: DetectableLiftParams } | { ok: false; error: string } {
+  const bad: string[] = []
+  const req = (k: string) => {
+    const n = num(p, k)
+    if (n === null || Number.isNaN(n)) bad.push(k)
+    return n ?? NaN
+  }
+  const baseline = req('baseline'), traffic = req('traffic'), days = req('days'), variants = req('variants'), tails = req('tails'), alpha = req('alpha'), power = req('power')
+  if (bad.length) return { ok: false, error: `detectable-lift: missing or non-numeric ${bad.join(', ')}` }
+  if (tails !== 1 && tails !== 2) return { ok: false, error: 'detectable-lift: tails must be 1 or 2' }
+  if (traffic <= 0 || days <= 0) return { ok: false, error: 'detectable-lift: traffic and days must be positive' }
+  // the lab rounds these on the way to the URL; do the same on the way in
+  return { ok: true, params: { baseline, traffic: Math.round(traffic), days: Math.round(days), variants: Math.round(variants), tails, alpha, power } }
+}
+
+// two decimals, trailing zeros dropped — the lab's own rendering
+const pct2 = (x: number) => `${(x * 100).toFixed(2).replace(/\.?0+$/, '')}%`
+
+export function detectableLiftMagnitude(d: DetectableLiftParams): string {
+  const r = detectableLift(d)
+  return r ? `≥ ${pct2(r.mdeRelative)} relative lift, the smallest this traffic can detect` : '? (inputs did not solve)'
+}
+
+export function detectableLiftOrigin(d: DetectableLiftParams): string {
+  const r = detectableLift(d)
+  if (!r) return 'sized in the lab · inputs did not solve (check baseline / traffic / power)'
+  return `sized in the lab · ${fmt(r.perVariant)} per arm over ${fmt(d.days)} days at ${fmt(d.traffic)}/day`
+}
+
+const detectableLiftTool: ToolParser = {
+  v: 1,
+  wired: true,
+  parse(p) {
+    const r = readDetectableLift(p)
+    if (r.ok === false) return r
+    const d = r.params
+    return {
+      ok: true,
+      params: { ...d } as LabSpec['params'],
+      bet: { direction: 'lift', magnitude: detectableLiftMagnitude(d), origin: detectableLiftOrigin(d), mechanism: '' },
+    }
+  },
+}
+
 // ── registry ─────────────────────────────────────────────────────────
 // Tools the funnel accepts, by `from=`. Stubs refuse with a message rather than
 // guess at a schema — another agent adds them as the lab tools ship.
@@ -144,10 +233,10 @@ const notYet = (tool: string): ToolParser => ({
 
 export const TOOLS: Record<string, ToolParser> = {
   'sample-size': sampleSize,
-  // STUB — /lab/srm: replace `notYet` with a parser once the tool's URL schema lands
+  'detectable-lift': detectableLiftTool,
+  // STUB — /lab/srm: its funnel semantics are undecided ("attach as evidence" to a
+  // running bet, not "lock as bet"), so it refuses rather than mint a draft.
   srm: notYet('srm'),
-  // STUB — /lab/detectable-lift: replace `notYet` with a parser once the tool's URL schema lands
-  'detectable-lift': notYet('detectable-lift'),
 }
 
 export const SUPPORTED_TOOLS = Object.keys(TOOLS).filter((k) => TOOLS[k].wired)

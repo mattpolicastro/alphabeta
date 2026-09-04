@@ -35,6 +35,7 @@ import { exportBoard, importBoard, downloadEnvelope, readJsonFile } from './port
 import { IntakeTray } from './IntakeTray'
 import { isFunnelLanding, parseFunnel } from './funnel'
 import { providerFor } from './llm'
+import { DocOverlay, type DocReq } from './Doc'
 
 const nodeTypes = { strat: StratNode, bet: BetNode, openfield: OpenFieldNode }
 
@@ -185,6 +186,8 @@ function Canvas() {
   const [relayUp, setRelayUp] = useState(true)
   const [view, setView] = useState<'canvas' | 'ledger' | 'docket'>('canvas')
   const [moment, setMoment] = useState<MomentReq | null>(null)
+  // documents are read-only projections opened in context — one overlay, never a route
+  const [doc, setDoc] = useState<DocReq | null>(null)
   // the walkthrough opens itself on first visit and stays closed once dismissed
   const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') && !isFunnelLanding(location.pathname, location.search) } catch { return false } })
   const closeTray = () => { setTray(false); try { localStorage.setItem('ab-loop-seen', '1') } catch {} }
@@ -602,7 +605,7 @@ function Canvas() {
   }, [patchBet, nodes])
   const doResolve = useCallback((id: string, p: any) => {
     patchBet(id, { status: 'resolved', outcome: p.outcome, actuals: p.actuals, call: p.call,
-      deviation: p.deviation || null } as any)
+      deviation: p.deviation || null, resolvedAt: new Date().toISOString() } as any)
   }, [patchBet])
   const doAnswer = useCallback((id: string, p: any) => {
     patchStrat(id, { answered: true, expectation: p.expectation, takeaway: p.takeaway, validity: p.validity,
@@ -649,6 +652,8 @@ function Canvas() {
       const b = nodes.find((n) => ['locked', 'running'].includes(betOf(n)?.status ?? ''))
       if (!b) return 'nothing is locked yet — commit a bet first'
       closeTray(); setView('canvas'); setSelectedId(b.id); setMoment({ kind: 'resolve', nodeId: b.id })
+    } else if (id === 'calibrate') {
+      closeTray(); setDoc({ kind: 'calibration' })
     }
   }
 
@@ -750,6 +755,8 @@ function Canvas() {
           {undo && <button className="btn2 sm" onClick={undoLast} title={`undo: ${undo.label}`}>↶ undo</button>}
           <button className="btn2 sm" onClick={clear}>clear board</button>
           <button className="btn2 sm" onClick={reset}>reset demo</button>
+          <button className={`btn2 sm ${doc?.kind === 'calibration' ? 'on' : ''}`} onClick={() => setDoc({ kind: 'calibration' })}>calibration</button>
+          <button className={`btn2 sm ${doc?.kind === 'graveyard' ? 'on' : ''}`} onClick={() => setDoc({ kind: 'graveyard' })}>graveyard</button>
           <button className={`btn2 sm ${intake ? 'on' : ''}`} onClick={() => { setIntake((v) => !v); if (!intake) closeTray() }}>intake</button>
           <button className={`btn2 sm ${tray ? 'on' : ''}`} onClick={() => { if (tray) closeTray(); else { setTray(true); setIntake(false) } }}>the loop</button>
         </span>
@@ -785,6 +792,7 @@ function Canvas() {
       ) : (
         <LedgerView nodes={nodes} onOpen={(id) => { setSelectedId(id) }}
           onMoment={(kind, nodeId) => setMoment({ kind, nodeId })}
+          onDiff={(id) => setDoc({ kind: 'diff', nodeId: id })}
           onStatus={(id, status) => patchBet(id, { status } as any)} />
       )}
 
@@ -799,7 +807,7 @@ function Canvas() {
 
       {selectedNode && (
         <RecordPanel node={selectedNode} nodes={nodes} edges={edges} onClose={() => setSelectedId(null)} onEdit={editBet} onEditStrat={patchStrat}
-          onMoment={(kind, nodeId) => setMoment({ kind, nodeId })} />
+          onMoment={(kind, nodeId) => setMoment({ kind, nodeId })} onDiff={(id) => setDoc({ kind: 'diff', nodeId: id })} />
       )}
 
       {tray && <LoopTray onClose={closeTray} onTry={tryStep} />}
@@ -817,6 +825,8 @@ function Canvas() {
           onAmend={doAmend}
         />
       )}
+
+      {doc && <DocOverlay req={doc} nodes={nodes} edges={edges} onClose={() => setDoc(null)} onOpen={(id) => { setDoc(null); setSelectedId(id) }} />}
 
       <Dock thread={dockThread} onSend={sendDock} relayUp={relayUp} error={dockError} />
     </div>

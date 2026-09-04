@@ -14,7 +14,7 @@ import { specLine } from './funnel'
 
 const CALL_FOR: Record<string, keyof BetRecord['criteria']> = { win: 'win', inconclusive: 'inconclusive', loss: 'loss' }
 
-export function Cockpit({ id, bet, onMoment }: { id: string; bet: BetRecord; onMoment: (kind: MomentKind, id: string) => void }) {
+export function Cockpit({ id, bet, onMoment, onDiff }: { id: string; bet: BetRecord; onMoment: (kind: MomentKind, id: string) => void; onDiff?: (id: string) => void }) {
   const resolved = bet.status === 'resolved'
   const date = bet.lockedAt ? bet.lockedAt.slice(0, 10) : null
   const rules = bet.decisionRules ?? compileCriteria(bet)
@@ -29,6 +29,7 @@ export function Cockpit({ id, bet, onMoment }: { id: string; bet: BetRecord; onM
         <div className="seal-row">
           <span className="seal">LOCKED{date ? ` · ${date}` : ''}</span>
           {bet.seal && <span className="seal-hash" title={bet.seal}>sha256 {bet.seal.slice(0, 8)}…{bet.seal.slice(-4)}</span>}
+          {onDiff && <button className="btn2 sm" style={{ marginLeft: 'auto', marginRight: 0 }} onClick={() => onDiff(id)}>view the diff →</button>}
         </div>
         <dl>
           <dt>instrument</dt>

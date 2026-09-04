@@ -63,6 +63,8 @@ export interface BetRecord {
   premortem?: string
   decisionRules?: DecisionRule[]
   lockedAt?: string
+  expectedResolveBy?: string // maturation, if declared at lock — the docket reads it (src/contentions.ts)
+  resolvedAt?: string
   seal?: string // SHA-256 of the committed fields at lock (src/lock.ts)
   actuals?: string
   call?: string
