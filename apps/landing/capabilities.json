@@ -34,7 +34,7 @@
     { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "live",    "question": "How big does my test need to be?" },
     { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "live",    "question": "What can I detect with the traffic I have?" },
     { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "live",    "question": "Is my split broken?" },
-    { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "planned", "question": "Did the change move the series?", "note": "causal-impact-wasm" },
+    { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "live",    "question": "Did the change move the series?", "note": "causal-impact-wasm; series-based, no URL contract yet" },
     { "id": "lab-results",         "kind": "lab", "name": "Results",                "status": "planned", "question": "What do my results say?" },
     { "id": "lab-sequential",      "kind": "lab", "name": "Sequential",             "status": "planned", "question": "Can I peek, and when do I stop?" },
     { "id": "lab-bayes",           "kind": "lab", "name": "Bayesian analysis",      "status": "planned", "question": "How likely is the treatment better?" }
