@@ -39,3 +39,36 @@
 - Cards never overlap; overlaps resolve along the packing axis only. Altitude/
   column is sacred. Auto-layout runs on demand and on node arrival — never on drag.
 - Cards are always opaque; state lives in color, never alpha.
+
+## Weight and color, settled 2026-09-04 (supersedes the hairline defaults)
+
+Two complaints drove this: the canvas felt *weightless* and *disorganized*.
+
+- **Structure and weight are separate decisions.** Structure = altitude lanes
+  washed over the retained graph paper (a `--band-wash`, so the grid reads
+  through). Weight = raised, borderless cards. Radius stays 0.
+- **No stroke ever uses `--ink`.** `--ink` is the text token; drawing borders
+  with it produces a hard white outline on the dark ground. Strokes use
+  `--edge` (hairline) / `--edge-strong` (drawn line).
+- **Dark ground drops, dark card rises** (`#191b1f` / `#272b31`) so elevation
+  has something to separate from — surface contrast carries the weight that a
+  border would.
+- **Type scale:** 10 eyebrow · 13 body · 15 title · 18 goal. Card titles are
+  Barlow Semi Condensed **500** at line-height 1.3; at 700 the title competed
+  with the ink header band and the mono fold-if.
+- **`--terra` means commitment and nothing else** — fold-if, lock seal,
+  elevation edge. It is never an outcome color.
+- **A loss is graphite, not red.** Killing an idea is a win here; a red card
+  punishes the behaviour the tool rewards. The alarm belongs on the
+  **deviation** line (`--incon`) — shipping anyway after the fold-if said stop.
+  Status color otherwise lives on the pill and a 3px card rule: win `--win`,
+  inconclusive `--incon`, loss `--loss` (graphite).
+- **Chrome is quieter than content.** The legend and minimap are raised paper,
+  not the black block, and sit clear of the bets row.
+- **Solution cards offer `place a bet` and `ask a question` at equal weight**,
+  neither accented. That pair is the discipline choice — spend a test or
+  answer it with a lookup — so making one louder biases the thing the tool
+  exists to check. ("Elevate to bet" is retired.)
+- **Baseline, not center, in any row mixing the wordmark with nav.** The
+  wordmark's box carries the β descender and uppercase tabs have none, so
+  centering boxes rides the wordmark visibly high.

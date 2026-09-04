@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta lab — what do my results say?</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff; --incon:#b58a1e;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a; --incon:#d4a63a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:baseline; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
+  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { align-self:center; font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── the tool ── */
+  .tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
+  form { padding:24px }
+  .field { margin-bottom:16px }
+  .field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
+  .field input[type=number], .field input[type=text] { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+  .field input:focus { outline:none; border-color:var(--ink) }
+  fieldset { border:0; margin:0; padding:0 }
+  .seg { display:flex; gap:0 }
+  .seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
+  .seg label + label { border-left:0 }
+  .seg input { position:absolute; opacity:0; width:0; height:0 }
+  .seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
+  .seg input:checked + label + input + label { border-left:0 }
+  .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
+
+  .arm { display:grid; gap:8px; margin-bottom:10px; padding:10px; border:1px dashed var(--line) }
+  .arm.binomial { grid-template-columns:1.2fr 1fr 1fr }
+  .arm.continuous { grid-template-columns:1.2fr .8fr .8fr .8fr }
+  .arm .field { margin:0 }
+  .arm .field input { font-size:14px; padding:7px 8px }
+  .arm .field label { font-size:10px }
+  .arm.control { border-style:solid }
+
+  .result { padding:24px }
+  .big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(30px,4.5vw,40px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+  .stat { margin-bottom:16px }
+  .stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+  .stat .ci { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim); font-variant-numeric:tabular-nums }
+  .assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
+  .err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
+  .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
+  .receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  .receipt .h { font-weight:600; color:var(--ink) }
+  .flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
+  details { margin-top:8px }
+  summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
+  details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
+  table { border-collapse:collapse; width:100%; margin:10px 0 }
+  td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
+  th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
+  @media (max-width:720px){ .tool { grid-template-columns:1fr } .arm.binomial, .arm.continuous { grid-template-columns:1fr 1fr } }
+
+  .cmp { margin:0 0 22px; padding:0 0 18px; border-bottom:1px solid var(--line) }
+  .cmp:last-of-type { border-bottom:0; padding-bottom:0 }
+  .cmp h3 { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; margin:0 0 10px }
+  .verdict { margin:0 0 16px; padding:14px; border:1.5px solid var(--ink); font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:17px; line-height:1.3 }
+  .verdict .k { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; margin-bottom:4px }
+  .verdict.inconclusive { border-color:var(--dim); color:var(--dim); border-style:dashed }
+  .verdict.treatment-worse { border-color:var(--incon); color:var(--incon) }
+  .verdict.treatment-worse .k { color:var(--incon) }
+  .control-line { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim); margin:0 0 16px; font-variant-numeric:tabular-nums }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/" aria-current="page">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">Results analysis · binomial &amp; continuous metrics</div>
+  <h1>What do my results say?</h1>
+  <p class="lede">Reads a finished test: whether each variant beat the control, by how much, and how sure you can be. Conversion rates get a two-proportion z-test; means get Welch's t-test. Up to three treatments against one control, Bonferroni-corrected.</p>
+</section>
+
+<section style="padding-top:0">
+  <div class="tool">
+    <form class="tile" id="form" autocomplete="off" onsubmit="return false">
+      <div class="two">
+        <div class="field">
+          <fieldset>
+            <legend>Metric</legend>
+            <div class="seg">
+              <input type="radio" name="metric" id="metric-b" value="binomial"><label for="metric-b">rate</label>
+              <input type="radio" name="metric" id="metric-c" value="continuous"><label for="metric-c">mean</label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="field">
+          <fieldset>
+            <legend>Arms</legend>
+            <div class="seg">
+              <input type="radio" name="count" id="count-2" value="2"><label for="count-2">2</label>
+              <input type="radio" name="count" id="count-3" value="3"><label for="count-3">3</label>
+              <input type="radio" name="count" id="count-4" value="4"><label for="count-4">4</label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <div id="arms"></div>
+      <p class="help" id="armhelp" style="margin:0 0 16px"></p>
+      <div class="two">
+        <div class="field">
+          <fieldset>
+            <legend>Tails</legend>
+            <div class="seg">
+              <input type="radio" name="tails" id="tails-1" value="1"><label for="tails-1">one</label>
+              <input type="radio" name="tails" id="tails-2" value="2"><label for="tails-2">two</label>
+            </div>
+          </fieldset>
+          <p class="help">One-tailed means you declared <em>treatment beats control</em> before looking; a worse treatment can only read as inconclusive.</p>
+        </div>
+        <div class="field">
+          <label for="alpha">Significance level (α)</label>
+          <input type="number" id="alpha" name="alpha" min="0" max="1" step="any" inputmode="decimal">
+          <p class="help">Family-wise. With three or four arms each comparison runs at α ÷ (arms − 1); intervals are at the same level.</p>
+        </div>
+      </div>
+    </form>
+
+    <div class="tile result" id="result" aria-live="polite">
+      <div id="out"></div>
+      <div class="actions">
+        <button class="cta" type="button" id="sealbtn">Seal this result</button>
+        <button class="cta" type="button" id="copybtn">Copy link</button><span class="flash" id="flash"></span>
+        <a class="cta primary" id="attachbtn" href="#">Attach to a bet →</a>
+        <div id="receipt" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>The URL is the contract — schema v1</summary>
+    <p class="muted" style="margin-top:10px">Every input lives in the query string, in this order, and nothing else does. A sealed result is <code>SHA-256</code> of the canonical string (everything after <code>?</code>), so the same inputs always produce the same receipt.</p>
+    <table>
+      <tr><th>key</th><th>value</th><th>notes</th></tr>
+      <tr><td><code>v</code></td><td><code>1</code></td><td>schema version; a breaking change bumps it</td></tr>
+      <tr><td><code>metric</code></td><td><code>binomial</code> | <code>continuous</code></td><td>conversion rate, or a mean</td></tr>
+      <tr><td><code>arms</code></td><td><code>name:n:conversions</code> or <code>name:n:mean:sd</code>, comma-separated</td><td>the first arm is the control; 2–4 arms; names are percent-encoded (<code>encodeURIComponent</code>), so <code>:</code> and <code>,</code> in a name are safe; <code>sd</code> is the sample standard deviation</td></tr>
+      <tr><td><code>tails</code></td><td><code>1</code> | <code>2</code></td><td>one-tailed is treatment &gt; control, declared in advance</td></tr>
+      <tr><td><code>alpha</code></td><td>proportion in (0, 1)</td><td>family-wise significance level; also the interval level, 1 − α</td></tr>
+    </table>
+    <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.05</code>, not <code>0.050</code>); lists use a literal comma. Binomial: two-proportion z-test with pooled variance under H₀ and no continuity correction — R <code>prop.test(correct = FALSE)</code>, statsmodels <code>proportions_ztest</code>; the interval on the difference is Wald with each arm's own variance, which is what <code>prop.test</code> reports. Continuous: Welch's t-test with Welch–Satterthwaite degrees of freedom — R <code>t.test(var.equal = FALSE)</code>, scipy <code>ttest_ind_from_stats(equal_var = False)</code>. Relative lift intervals are the delta method on <code>treatment / control − 1</code> with the same quantile. More than two arms: each treatment against the control at α ÷ (arms − 1), Bonferroni, the same split the sample-size tool sizes for. Departures from the reference tool on forwarddigital.org: it uses the unpooled z for the p-value, a pooled-variance z (not Welch) for means, divides the difference interval by the control rate for relative lift, and takes the one-tailed direction from the data.</p>
+    <p class="mono">Example: <code id="example"></code></p>
+  </details>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script type="module">
+  import { results } from './analysis.js'
+
+  const APP = 'https://app.alphabeta.tools/bet/attach'
+  const KEYS = ['v', 'metric', 'arms', 'tails', 'alpha']
+  const DEFAULTS = {
+    v: 1, metric: 'binomial', tails: 2, alpha: 0.05,
+    arms: [{ name: 'control', n: 10000, conversions: 890 }, { name: 'treatment', n: 10000, conversions: 920 }],
+  }
+  const CONTINUOUS_DEFAULTS = [{ name: 'control', n: 10000, mean: 2.57, sd: 19 }, { name: 'treatment', n: 10000, mean: 2.98, sd: 24 }]
+  const NAMES = ['control', 'treatment', 'treatment 2', 'treatment 3']
+
+  const $ = id => document.getElementById(id)
+  const form = $('form')
+
+  // ── state ⇄ URL ──
+  function num(s, fallback){ const n = Number(s); return s === null || s === '' || !Number.isFinite(n) ? fallback : n }
+  function parseArms(s, metric){
+    if (s === null || s === '') return null
+    return s.split(',').map(part => {
+      const f = part.split(':')
+      let name = f[0] ?? ''
+      try { name = decodeURIComponent(name) } catch (e) {}
+      return metric === 'continuous'
+        ? { name, n: num(f[1], NaN), mean: num(f[2], NaN), sd: num(f[3], NaN) }
+        : { name, n: num(f[1], NaN), conversions: num(f[2], NaN) }
+    })
+  }
+  function parse(qs){
+    const p = new URLSearchParams(qs)
+    const s = { ...DEFAULTS }
+    s.metric = p.get('metric') === 'continuous' ? 'continuous' : 'binomial'
+    s.arms = parseArms(p.get('arms'), s.metric) ?? (s.metric === 'continuous' ? CONTINUOUS_DEFAULTS : DEFAULTS.arms)
+    s.tails = num(p.get('tails'), s.tails) === 1 ? 1 : 2
+    s.alpha = num(p.get('alpha'), s.alpha)
+    return s
+  }
+  // Canonical: fixed key order, shortest exact decimal, arms joined by a literal comma, names percent-encoded.
+  const enc = v => String(Number(v))
+  function encArm(a, metric){
+    const fields = metric === 'continuous' ? [a.n, a.mean, a.sd] : [a.n, a.conversions]
+    return [encodeURIComponent(a.name)].concat(fields.map(enc)).join(':')
+  }
+  function canonical(s){
+    return KEYS.map(k => k + '=' + (k === 'arms' ? s.arms.map(a => encArm(a, s.metric)).join(',') : k === 'metric' ? s.metric : enc(s[k]))).join('&')
+  }
+
+  // ── state ⇄ form ──
+  const r = (x, d = 6) => Number.isFinite(x) ? String(Number(Number(x).toFixed(d))) : ''
+  function armRow(i, a, metric){
+    const cls = `arm ${metric} ${i === 0 ? 'control' : ''}`
+    const f = (k, label, type, extra = '') =>
+      `<div class="field"><label for="arm${i}-${k}">${label}</label><input type="${type}" id="arm${i}-${k}" name="arm${i}-${k}" ${extra}></div>`
+    return `<div class="${cls}" data-arm="${i}">` +
+      f('name', i === 0 ? 'control' : `arm ${i + 1}`, 'text', 'spellcheck="false"') +
+      (metric === 'continuous'
+        ? f('n', 'n', 'number', 'min="2" step="1" inputmode="numeric"') + f('mean', 'mean', 'number', 'step="any" inputmode="decimal"') + f('sd', 'sd', 'number', 'min="0" step="any" inputmode="decimal"')
+        : f('n', 'visitors', 'number', 'min="1" step="1" inputmode="numeric"') + f('conversions', 'conversions', 'number', 'min="0" step="1" inputmode="numeric"')) +
+      `</div>`
+  }
+  function buildArms(s){
+    $('arms').innerHTML = s.arms.map((a, i) => armRow(i, a, s.metric)).join('')
+    s.arms.forEach((a, i) => {
+      $(`arm${i}-name`).value = a.name
+      $(`arm${i}-n`).value = r(a.n, 0)
+      if (s.metric === 'continuous') { $(`arm${i}-mean`).value = r(a.mean, 10); $(`arm${i}-sd`).value = r(a.sd, 10) }
+      else $(`arm${i}-conversions`).value = r(a.conversions, 0)
+    })
+    $('armhelp').textContent = s.metric === 'continuous'
+      ? 'Per arm: units, the mean of the metric, and its sample standard deviation (n − 1). The first arm is the control.'
+      : 'Per arm: unique visitors and how many of them converted. The first arm is the control.'
+  }
+  function toForm(s){
+    $(s.metric === 'continuous' ? 'metric-c' : 'metric-b').checked = true
+    const count = Math.min(4, Math.max(2, s.arms.length))
+    $('count-' + count).checked = true
+    $('tails-' + s.tails).checked = true
+    $('alpha').value = r(s.alpha)
+    buildArms(s)
+  }
+  function fromForm(){
+    const f = new FormData(form)
+    const g = k => f.get(k)
+    const metric = g('metric') === 'continuous' ? 'continuous' : 'binomial'
+    const arms = [...document.querySelectorAll('#arms .arm')].map((row, i) => {
+      const name = String(g(`arm${i}-name`) ?? '').trim() || NAMES[i]
+      const n = num(g(`arm${i}-n`), NaN)
+      return metric === 'continuous'
+        ? { name, n, mean: num(g(`arm${i}-mean`), NaN), sd: num(g(`arm${i}-sd`), NaN) }
+        : { name, n, conversions: num(g(`arm${i}-conversions`), NaN) }
+    })
+    return { v: 1, metric, arms, tails: Number(g('tails')) === 1 ? 1 : 2, alpha: num(g('alpha'), NaN) }
+  }
+  // Metric or arm-count change rebuilds the rows, keeping what was typed where it still applies.
+  function reshape(){
+    const prev = fromForm()
+    const metric = prev.metric
+    const count = Number(new FormData(form).get('count')) || prev.arms.length
+    const template = metric === 'continuous' ? CONTINUOUS_DEFAULTS : DEFAULTS.arms
+    const arms = []
+    for (let i = 0; i < count; i++) {
+      const old = prev.arms[i]
+      const base = template[Math.min(i, template.length - 1)]
+      const a = { name: old ? old.name : NAMES[i], n: old && Number.isFinite(old.n) ? old.n : base.n }
+      if (metric === 'continuous') {
+        a.mean = old && Number.isFinite(old.mean) ? old.mean : base.mean
+        a.sd = old && Number.isFinite(old.sd) ? old.sd : base.sd
+      } else {
+        a.conversions = old && Number.isFinite(old.conversions) ? old.conversions : base.conversions
+      }
+      if (!old) a.name = NAMES[i]
+      arms.push(a)
+    }
+    buildArms({ ...prev, metric, arms })
+  }
+
+  // ── render ──
+  const fmt = n => n.toLocaleString('en-US')
+  const pct = (x, d = 2) => (x * 100).toFixed(d) + '%'
+  const pts = (x, d = 2) => (x * 100).toFixed(d) + ' pts'
+  const dec = (x, d = 4) => String(Number(x.toFixed(d)))
+  const signed = (x, f) => (x > 0 ? '+' : x < 0 ? '−' : '') + f(Math.abs(x))
+  const ci = ([lo, hi], f) => `${signed(lo, f)} to ${hi === Infinity ? '∞' : signed(hi, f)}`
+  const pv = p => p < 1e-4 ? p.toExponential(2) : p.toFixed(4)
+  function compute(s){
+    return results({ metric: s.metric, arms: s.arms, tails: s.tails, alpha: s.alpha })
+  }
+  function verdictText(c, alpha, name){
+    const a = r(alpha)
+    if (c.verdict === 'treatment-better') return `Significant — ${name} beats control at α = ${a}.`
+    if (c.verdict === 'treatment-worse') return `Significant — ${name} is worse than control at α = ${a}.`
+    return `Inconclusive — no significant difference at α = ${a}. Not evidence of no effect.`
+  }
+  const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]))
+  function render(s){
+    const out = $('out')
+    let res
+    try {
+      res = compute(s)
+    } catch (e) {
+      out.innerHTML = ''
+      const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message
+      out.appendChild(p)
+      return null
+    }
+    const bin = res.metric === 'binomial'
+    const c0 = res.comparisons[0].control
+    const stat = (k, v, extra = '') => `<div class="stat"><div class="k">${k}</div><div class="big">${v}</div>${extra ? `<div class="ci">${extra}</div>` : ''}</div>`
+    const level = pct(1 - res.alphaPerComparison, 1)
+    const blocks = res.comparisons.map(c => {
+      const t = c.treatment
+      const name = esc(t.name)
+      const rel = Number.isFinite(c.relativeLift)
+      return `<div class="cmp"><h3>${name} vs ${esc(c0.name)}</h3>` +
+        `<div class="verdict ${c.verdict}"><span class="k">p ${pv(c.pValue)} · ${bin ? 'z' : 't'} ${signed(bin ? c.z : c.t, x => dec(x, 3))}${bin ? '' : ` on ${dec(c.df, 1)} df`}</span>${verdictText(c, res.alphaPerComparison, name)}</div>` +
+        `<div class="two">` +
+          stat(bin ? `${name} rate` : `${name} mean`, bin ? pct(t.rate) : dec(t.mean), bin ? `${fmt(t.conversions)} of ${fmt(t.n)}` : `sd ${dec(t.sd)} · n ${fmt(t.n)}`) +
+          stat('relative lift', rel ? signed(c.relativeLift, x => pct(x)) : '—', rel ? `${level} CI ${ci(c.relativeCi, x => pct(x))}` : 'control is zero') +
+        `</div>` +
+        stat(bin ? 'absolute lift' : 'difference in means', bin ? signed(c.absoluteLift, x => pts(x)) : signed(c.absoluteLift, x => dec(x)), `${level} CI ${ci(c.absoluteCi, bin ? (x => pts(x)) : (x => dec(x)))}`) +
+        `</div>`
+    }).join('')
+    const a0 = res.comparisons[0].assumptions
+    const assump =
+      `test        ${a0.test}\n` +
+      `arms        ${res.arms} · ${res.comparisonCount} comparison${res.comparisonCount > 1 ? 's' : ''} vs control · correction ${res.correction}\n` +
+      `alpha       ${r(res.alpha)} family-wise → ${r(res.alphaPerComparison)} per comparison · ${res.tails === 1 ? 'one-tailed, treatment > control' : 'two-tailed'}\n` +
+      `interval    ${a0.ci}\n` +
+      `rel. lift   ${a0.relativeCi}\n` +
+      res.comparisons.map(c => `${c.treatment.name.padEnd(11).slice(0, 11)} p ${c.pValue.toExponential(6)}${res.comparisonCount > 1 ? ` (×${res.comparisonCount} = ${c.pAdjusted.toExponential(6)})` : ''} → ${c.verdict}`).join('\n')
+    out.innerHTML =
+      `<p class="control-line">${esc(c0.name)}: ${bin ? `${pct(c0.rate)} · ${fmt(c0.conversions)} of ${fmt(c0.n)}` : `mean ${dec(c0.mean)} · sd ${dec(c0.sd)} · n ${fmt(c0.n)}`}</p>` +
+      blocks +
+      `<pre class="assump">${esc(assump)}</pre>`
+    return res
+  }
+
+  // ── seal / copy / attach ──
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  function flash(msg){
+    const f = $('flash'); f.textContent = msg
+    setTimeout(() => { if (f.textContent === msg) f.textContent = '' }, 1800)
+  }
+  let state = parse(location.search)
+  let last = null
+
+  function sync(){
+    const q = canonical(state)
+    history.replaceState(null, '', location.pathname + '?' + q)
+    $('attachbtn').href = APP + '?from=results&' + q
+    $('example').textContent = location.pathname + '?' + q
+    $('receipt').hidden = true
+  }
+  function update(){
+    state = fromForm()
+    last = render(state)
+    sync()
+  }
+
+  form.addEventListener('input', e => {
+    if (e.target.name === 'metric' || e.target.name === 'count') reshape()
+    update()
+  })
+  form.addEventListener('change', update)
+
+  $('copybtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); flash('copied') }
+    catch (e) { flash('copy failed — select the URL bar') }
+  })
+
+  $('sealbtn').addEventListener('click', async () => {
+    if (!last) { flash('fix the inputs first'); return }
+    const q = canonical(state)
+    const hash = await sha256(q)
+    const when = new Date().toISOString()
+    const rc = $('receipt')
+    rc.className = 'receipt'
+    rc.textContent = ''
+    const h = document.createElement('div'); h.className = 'h'; h.textContent = 'sha256  ' + hash
+    rc.appendChild(h)
+    const lines = last.comparisons.map(c =>
+      `result  ${c.treatment.name} vs ${c.control.name}: ${Number.isFinite(c.relativeLift) ? signed(c.relativeLift, x => pct(x)) : '—'} (${ci(c.relativeCi, x => pct(x))}) · p ${c.pValue.toExponential(4)} · ${c.verdict} at α ${r(last.alphaPerComparison)}`)
+    rc.appendChild(document.createTextNode(
+      `sealed  ${when}\n` +
+      `of      ?${q}\n` +
+      lines.join('\n') +
+      `\nlab     results v1 · ${last.comparisons[0].assumptions.test}`
+    ))
+    rc.hidden = false
+  })
+
+  toForm(state)
+  last = render(state)
+  sync()
+</script>
+</body>
+</html>

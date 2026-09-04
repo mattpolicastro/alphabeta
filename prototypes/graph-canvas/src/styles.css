@@ -439,12 +439,14 @@ header .reset + .reset { margin-left: 0; }
 textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 
 /* nav (product register, light) */
-.prodbar { display:flex; align-items:center; gap:18px; padding:10px 16px; background:var(--paper-raised); border-bottom:1px solid var(--line) }
+/* baseline, not center: the wordmark's box carries the β descender and the tabs
+   have none, so centering boxes rides the wordmark visibly high */
+.prodbar { display:flex; align-items:baseline; gap:18px; padding:10px 16px; background:var(--paper-raised); border-bottom:1px solid var(--line) }
 .prodbar .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:16px; letter-spacing:-.02em }
 .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:12px; letter-spacing:.08em; text-transform:uppercase; background:none; border:none; color:var(--fade); padding:6px 2px; cursor:pointer; border-bottom:2px solid transparent }
 .tab.on { color:var(--ink); border-bottom-color:var(--terra) }
 .tab:disabled { opacity:.4; cursor:default }
-.prodbar .right { margin-left:auto; display:flex; gap:8px }
+.prodbar .right { margin-left:auto; display:flex; gap:8px; align-self:center }
 
 /* moment overlay */
 .moment-scrim { position:fixed; inset:0; background:rgba(38,40,44,.45); z-index:40; display:flex; align-items:center; justify-content:center }
@@ -703,3 +705,21 @@ textarea.finput { resize:vertical; font-family:'Barlow',sans-serif }
 
 /* the dock's scope hint: what the facilitator sees — pencil register */
 .dock-scope { flex:1 1 100%; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--fade); border-left:1px dashed var(--fade); padding-left:6px; line-height:1.4; margin-top:2px }
+
+/* evidence from the lab (src/attach.ts): mono rows in ink, seal state in pencil — evidence is not a commitment, no accent */
+.evid-row { font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:6px 0; border-bottom:1px dashed var(--line); line-height:1.5 }
+.evid-row .evid-head { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; color:var(--fade) }
+.evid-row .evid-head a { color:var(--ink); text-decoration:none; border-bottom:1px dashed var(--ink); margin-left:auto }
+.evid-row .evid-head a:hover { border-bottom-style:solid }
+.evid-row .evid-seal { color:var(--fade) }
+.evid-row .evid-seal.verified { color:var(--ink) }
+.evid-row .evid-verdict { color:var(--ink); font-weight:600 }
+/* the attach overlay: summary on top, then the picker */
+.attach-summary { padding:10px 12px; border:1px solid var(--ink); background:var(--paper-raised); margin-top:4px }
+.attach-empty { margin-top:16px; font-size:12.5px; color:var(--ink) }
+.attach-row { display:flex; gap:12px; align-items:baseline; width:100%; text-align:left; font-family:inherit; font-size:12.5px; color:var(--ink); background:var(--paper-raised); border:1px solid var(--line); padding:9px 12px; margin-bottom:6px; cursor:pointer }
+.attach-row:hover, .attach-row:focus { outline:none; border-color:var(--ink) }
+.attach-row .attach-tag { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--fade); white-space:nowrap }
+.attach-row .attach-change { flex:1 }
+.attach-row .attach-meta { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--fade); white-space:nowrap }
+.diff td.reported { white-space:pre-line }

@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta lab — can I peek, and when do I stop?</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:baseline; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
+  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .cta.small { padding:7px 14px; font-size:12px; margin:0 }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { align-self:center; font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── the tool ── */
+  .tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
+  form { padding:24px }
+  .field { margin-bottom:16px }
+  .field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
+  .field input[type=number], .field select { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+  .field input[type=number]:focus, .field select:focus { outline:none; border-color:var(--ink) }
+  .field .unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); pointer-events:none }
+  .field .wrap { position:relative }
+  fieldset { border:0; margin:0; padding:0 }
+  .seg { display:flex; gap:0 }
+  .seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
+  .seg label + label { border-left:0 }
+  .seg input { position:absolute; opacity:0; width:0; height:0 }
+  .seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
+  .seg input:checked + label + input + label { border-left:0 }
+  .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .four { display:grid; grid-template-columns:repeat(4,1fr); gap:10px }
+  .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
+
+  .result { padding:24px }
+  .big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(34px,5vw,46px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+  .mid { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:26px; line-height:1.1; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+  .stat { margin-bottom:18px }
+  .stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+  .assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
+  .err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
+  .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
+  .receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  .receipt .h { font-weight:600; color:var(--ink) }
+  .flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
+  details { margin-top:8px }
+  summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
+  details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
+  table { border-collapse:collapse; width:100%; margin:10px 0 }
+  td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
+  th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .scroll { overflow-x:auto }
+  .chart { width:100%; height:auto; display:block; margin:6px 0 4px }
+  .chart text { font-family:'IBM Plex Mono',monospace; font-size:10px; fill:var(--dim) }
+  .chart .axis { stroke:var(--line); stroke-width:1 }
+  .chart .up { stroke:var(--accent); stroke-width:1.5; fill:none }
+  .chart .lo { stroke:var(--ink); stroke-width:1.5; fill:none; stroke-dasharray:4 3 }
+  .chart .band { fill:var(--accent); opacity:.10 }
+  .chart .band2 { fill:var(--ink); opacity:.06 }
+  .chart .fixed { stroke:var(--dim); stroke-dasharray:2 3 }
+  .chart .obs { fill:var(--ink); stroke:var(--card); stroke-width:1.5 }
+  .chart .obsline { stroke:var(--ink); stroke-width:1; fill:none; opacity:.6 }
+  .rule { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); margin:8px 0 0; padding:10px 0 0; border-top:1px solid var(--line) }
+  .rule b { color:var(--ink); font-weight:600 }
+  .cp-entered td { background:var(--ground) }
+  .cp-dec { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase }
+  .cp-dec.reject { color:var(--accent) }
+  .xbtn { font-family:'IBM Plex Mono',monospace; font-size:12px; background:none; border:1px solid var(--line); color:var(--dim); padding:2px 8px; cursor:pointer }
+  .xbtn:hover { border-color:var(--ink); color:var(--ink) }
+  .verdict { margin-top:14px; padding:14px; border:1px solid var(--line); background:var(--ground) }
+  .verdict .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+  @media (max-width:720px){ .tool { grid-template-columns:1fr } .four { grid-template-columns:1fr 1fr } }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/" aria-current="page">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">Sequential</div>
+  <h1>Can I peek, and when do I stop?</h1>
+  <p class="lede">Plan a test you are allowed to look at while it runs — a fixed number of looks, each with a boundary that keeps the overall error rate honest — then score each look as the data comes in.</p>
+  <p class="rule" id="rule"></p>
+</section>
+
+<section style="padding-top:0" id="plan">
+  <h2>Plan</h2>
+  <div class="tool">
+    <form class="tile" id="form" autocomplete="off" onsubmit="return false">
+      <div class="field">
+        <label for="baseline">Baseline conversion rate</label>
+        <div class="wrap"><input type="number" id="baseline" name="baseline" min="0" max="100" step="any" inputmode="decimal"><span class="unit">%</span></div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="mde">Minimum detectable effect</label>
+          <div class="wrap"><input type="number" id="mde" name="mde" min="0" step="any" inputmode="decimal"><span class="unit">% relative</span></div>
+        </div>
+        <div class="field">
+          <label for="margin">Non-inferiority margin <span style="text-transform:none;letter-spacing:0">(one-tailed)</span></label>
+          <div class="wrap"><input type="number" id="margin" name="margin" min="0" max="99" step="any" inputmode="decimal"><span class="unit">%</span></div>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="k">Looks, incl. the final one</label>
+          <input type="number" id="k" name="k" min="2" max="20" step="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <fieldset><legend>Tails</legend>
+            <div class="seg">
+              <input type="radio" name="tails" id="t1" value="1"><label for="t1">one</label>
+              <input type="radio" name="tails" id="t2" value="2"><label for="t2">two</label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="alpha">Alpha (α)</label>
+          <input type="number" id="alpha" name="alpha" min="0" max="1" step="any" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="power">Power (1 − β)</label>
+          <input type="number" id="power" name="power" min="0" max="1" step="any" inputmode="decimal">
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="variants">Variants, incl. control</label>
+          <input type="number" id="variants" name="variants" min="2" max="20" step="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="traffic">Daily traffic <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <div class="wrap"><input type="number" id="traffic" name="traffic" min="0" step="1" inputmode="numeric" placeholder="—"><span class="unit">/ day</span></div>
+        </div>
+      </div>
+      <p class="help" id="help"></p>
+    </form>
+
+    <div class="tile result" id="result" aria-live="polite">
+      <div id="out"></div>
+      <div class="actions">
+        <button class="cta" type="button" id="sealbtn">Seal this plan</button>
+        <button class="cta" type="button" id="copybtn">Copy link</button><span class="flash" id="flash"></span>
+        <a class="cta" id="lockbtn" href="#">Lock as bet →</a>
+        <div id="receipt" hidden></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0" id="analyze">
+  <h2>Analyze</h2>
+  <p class="muted">Enter what each look observed. Un-entered looks between and after your entries are re-spaced to fit; the ones you entered are never moved and their boundaries are re-computed at the sample you actually had.</p>
+  <div class="tool">
+    <form class="tile" id="cpform" autocomplete="off" onsubmit="return false">
+      <div class="field">
+        <label for="cp-index">Which look is this?</label>
+        <select id="cp-index"></select>
+      </div>
+      <div class="four">
+        <div class="field"><label for="cp-cv">Control visitors</label><input type="number" id="cp-cv" min="1" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="cp-cc">Control conv.</label><input type="number" id="cp-cc" min="0" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="cp-tv">Treatment visitors</label><input type="number" id="cp-tv" min="1" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="cp-tc">Treatment conv.</label><input type="number" id="cp-tc" min="0" step="1" inputmode="numeric"></div>
+      </div>
+      <button class="cta small" type="button" id="cp-add">Add this look</button>
+      <span class="flash" id="cp-flash"></span>
+      <p class="help" id="cp-help" style="margin-top:12px"></p>
+    </form>
+
+    <div class="tile result" id="cpresult" aria-live="polite">
+      <div id="cpout"></div>
+      <div class="actions">
+        <button class="cta" type="button" id="clearbtn">Clear looks</button>
+        <a class="cta" id="attachbtn" href="#">Attach to a bet →</a>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>The URL is the contract — schema v1</summary>
+    <p class="muted" style="margin-top:10px">Every input lives in the query string, in this order, and nothing else does. A sealed plan is <code>SHA-256</code> of the canonical string of the plan keys alone (everything after <code>?</code> up to and excluding <code>looks</code>), so the same plan always produces the same receipt whatever was observed later.</p>
+    <table>
+      <tr><th>key</th><th>value</th><th>notes</th></tr>
+      <tr><td><code>v</code></td><td><code>1</code></td><td>schema version; a breaking change bumps it</td></tr>
+      <tr><td><code>baseline</code></td><td>proportion in (0, 1)</td><td>10% is <code>0.1</code></td></tr>
+      <tr><td><code>mde</code></td><td>positive proportion</td><td>relative lift: <code>0.1</code> = +10%, so 10% becomes 11%</td></tr>
+      <tr><td><code>margin</code></td><td>proportion in [0, 1)</td><td>non-inferiority margin, relative; one-tailed only; omitted when 0</td></tr>
+      <tr><td><code>variants</code></td><td>integer ≥ 2</td><td>arms including control; above 2 adds the Holm-adjusted efficacy bounds</td></tr>
+      <tr><td><code>tails</code></td><td><code>1</code> | <code>2</code></td><td>one-tailed gets a non-binding futility bound; two-tailed is symmetric and binding</td></tr>
+      <tr><td><code>alpha</code></td><td>proportion in (0, 1)</td><td>1 − confidence; split per side when two-tailed</td></tr>
+      <tr><td><code>power</code></td><td>proportion in (0, 1)</td><td></td></tr>
+      <tr><td><code>k</code></td><td>integer 2–20</td><td>planned looks, including the final analysis</td></tr>
+      <tr><td><code>traffic</code></td><td>positive integer, optional</td><td>daily visitors across all arms; omitted when blank</td></tr>
+      <tr><td><code>looks</code></td><td><code>i:cv:cc:tv:tc,…</code></td><td>entered looks, ascending by look number <code>i</code>: control visitors, control conversions, treatment visitors, treatment conversions; omitted when none</td></tr>
+    </table>
+    <p class="mono">Numbers are written in their shortest exact decimal form. Method: gsDesign — test.type 4 (one-tailed: binding efficacy bound, non-binding futility bound) or 2 (two-tailed symmetric), Kim-DeMets power spending α·t³ for efficacy and β·t² for futility, sample size from <code>power.prop.test</code>; the z-statistic is <code>testBinomial</code> (Miettinen–Nurminen), the sequential p-value <code>gsProbability</code>, the interval <code>ciBinomial</code> at the look's efficacy bound. The same calls, in the same order, as Merritt Aho's sequential-test-app on forwarddigital.org/tools.</p>
+    <p class="mono">Example: <code id="example"></code></p>
+  </details>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script type="module">
+  import { sequentialPlan, sequentialAnalyze } from './analysis.js'
+
+  const APP = 'https://app.alphabeta.tools'
+  const PLAN_KEYS = ['v', 'baseline', 'mde', 'margin', 'variants', 'tails', 'alpha', 'power', 'k', 'traffic']
+  const DEFAULTS = { v: 1, baseline: 0.1, mde: 0.1, margin: 0, variants: 2, tails: 1, alpha: 0.05, power: 0.8, k: 4, traffic: null, looks: [] }
+
+  const $ = id => document.getElementById(id)
+  const form = $('form')
+
+  // ── state ⇄ URL ──
+  function num(s, fallback){ const n = Number(s); return s === null || s === '' || !Number.isFinite(n) ? fallback : n }
+  function parseLooks(str){
+    if (!str) return []
+    const out = []
+    for (const part of str.split(',')) {
+      const f = part.split(':').map(x => Math.round(Number(x)))
+      if (f.length !== 5 || f.some(x => !Number.isFinite(x))) continue
+      out.push({ index: f[0], cv: f[1], cc: f[2], tv: f[3], tc: f[4] })
+    }
+    return out.sort((a, b) => a.index - b.index)
+  }
+  function parse(qs){
+    const p = new URLSearchParams(qs)
+    const s = { ...DEFAULTS }
+    s.baseline = num(p.get('baseline'), s.baseline)
+    s.mde = num(p.get('mde'), s.mde)
+    s.margin = num(p.get('margin'), 0)
+    s.variants = Math.round(num(p.get('variants'), s.variants))
+    s.tails = num(p.get('tails'), s.tails) === 2 ? 2 : 1
+    s.alpha = num(p.get('alpha'), s.alpha)
+    s.power = num(p.get('power'), s.power)
+    s.k = Math.round(num(p.get('k'), s.k))
+    const t = num(p.get('traffic'), null)
+    s.traffic = t && t > 0 ? Math.round(t) : null
+    s.looks = parseLooks(p.get('looks'))
+    return s
+  }
+  // Canonical: fixed key order, shortest exact decimal; margin only when > 0, traffic only when set, looks only when any.
+  function canonicalPlan(s){
+    return PLAN_KEYS
+      .filter(k => (k !== 'traffic' || s.traffic) && (k !== 'margin' || s.margin > 0))
+      .map(k => k + '=' + String(Number(s[k]))).join('&')
+  }
+  function canonical(s){
+    const looks = s.looks.map(l => [l.index, l.cv, l.cc, l.tv, l.tc].join(':')).join(',')
+    return canonicalPlan(s) + (looks ? '&looks=' + looks : '')
+  }
+  const toCheckpoints = looks => looks.map(l => ({ index: l.index, control: { visitors: l.cv, conversions: l.cc }, treatment: { visitors: l.tv, conversions: l.tc } }))
+
+  // ── state ⇄ form ── (the form speaks percent; the URL and the core speak proportions)
+  const r = (x, d = 6) => String(Number(Number(x).toFixed(d)))
+  function toForm(s){
+    $('baseline').value = r(s.baseline * 100)
+    $('mde').value = r(s.mde * 100)
+    $('margin').value = s.margin > 0 ? r(s.margin * 100) : ''
+    $('variants').value = s.variants
+    ;(s.tails === 2 ? $('t2') : $('t1')).checked = true
+    $('alpha').value = r(s.alpha)
+    $('power').value = r(s.power)
+    $('k').value = s.k
+    $('traffic').value = s.traffic ?? ''
+  }
+  function fromForm(){
+    const f = new FormData(form)
+    const g = k => f.get(k)
+    const t = num(g('traffic'), null)
+    const m = num(g('margin'), 0)
+    return {
+      v: 1,
+      baseline: num(g('baseline'), NaN) / 100,
+      mde: num(g('mde'), NaN) / 100,
+      margin: m > 0 ? m / 100 : 0,
+      variants: Math.round(num(g('variants'), NaN)),
+      tails: g('tails') === '2' ? 2 : 1,
+      alpha: num(g('alpha'), NaN),
+      power: num(g('power'), NaN),
+      k: Math.round(num(g('k'), NaN)),
+      traffic: t && t > 0 ? Math.round(t) : null,
+      looks: state.looks,
+    }
+  }
+
+  // ── render ──
+  const fmt = n => Math.round(n).toLocaleString('en-US')
+  const pct = (x, d = 1) => (x * 100).toFixed(d).replace(/\.?0+$/, '') + '%'
+  const f3 = x => x.toFixed(3)
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+  function chart(plan, cps){
+    const W = 420, H = 210, L = 38, R = 12, T = 14, B = 26
+    const xs = [0, ...plan.looks.map(l => l.total)]
+    const xmax = Math.max(plan.maxTotal, plan.fixed.total, ...cps.map(c => c.control.visitors + c.treatment.visitors)) * 1.04
+    const zs = [...plan.looks.map(l => l.upper), ...plan.looks.map(l => l.lower), ...cps.map(c => c.z), 0]
+    const zmaxAbs = Math.min(6, Math.max(3, ...zs.map(Math.abs)) + 0.4)
+    const ymin = plan.assumptions.testType === 2 ? -zmaxAbs : Math.min(-2, Math.min(...zs) - 0.4)
+    const ymax = zmaxAbs
+    const X = v => L + (v / xmax) * (W - L - R)
+    const Y = z => T + ((ymax - z) / (ymax - ymin)) * (H - T - B)
+    const pts = (key) => plan.looks.map(l => `${X(l.total).toFixed(1)},${Y(l[key]).toFixed(1)}`).join(' ')
+    const up = pts('upper'), lo = pts('lower')
+    const first = plan.looks[0], last = plan.looks[plan.looks.length - 1]
+    const bandUp = `${X(first.total).toFixed(1)},${Y(ymax).toFixed(1)} ${up} ${X(last.total).toFixed(1)},${Y(ymax).toFixed(1)}`
+    const bandLo = `${X(first.total).toFixed(1)},${Y(ymin).toFixed(1)} ${lo} ${X(last.total).toFixed(1)},${Y(ymin).toFixed(1)}`
+    let yt = ''
+    for (let z = Math.ceil(ymin); z <= Math.floor(ymax); z++) {
+      yt += `<line class="axis" x1="${L}" x2="${W - R}" y1="${Y(z).toFixed(1)}" y2="${Y(z).toFixed(1)}"${z === 0 ? ' style="stroke:var(--dim)"' : ''}/><text x="${L - 6}" y="${(Y(z) + 3).toFixed(1)}" text-anchor="end">${z}</text>`
+    }
+    const xt = plan.looks.map(l => `<text x="${X(l.total).toFixed(1)}" y="${H - 8}" text-anchor="middle">${fmt(l.total)}</text>`).join('')
+    const obs = cps.map(c => {
+      const n = c.control.visitors + c.treatment.visitors
+      return `<circle class="obs" cx="${X(n).toFixed(1)}" cy="${Y(c.z).toFixed(1)}" r="4"><title>look ${c.index}: z = ${c.z.toFixed(3)}</title></circle>`
+    }).join('')
+    const obsline = cps.length > 1 ? `<polyline class="obsline" points="${cps.map(c => `${X(c.control.visitors + c.treatment.visitors).toFixed(1)},${Y(c.z).toFixed(1)}`).join(' ')}"/>` : ''
+    const fx = X(plan.fixed.total)
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Decision boundaries by sample size">
+      <polygon class="band" points="${bandUp}"/><polygon class="band2" points="${bandLo}"/>${yt}
+      <line class="fixed" x1="${fx.toFixed(1)}" x2="${fx.toFixed(1)}" y1="${T}" y2="${H - B}"/><text x="${(fx + 4).toFixed(1)}" y="${T + 9}">fixed n</text>
+      <polyline class="up" points="${up}"/><polyline class="lo" points="${lo}"/>${obsline}${obs}${xt}
+      <text x="${L}" y="${H - 8}" text-anchor="start" style="opacity:.6">0</text><text x="${W - R}" y="${T - 4}" text-anchor="end">z</text></svg>`
+  }
+
+  function renderPlan(plan, cps, revised){
+    const s = state
+    const stat = (k, v, cls = 'big') => `<div class="stat"><div class="k">${k}</div><div class="${cls}">${v}</div></div>`
+    const a = plan.assumptions
+    const rows = plan.looks.map(l => `<tr><td class="n">${l.index}</td><td class="n">${pct(l.timing, 0)}</td><td class="n">${fmt(l.perVariant)}</td><td class="n">${fmt(l.total)}</td>${s.traffic ? `<td class="n">${fmt(l.days)}</td>` : ''}<td class="n">${f3(l.lower)}</td><td class="n">${f3(l.upper)}</td></tr>`).join('')
+    const holm = plan.holm ? `<h3 style="margin-top:14px">Holm-adjusted efficacy bounds, ${s.variants - 1} comparisons</h3><p class="help" style="margin:0 0 6px">Rank the comparisons' z-scores high to low by absolute value; the first column applies to the largest. The futility bound does not apply under multiple comparisons.</p><div class="scroll"><table><tr><th class="n">look</th>${plan.holm[0].map((_, i) => `<th class="n">z-${i + 1}</th>`).join('')}</tr>${plan.holm.map((row, i) => `<tr><td class="n">${i + 1}</td>${row.map(z => `<td class="n">${f3(z)}</td>`).join('')}</tr>`).join('')}</table></div>` : ''
+    const assump = [
+      `method        ${a.method}`,
+      `rates         control ${pct(a.controlRate, 3)}  →  treatment ${pct(a.treatmentRate, 3)}${s.margin > 0 ? `  (margin ${pct(s.margin, 2)} below baseline ${pct(s.baseline, 3)})` : ''}`,
+      `tails ${s.tails}   α ${r(s.alpha)} (${r(a.alphaPerSide)} per side)   power ${r(s.power)}   looks ${s.k}`,
+      `fixed n       ${plan.fixed.nExact.toFixed(2)} per arm  ·  z_α ${a.zAlpha.toFixed(6)}  z_β ${a.zBeta.toFixed(6)}  δ ${a.delta.toExponential(6)}`,
+      `achieved      power ${plan.power.toFixed(6)}  ·  α spent ${plan.alphaSpent.toFixed(6)}${a.testType === 4 ? ' (efficacy bound alone)' : ''}`,
+      `expected n    ${fmt(plan.expected.null * 2)} total under H0  ·  ${fmt(plan.expected.alt * 2)} total at the MDE`,
+      `per look      ${plan.looks.map(l => `${l.perVariant.toFixed(2)}`).join(' | ')}`,
+      `upper         ${plan.looks.map(l => l.upper.toFixed(6)).join(' | ')}`,
+      `lower         ${plan.looks.map(l => l.lower.toFixed(6)).join(' | ')}`,
+    ].join('\n')
+    $('out').innerHTML =
+      stat('Maximum sample, both arms', fmt(plan.maxTotal)) +
+      `<div class="two">` +
+      stat('Per variant, max', fmt(plan.maxPerVariant), 'mid') +
+      stat('vs fixed horizon', `${fmt(plan.fixed.total)} <span class="muted" style="font-size:16px">(+${pct(plan.increase, 1)})</span>`, 'mid') +
+      `</div>` +
+      (s.traffic ? stat(`Max runtime at ${fmt(s.traffic)}/day`, `${fmt(plan.looks[plan.looks.length - 1].days)} days`, 'mid') : '') +
+      chart(plan, cps) +
+      `<div class="scroll"><table><tr><th class="n">look</th><th class="n">timing</th><th class="n">per variant</th><th class="n">total</th>${s.traffic ? '<th class="n">days</th>' : ''}<th class="n">${s.tails === 1 ? 'futility z' : 'lower z'}</th><th class="n">efficacy z</th></tr>${rows}</table></div>` +
+      (revised ? `<p class="help">Re-timed to the entered looks: un-entered looks now sit at ${revised.map(fmt).join(', ')} per variant.</p>` : '') +
+      holm +
+      `<pre class="assump">${esc(assump)}</pre>`
+  }
+
+  function renderAnalyze(an){
+    const s = state
+    const k = s.k
+    const byIndex = new Map(an ? an.checkpoints.map(c => [c.index, c]) : [])
+    const looksRows = []
+    for (let i = 1; i <= k; i++) {
+      const l = an ? an.plan.looks[i - 1] : null
+      const c = byIndex.get(i)
+      const entered = s.looks.find(x => x.index === i)
+      if (c) {
+        const dec = c.outcome === 'reject' ? 'stop · reject' : c.outcome === 'option' ? 'futility · may stop' : c.outcome === 'inconclusive' ? 'stop · inconclusive' : 'continue'
+        looksRows.push(`<tr class="cp-entered"><td class="n">${i}</td><td class="n">${fmt(c.control.visitors)} / ${fmt(c.control.conversions)}</td><td class="n">${fmt(c.treatment.visitors)} / ${fmt(c.treatment.conversions)}</td><td class="n">${pct(c.lift, 2)}</td><td class="n"><b>${c.z.toFixed(3)}</b></td><td class="n">${f3(c.lower)} · ${f3(c.upper)}</td><td><span class="cp-dec${c.outcome === 'reject' ? ' reject' : ''}">${dec}</span></td><td><button class="xbtn" type="button" data-rm="${i}" aria-label="remove look ${i}">×</button></td></tr>`)
+      } else if (entered) {
+        looksRows.push(`<tr class="cp-entered"><td class="n">${i}</td><td class="n">${fmt(entered.cv)} / ${fmt(entered.cc)}</td><td class="n">${fmt(entered.tv)} / ${fmt(entered.tc)}</td><td class="n muted">—</td><td class="n muted">not scored</td><td class="n muted">after a stop</td><td></td><td><button class="xbtn" type="button" data-rm="${i}" aria-label="remove look ${i}">×</button></td></tr>`)
+      } else {
+        looksRows.push(`<tr><td class="n">${i}</td><td class="n muted" colspan="3">planned at ${l ? fmt(l.total) : '—'} total</td><td class="n muted">—</td><td class="n">${l ? f3(l.lower) + ' · ' + f3(l.upper) : ''}</td><td class="muted cp-dec">pending</td><td></td></tr>`)
+      }
+    }
+    let verdict = ''
+    if (an && an.verdict) {
+      const v = an.verdict
+      const conf = v.confidence !== null ? `<div class="stat"><div class="k">Sequential p-value · confidence</div><div class="mid">${v.pValue.toExponential(3)} · ${pct(v.confidence, 2)}</div></div>` : ''
+      verdict = `<div class="verdict"><div class="k">Verdict at look ${v.checkpoint} · ${esc(v.status)}</div><div class="mid" style="margin:6px 0 10px">${{ reject: 'Stop — reject the null', continue: 'Continue', option: 'Futility crossed — you may stop', inconclusive: 'Stop — inconclusive' }[v.outcome]}</div><p style="margin:0 0 12px">${esc(v.advice)}</p>${conf}<div class="stat" style="margin:0"><div class="k">Lift with interval at the look's efficacy bound</div><div class="mid">${pct(v.ci.mean, 2)} <span class="muted" style="font-size:16px">[${pct(v.ci.lower, 2)}, ${pct(v.ci.upper, 2)}]</span></div></div></div>`
+    }
+    $('cpout').innerHTML =
+      `<div class="scroll"><table><tr><th class="n">look</th><th class="n">control v / c</th><th class="n">treatment v / c</th><th class="n">lift</th><th class="n">z</th><th class="n">bounds</th><th>decision</th><th></th></tr>${looksRows.join('')}</table></div>` +
+      (an ? verdict : `<p class="err">Fix the plan first — the looks are scored against it.</p>`) +
+      (s.looks.length === 0 ? `<p class="help">No looks entered yet. The plan above is the commitment; once a look goes in, the evidence is what you attach.</p>` : '')
+    $('cpout').querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+      state.looks = state.looks.filter(l => l.index !== Number(b.dataset.rm))
+      update()
+    }))
+    // the picker offers un-entered looks, next one first
+    const sel = $('cp-index')
+    const cur = sel.value
+    sel.innerHTML = ''
+    const entered = new Set(s.looks.map(l => l.index))
+    for (let i = 1; i <= k; i++) if (!entered.has(i)) { const o = document.createElement('option'); o.value = i; o.textContent = `look ${i} of ${k}`; sel.appendChild(o) }
+    if (cur && !entered.has(Number(cur)) && Number(cur) <= k) sel.value = cur
+    $('cp-add').disabled = sel.options.length === 0
+    $('cp-help').textContent = sel.options.length === 0 ? 'Every planned look is entered.' : 'Cumulative counts at the look, per arm. Total visitors must exceed every earlier look.'
+  }
+
+  function render(s){
+    $('help').textContent = s.tails === 1
+      ? 'One-tailed: an efficacy bound (binding) and a futility bound (non-binding — you may keep going).'
+      : 'Two-tailed: symmetric bounds, both binding. The margin does not apply.'
+    $('margin').disabled = s.tails === 2
+    let an = null
+    try {
+      const looks = s.looks.filter(l => l.index >= 1 && l.index <= s.k)
+      an = sequentialAnalyze({ baseline: s.baseline, mde: s.mde, margin: s.margin, variants: s.variants, tails: s.tails, alpha: s.alpha, power: s.power, k: s.k, traffic: s.traffic }, toCheckpoints(looks))
+    } catch (e) {
+      // A bad look must not blank the plan: fall back to the plan alone and say why.
+      let plan = null
+      try { plan = sequentialPlan({ baseline: s.baseline, mde: s.mde, margin: s.margin, variants: s.variants, tails: s.tails, alpha: s.alpha, power: s.power, k: s.k, traffic: s.traffic }) } catch (e2) {
+        $('out').innerHTML = `<p class="err">${esc(e2.message)}</p>`
+        renderAnalyze(null)
+        return null
+      }
+      renderPlan(plan, [], null)
+      renderAnalyze(null)
+      $('cpout').insertAdjacentHTML('afterbegin', `<p class="err" style="margin-bottom:12px">${esc(e.message)}</p>`)
+      return { plan, an: null }
+    }
+    renderPlan(an.plan, an.checkpoints, an.checkpoints.length ? an.revisedPerVariant : null)
+    renderAnalyze(an)
+    return { plan: an.plan, an }
+  }
+
+  // ── seal / copy / lock / attach ──
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  function flash(msg, id = 'flash'){
+    const f = $(id); f.textContent = msg
+    setTimeout(() => { if (f.textContent === msg) f.textContent = '' }, 1800)
+  }
+  let state = parse(location.search)
+  let last = null
+
+  function sync(){
+    const q = canonical(state)
+    const qp = canonicalPlan(state)
+    history.replaceState(null, '', location.pathname + '?' + q)
+    $('lockbtn').href = APP + '/bet/new?from=sequential&' + qp
+    $('attachbtn').href = APP + '/bet/attach?from=sequential&' + q
+    $('example').textContent = location.pathname + '?' + q
+    $('receipt').hidden = true
+    // Two CTAs, one accent: the plan is the commitment until a look is entered; then the evidence is what you attach.
+    const hasLooks = state.looks.length > 0
+    $('lockbtn').classList.toggle('primary', !hasLooks)
+    $('attachbtn').classList.toggle('primary', hasLooks)
+    $('rule').innerHTML = hasLooks
+      ? `<b>${state.looks.length} look${state.looks.length === 1 ? '' : 's'} entered</b> — this page is now evidence: <b>attach it</b> to the bet that was locked from the plan. Lock as bet is still here, unaccented, for a plan you have not committed yet.`
+      : `<b>No looks entered</b> — this page is a plan: <b>lock it as a bet</b> before the first look. Attach to a bet takes the accent once a look goes in.`
+  }
+  function update(){
+    state = fromForm()
+    last = render(state)
+    sync()
+  }
+
+  form.addEventListener('input', update)
+  form.addEventListener('change', update)
+
+  $('cp-add').addEventListener('click', () => {
+    const idx = Math.round(num($('cp-index').value, NaN))
+    const cv = Math.round(num($('cp-cv').value, NaN)), cc = Math.round(num($('cp-cc').value, NaN))
+    const tv = Math.round(num($('cp-tv').value, NaN)), tc = Math.round(num($('cp-tc').value, NaN))
+    if ([idx, cv, cc, tv, tc].some(x => !Number.isFinite(x))) { flash('fill in all four counts', 'cp-flash'); return }
+    // Validate before committing: adding a look never rewrites prior rows, so a bad one must not get in.
+    const trial = [...state.looks.filter(l => l.index !== idx), { index: idx, cv, cc, tv, tc }].sort((a, b) => a.index - b.index)
+    try {
+      sequentialAnalyze({ baseline: state.baseline, mde: state.mde, margin: state.margin, variants: state.variants, tails: state.tails, alpha: state.alpha, power: state.power, k: state.k }, toCheckpoints(trial))
+    } catch (e) { flash(e.message, 'cp-flash'); return }
+    state.looks = trial
+    ;['cp-cv', 'cp-cc', 'cp-tv', 'cp-tc'].forEach(id => { $(id).value = '' })
+    update()
+  })
+  $('clearbtn').addEventListener('click', () => { state.looks = []; update() })
+
+  $('copybtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); flash('copied') }
+    catch (e) { flash('copy failed — select the URL bar') }
+  })
+
+  $('sealbtn').addEventListener('click', async () => {
+    if (!last || !last.plan) { flash('fix the inputs first'); return }
+    const q = canonicalPlan(state)
+    const hash = await sha256(q)
+    const when = new Date().toISOString()
+    const p = last.plan
+    const rc = $('receipt')
+    rc.className = 'receipt'
+    rc.textContent = ''
+    const h = document.createElement('div'); h.className = 'h'; h.textContent = 'sha256  ' + hash
+    rc.appendChild(h)
+    rc.appendChild(document.createTextNode(
+      `sealed  ${when}\n` +
+      `of      ?${q}\n` +
+      `plan    ${state.k} looks · max ${fmt(p.maxTotal)} total (${fmt(p.maxPerVariant)} per variant) · fixed ${fmt(p.fixed.total)}\n` +
+      `bounds  efficacy ${p.looks.map(l => l.upper.toFixed(3)).join(' ')}\n` +
+      `        ${state.tails === 1 ? 'futility' : 'lower   '} ${p.looks.map(l => l.lower.toFixed(3)).join(' ')}\n` +
+      `lab     sequential v1 · gsDesign test.type ${p.assumptions.testType} · sfPower 3/2`
+    ))
+    rc.hidden = false
+  })
+
+  toForm(state)
+  last = render(state)
+  sync()
+</script>
+</body>
+</html>

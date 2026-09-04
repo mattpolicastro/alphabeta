@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta lab — how likely is the treatment better?</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff; --incon:#b58a1e;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a; --incon:#d4a63a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:baseline; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
+  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { align-self:center; font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── the tool ── */
+  .tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
+  form { padding:24px }
+  .field { margin-bottom:16px }
+  .field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
+  .field input[type=number], .field input[type=text] { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+  .field input:focus { outline:none; border-color:var(--ink) }
+  .field .unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); pointer-events:none }
+  .field .wrap { position:relative }
+  fieldset { border:0; margin:0; padding:0 }
+  .seg { display:flex; gap:0 }
+  .seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
+  .seg label + label { border-left:0 }
+  .seg input { position:absolute; opacity:0; width:0; height:0 }
+  .seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
+  .seg input:checked + label + input + label { border-left:0 }
+  .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
+
+  .arm { display:grid; gap:8px; grid-template-columns:1.2fr 1fr 1fr; margin-bottom:10px; padding:10px; border:1px dashed var(--line) }
+  .arm .field { margin:0 }
+  .arm .field input { font-size:14px; padding:7px 8px }
+  .arm .field label { font-size:10px }
+  .arm.control { border-style:solid }
+
+  .result { padding:24px }
+  .big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(30px,4.5vw,40px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+  .stat { margin-bottom:16px }
+  .stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+  .stat .ci { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim); font-variant-numeric:tabular-nums }
+  .assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
+  .err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
+  .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
+  .receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  .receipt .h { font-weight:600; color:var(--ink) }
+  .flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
+  details { margin-top:8px }
+  summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
+  details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
+  table { border-collapse:collapse; width:100%; margin:10px 0 }
+  td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
+  th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
+  @media (max-width:720px){ .tool { grid-template-columns:1fr } .arm { grid-template-columns:1fr 1fr } }
+
+  .cmp { margin:0 0 22px; padding:0 0 18px; border-bottom:1px solid var(--line) }
+  .cmp:last-of-type { border-bottom:0; padding-bottom:0 }
+  .cmp h3 { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; margin:0 0 10px }
+  .read { margin:0 0 16px; padding:14px; border:1.5px solid var(--ink); font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:17px; line-height:1.3 }
+  .read .k { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; margin-bottom:4px }
+  .read.undecided { border-color:var(--dim); color:var(--dim); border-style:dashed }
+  .read.not-worse { border-style:dashed }
+  .read.control-better { border-color:var(--incon); color:var(--incon) }
+  .read.control-better .k { color:var(--incon) }
+  .control-line { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim); margin:0 0 16px; font-variant-numeric:tabular-nums }
+  .probs { width:100%; margin:0 0 14px; font-variant-numeric:tabular-nums }
+  .probs td, .probs th { font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:5px 8px 5px 0 }
+  .probs td.n, .probs th.n { text-align:right }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/" aria-current="page">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">Bayesian analysis · Beta–Binomial</div>
+  <h1>How likely is the treatment better?</h1>
+  <p class="lede">The same conversion test read the Bayesian way: the probability each variant beats the control, what you stand to lose by choosing it, and a credible interval on the lift. Computed exactly by integrating the posterior — no simulation, so the same inputs always give the same digits.</p>
+</section>
+
+<section style="padding-top:0">
+  <div class="tool">
+    <form class="tile" id="form" autocomplete="off" onsubmit="return false">
+      <div class="field">
+        <fieldset>
+          <legend>Arms</legend>
+          <div class="seg">
+            <input type="radio" name="count" id="count-2" value="2"><label for="count-2">2</label>
+            <input type="radio" name="count" id="count-3" value="3"><label for="count-3">3</label>
+            <input type="radio" name="count" id="count-4" value="4"><label for="count-4">4</label>
+          </div>
+        </fieldset>
+      </div>
+      <div id="arms"></div>
+      <p class="help" style="margin:0 0 16px">Per arm: unique visitors and how many of them converted. The first arm is the control.</p>
+      <div class="two">
+        <div class="field">
+          <label for="a">Prior α</label>
+          <input type="number" id="a" name="a" min="0" step="any" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="b">Prior β</label>
+          <input type="number" id="b" name="b" min="0" step="any" inputmode="decimal">
+        </div>
+      </div>
+      <p class="help" style="margin:-8px 0 16px">Beta(α, β) on every arm's rate. Beta(1, 1) is flat — the reference tool's choice, and the default. Beta(α, β) reads as α prior conversions among α + β prior visitors, so Beta(2, 20) says "about 9%, from 22 visitors' worth of belief".</p>
+      <div class="two">
+        <div class="field">
+          <label for="threshold">Threshold of caring</label>
+          <div class="wrap"><input type="number" id="threshold" name="threshold" min="0" step="any" inputmode="decimal"><span class="unit">% lift</span></div>
+          <p class="help">A relative lift smaller than this is not worth acting on. 0 asks only "is it better at all?"</p>
+        </div>
+        <div class="field">
+          <label for="level">Credible level</label>
+          <input type="number" id="level" name="level" min="0" max="1" step="any" inputmode="decimal">
+          <p class="help">Mass in the interval on lift, and the bar a probability must clear for the one-line read.</p>
+        </div>
+      </div>
+    </form>
+
+    <div class="tile result" id="result" aria-live="polite">
+      <div id="out"></div>
+      <div class="actions">
+        <button class="cta" type="button" id="sealbtn">Seal this result</button>
+        <button class="cta" type="button" id="copybtn">Copy link</button><span class="flash" id="flash"></span>
+        <a class="cta primary" id="attachbtn" href="#">Attach to a bet →</a>
+        <div id="receipt" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>The URL is the contract — schema v1</summary>
+    <p class="muted" style="margin-top:10px">Every input lives in the query string, in this order, and nothing else does. A sealed result is <code>SHA-256</code> of the canonical string (everything after <code>?</code>), so the same inputs always produce the same receipt.</p>
+    <table>
+      <tr><th>key</th><th>value</th><th>notes</th></tr>
+      <tr><td><code>v</code></td><td><code>1</code></td><td>schema version; a breaking change bumps it</td></tr>
+      <tr><td><code>arms</code></td><td><code>name:visitors:conversions</code>, comma-separated</td><td>the first arm is the control; 2–4 arms; names are percent-encoded (<code>encodeURIComponent</code>)</td></tr>
+      <tr><td><code>a</code>, <code>b</code></td><td>positive numbers</td><td>Beta(a, b) prior, shared by every arm</td></tr>
+      <tr><td><code>threshold</code></td><td>proportion in [0, 1)</td><td>threshold of caring as a relative lift: <code>0.015</code> is 1.5%</td></tr>
+      <tr><td><code>level</code></td><td>proportion in (0, 1)</td><td>credible level for the interval on lift and the bar for the read</td></tr>
+    </table>
+    <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.95</code>, not <code>0.950</code>); lists use a literal comma. Model: independent Beta–Binomial per arm, posterior <code>Beta(a + conversions, b + visitors − conversions)</code>. Every quantity is a one-dimensional integral over the control's posterior density, evaluated by composite Gauss–Legendre quadrature (96 panels × 12 points over the 10⁻¹⁵-quantile range of the density) with the regularized incomplete beta function for the CDF: <code>P(lift &gt; t) = ∫ f_c(x) · [1 − F_t((1 + t) x)] dx</code>; expected loss <code>E[max(0, p_c − p_t)] = ∫ f_c(x) · [x F_t(x) − μ_t F_{t+}(x)] dx</code>; <code>P(best) = ∫ f_i(x) · Π F_j(x) dx</code>. The equal-tailed credible interval on lift inverts <code>P(lift &gt; t)</code> by bisection. No sampling and no seed anywhere. The reference tool on forwarddigital.org (Merritt Aho) draws 100 000 <code>rbeta</code> samples with the same Beta(1, 1) prior and reports the same three probabilities; its numbers land within its own Monte Carlo noise of these (±0.5 points at 100 000 draws), which is why it rounds to whole percents. It omits expected loss on purpose; we include it, pairwise against the control.</p>
+    <p class="mono">Example: <code id="example"></code></p>
+  </details>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script type="module">
+  import { bayes } from './analysis.js'
+
+  const APP = 'https://app.alphabeta.tools/bet/attach'
+  const KEYS = ['v', 'arms', 'a', 'b', 'threshold', 'level']
+  const DEFAULTS = {
+    v: 1, a: 1, b: 1, threshold: 0.015, level: 0.95,
+    arms: [{ name: 'control', n: 10000, conversions: 950 }, { name: 'treatment', n: 10010, conversions: 980 }],
+  }
+  const NAMES = ['control', 'treatment', 'treatment 2', 'treatment 3']
+
+  const $ = id => document.getElementById(id)
+  const form = $('form')
+
+  // ── state ⇄ URL ──
+  function num(s, fallback){ const n = Number(s); return s === null || s === '' || !Number.isFinite(n) ? fallback : n }
+  function parseArms(s){
+    if (s === null || s === '') return null
+    return s.split(',').map(part => {
+      const f = part.split(':')
+      let name = f[0] ?? ''
+      try { name = decodeURIComponent(name) } catch (e) {}
+      return { name, n: num(f[1], NaN), conversions: num(f[2], NaN) }
+    })
+  }
+  function parse(qs){
+    const p = new URLSearchParams(qs)
+    const s = { ...DEFAULTS }
+    s.arms = parseArms(p.get('arms')) ?? s.arms
+    for (const k of ['a', 'b', 'threshold', 'level']) s[k] = num(p.get(k), s[k])
+    return s
+  }
+  const enc = v => String(Number(v))
+  const encArm = a => [encodeURIComponent(a.name), enc(a.n), enc(a.conversions)].join(':')
+  function canonical(s){
+    return KEYS.map(k => k + '=' + (k === 'arms' ? s.arms.map(encArm).join(',') : enc(s[k]))).join('&')
+  }
+
+  // ── state ⇄ form ──
+  const r = (x, d = 6) => Number.isFinite(x) ? String(Number(Number(x).toFixed(d))) : ''
+  function armRow(i){
+    const f = (k, label, type, extra = '') =>
+      `<div class="field"><label for="arm${i}-${k}">${label}</label><input type="${type}" id="arm${i}-${k}" name="arm${i}-${k}" ${extra}></div>`
+    return `<div class="arm ${i === 0 ? 'control' : ''}" data-arm="${i}">` +
+      f('name', i === 0 ? 'control' : `arm ${i + 1}`, 'text', 'spellcheck="false"') +
+      f('n', 'visitors', 'number', 'min="1" step="1" inputmode="numeric"') +
+      f('conversions', 'conversions', 'number', 'min="0" step="1" inputmode="numeric"') +
+      `</div>`
+  }
+  function buildArms(arms){
+    $('arms').innerHTML = arms.map((a, i) => armRow(i)).join('')
+    arms.forEach((a, i) => {
+      $(`arm${i}-name`).value = a.name
+      $(`arm${i}-n`).value = r(a.n, 0)
+      $(`arm${i}-conversions`).value = r(a.conversions, 0)
+    })
+  }
+  function toForm(s){
+    $('count-' + Math.min(4, Math.max(2, s.arms.length))).checked = true
+    $('a').value = r(s.a)
+    $('b').value = r(s.b)
+    $('threshold').value = r(s.threshold * 100, 4)
+    $('level').value = r(s.level)
+    buildArms(s.arms)
+  }
+  function fromForm(){
+    const f = new FormData(form)
+    const g = k => f.get(k)
+    const arms = [...document.querySelectorAll('#arms .arm')].map((row, i) => ({
+      name: String(g(`arm${i}-name`) ?? '').trim() || NAMES[i],
+      n: num(g(`arm${i}-n`), NaN),
+      conversions: num(g(`arm${i}-conversions`), NaN),
+    }))
+    const thr = num(g('threshold'), NaN)
+    return { v: 1, arms, a: num(g('a'), NaN), b: num(g('b'), NaN), threshold: Number.isFinite(thr) ? thr / 100 : NaN, level: num(g('level'), NaN) }
+  }
+  function reshape(){
+    const prev = fromForm()
+    const count = Number(new FormData(form).get('count')) || prev.arms.length
+    const arms = []
+    for (let i = 0; i < count; i++) {
+      const old = prev.arms[i]
+      const base = DEFAULTS.arms[Math.min(i, 1)]
+      arms.push(old ? old : { name: NAMES[i], n: base.n, conversions: base.conversions })
+    }
+    buildArms(arms)
+  }
+
+  // ── render ──
+  const fmt = n => n.toLocaleString('en-US')
+  const pct = (x, d = 2) => (x * 100).toFixed(d) + '%'
+  const pts = (x, d = 3) => (x * 100).toFixed(d) + ' pts'
+  const signed = (x, f) => (x > 0 ? '+' : x < 0 ? '−' : '') + f(Math.abs(x))
+  const ci = ([lo, hi], f) => `${signed(lo, f)} to ${signed(hi, f)}`
+  const prob = p => p >= 0.9995 ? '>99.9%' : p < 0.0005 ? '<0.1%' : pct(p, 1)
+  const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]))
+  function compute(s){
+    return bayes({ arms: s.arms, prior: { a: s.a, b: s.b }, threshold: s.threshold, level: s.level })
+  }
+  function readText(t, res, name){
+    const bar = pct(res.level, 0)
+    const thr = pct(res.threshold, 2)
+    switch (t.read) {
+      case 'beats-control-above-threshold': return `${name} beats control by more than ${thr} with at least ${bar} probability.`
+      case 'beats-control': return `${name} beats control with at least ${bar} probability${res.threshold > 0 ? `, but the lift is not ${bar}-sure to clear ${thr}` : ''}.`
+      case 'not-worse': return `${name} is not worse than control by more than ${thr} with at least ${bar} probability — a wash, not a win.`
+      case 'control-better': return `Control beats ${name} with at least ${bar} probability.`
+      default: return `Undecided — no probability clears ${bar}. Keep collecting, or lower the bar and say so.`
+    }
+  }
+  function render(s){
+    const out = $('out')
+    let res
+    try {
+      res = compute(s)
+    } catch (e) {
+      out.innerHTML = ''
+      const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message
+      out.appendChild(p)
+      return null
+    }
+    const c = res.control
+    const multi = res.treatments.length > 1
+    const stat = (k, v, extra = '') => `<div class="stat"><div class="k">${k}</div><div class="big">${v}</div>${extra ? `<div class="ci">${extra}</div>` : ''}</div>`
+    const level = pct(res.level, 0)
+    const thr = pct(res.threshold, 2)
+    const blocks = res.treatments.map(t => {
+      const name = esc(t.name)
+      const rows =
+        (res.threshold > 0 ? `<tr><td>P(lift &gt; ${thr})</td><td class="n">${prob(t.pAboveThreshold)}</td></tr><tr><td>P(lift &gt; −${thr})</td><td class="n">${prob(t.pNotWorse)}</td></tr>` : '') +
+        (multi ? `<tr><td>P(best of all ${res.treatments.length + 1} arms)</td><td class="n">${prob(t.pBest)}</td></tr>` : '') +
+        `<tr><td>expected loss if control is kept</td><td class="n">${pts(t.lossIfControlKept)}</td></tr>`
+      return `<div class="cmp"><h3>${name} vs ${esc(c.name)}</h3>` +
+        `<div class="read ${t.read}"><span class="k">${pct(t.rate)} · ${fmt(t.conversions)} of ${fmt(t.n)} · posterior ${level} CI ${pct(t.posterior.ci[0])}–${pct(t.posterior.ci[1])}</span>${readText(t, res, name)}</div>` +
+        `<div class="two">` +
+          stat(`P(${name} beats control)`, prob(t.pBeatsControl)) +
+          stat(`expected loss if chosen`, pts(t.lossIfChosen), c.rate > 0 ? `${pct(t.lossIfChosen / c.rate)} of the control rate` : '') +
+        `</div>` +
+        stat('relative lift', Number.isFinite(t.relativeLift) ? signed(t.relativeLift, x => pct(x)) : '—', `${level} credible interval ${ci(t.relativeCi, x => pct(x))}`) +
+        (rows ? `<table class="probs">${rows}</table>` : '') +
+        `</div>`
+    }).join('')
+    const a = res.assumptions
+    const assump =
+      `model     ${a.model}\n` +
+      `method    ${a.method}\n` +
+      `prior     ${a.prior}\n` +
+      `loss      ${a.loss}\n` +
+      `interval  ${a.interval}\n` +
+      `caring    lift of ${r(res.threshold)} (${thr}); read clears at ${r(res.level)}\n` +
+      `control   Beta(${r(c.posterior.a)}, ${r(c.posterior.b)}) · mean ${c.posterior.mean.toFixed(6)}${multi ? ` · P(best) ${c.pBest.toFixed(6)}` : ''}\n` +
+      res.treatments.map(t => `${t.name.padEnd(9).slice(0, 9)} Beta(${r(t.posterior.a)}, ${r(t.posterior.b)}) · P(>control) ${t.pBeatsControl.toFixed(6)} · loss ${t.lossIfChosen.toExponential(4)} · lift CI [${t.relativeCi[0].toFixed(6)}, ${t.relativeCi[1].toFixed(6)}]`).join('\n')
+    out.innerHTML =
+      `<p class="control-line">${esc(c.name)}: ${pct(c.rate)} · ${fmt(c.conversions)} of ${fmt(c.n)} · posterior ${level} CI ${pct(c.posterior.ci[0])}–${pct(c.posterior.ci[1])}${multi ? ` · P(best) ${prob(c.pBest)}` : ''}</p>` +
+      blocks +
+      `<pre class="assump">${esc(assump)}</pre>`
+    return res
+  }
+
+  // ── seal / copy / attach ──
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  function flash(msg){
+    const f = $('flash'); f.textContent = msg
+    setTimeout(() => { if (f.textContent === msg) f.textContent = '' }, 1800)
+  }
+  let state = parse(location.search)
+  let last = null
+
+  function sync(){
+    const q = canonical(state)
+    history.replaceState(null, '', location.pathname + '?' + q)
+    $('attachbtn').href = APP + '?from=bayes&' + q
+    $('example').textContent = location.pathname + '?' + q
+    $('receipt').hidden = true
+  }
+  function update(){
+    state = fromForm()
+    last = render(state)
+    sync()
+  }
+
+  form.addEventListener('input', e => {
+    if (e.target.name === 'count') reshape()
+    update()
+  })
+  form.addEventListener('change', update)
+
+  $('copybtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); flash('copied') }
+    catch (e) { flash('copy failed — select the URL bar') }
+  })
+
+  $('sealbtn').addEventListener('click', async () => {
+    if (!last) { flash('fix the inputs first'); return }
+    const q = canonical(state)
+    const hash = await sha256(q)
+    const when = new Date().toISOString()
+    const rc = $('receipt')
+    rc.className = 'receipt'
+    rc.textContent = ''
+    const h = document.createElement('div'); h.className = 'h'; h.textContent = 'sha256  ' + hash
+    rc.appendChild(h)
+    const lines = last.treatments.map(t =>
+      `result  ${t.name} vs ${last.control.name}: P(better) ${t.pBeatsControl.toFixed(4)} · loss ${t.lossIfChosen.toExponential(3)} · lift ${signed(t.relativeLift, x => pct(x))} (${ci(t.relativeCi, x => pct(x))}) · ${t.read}`)
+    rc.appendChild(document.createTextNode(
+      `sealed  ${when}\n` +
+      `of      ?${q}\n` +
+      lines.join('\n') +
+      `\nlab     bayes v1 · Beta–Binomial, exact integration, ${last.assumptions.prior}`
+    ))
+    rc.hidden = false
+  })
+
+  toForm(state)
+  last = render(state)
+  sync()
+</script>
+</body>
+</html>
