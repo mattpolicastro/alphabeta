@@ -30,13 +30,14 @@
     { "id": "data-export", "kind": "data", "name": "Export / import board", "status": "live", "note": "versioned envelope with migration chain; the precondition for keeping real bets here" },
     { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock seals the committed fields (SHA-256) and the cockpit re-verifies; no shareable receipt yet" },
     { "id": "funnel-lock-as-bet", "kind": "data", "name": "Lock as bet (from the lab)", "status": "live", "note": "app.alphabeta.tools/bet/new?from=<tool>&v=1&… mints a draft with the lab inputs on the instrument; supports sample-size and detectable-lift (srm is a registered stub that refuses rather than guess — its funnel is attach-as-evidence, undecided)" },
+    { "id": "funnel-attach-evidence", "kind": "data", "name": "Attach to a bet (from the lab)", "status": "partial", "note": "app.alphabeta.tools/bet/attach?from=<tool>&v=1&… attaches a lab result to a locked, running, or resolved bet as evidence — recomputed in-app from the URL, seal checked against the app's own SHA-256 of the canonical string; never mints, never inside the seal", "gap": "srm wired; results, bayes, sequential land as their pages finish" },
 
     { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "live",    "question": "How big does my test need to be?" },
     { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "live",    "question": "What can I detect with the traffic I have?" },
     { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "live",    "question": "Is my split broken?" },
     { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "live",    "question": "Did the change move the series?", "note": "causal-impact-wasm; series-based, no URL contract yet" },
-    { "id": "lab-results",         "kind": "lab", "name": "Results",                "status": "planned", "question": "What do my results say?" },
-    { "id": "lab-sequential",      "kind": "lab", "name": "Sequential",             "status": "planned", "question": "Can I peek, and when do I stop?" },
-    { "id": "lab-bayes",           "kind": "lab", "name": "Bayesian analysis",      "status": "planned", "question": "How likely is the treatment better?" }
+    { "id": "lab-results",         "kind": "lab", "name": "Results",                "status": "live",    "question": "What do my results say?", "note": "two-proportion z (R prop.test) and Welch t; 2–4 arms, Bonferroni; attach-as-evidence CTA" },
+    { "id": "lab-sequential",      "kind": "lab", "name": "Sequential",             "status": "live",    "question": "Can I peek, and when do I stop?", "note": "gsDesign port (test.type 4/2, Kim-DeMets 3/2), R-oracled to 1e-9; plan → lock, looks → attach", "gap": "the app compares a z rounded to 2 dp; this scores the exact z — a difference only at the fourth decimal of a boundary" },
+    { "id": "lab-bayes",           "kind": "lab", "name": "Bayesian analysis",      "status": "live",    "question": "How likely is the treatment better?", "note": "Beta–Binomial, exact integration (no sampling); P(beats control), expected loss, credible interval on lift, P(best); attach-as-evidence CTA" }
   ]
 }

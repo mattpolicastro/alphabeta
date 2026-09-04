@@ -59,6 +59,15 @@
   .seg input:checked + label + input + label { border-left:0 }
   .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
   .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .solve { margin:0 0 18px; padding-bottom:16px; border-bottom:1px solid var(--line) }
+  .solve .k { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px }
+  .solve .opts { display:flex }
+  .solve .opts > * { flex:1; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); text-decoration:none }
+  .solve .opts > * + * { border-left:0 }
+  .solve .opts [aria-current="page"] { color:var(--ink); border-color:var(--ink); background:var(--card); cursor:default }
+  .solve .opts a:hover { color:var(--ink) }
+  .solve .opts a:focus-visible { outline:2px solid var(--ink); outline-offset:-2px; color:var(--ink) }
+  .solve .hint { font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.6; color:var(--dim); margin:8px 0 0 }
   .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
 
   .result { padding:24px }
@@ -101,6 +110,14 @@
 <section style="padding-top:0">
   <div class="tool">
     <form class="tile" id="form" autocomplete="off" onsubmit="return false">
+      <div class="solve">
+        <span class="k" id="solvelabel">solve for</span>
+        <div class="opts" role="group" aria-labelledby="solvelabel">
+          <span aria-current="page">sample size</span>
+          <a id="flip" href="/lab/detectable-lift/">detectable lift</a>
+        </div>
+        <p class="hint" id="solvehint"></p>
+      </div>
       <div class="field">
         <label for="baseline">Baseline conversion rate</label>
         <div class="wrap"><input type="number" id="baseline" name="baseline" min="0" max="100" step="any" inputmode="decimal"><span class="unit">%</span></div>
@@ -173,6 +190,7 @@
       <tr><td><code>traffic</code></td><td>positive integer, optional</td><td>daily visitors across all arms; omitted when blank</td></tr>
     </table>
     <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.1</code>, not <code>0.10</code>); the parser accepts either. Method: two-proportion z-test, equal arms, no continuity correction — R's <code>power.prop.test</code>, the same convention as the reference calculator on forwarddigital.org/tools.</p>
+    <p class="mono">One relation, two unknowns. <a href="/lab/detectable-lift/">What can I detect with the traffic I have?</a> solves the same <code>power.prop.test</code> for the lift instead of the n; the <strong>solve for</strong> toggle navigates there, carrying <code>baseline</code>, <code>variants</code>, <code>tails</code>, <code>alpha</code> and <code>power</code> verbatim and restating the computed total as that page's <code>traffic</code> × <code>days</code>. Each page keeps its own URL, its own schema and its own seal — a receipt is a receipt for one question.</p>
     <p class="mono">Example: <code id="example"></code></p>
   </details>
 </section>
@@ -296,6 +314,38 @@
     return res
   }
 
+  // ── solve-for toggle ──
+  // Each page keeps its own URL, schema and seal; the toggle NAVIGATES to the
+  // sibling with the shared inputs restated in the sibling's canonical form.
+  //
+  // Round-trip tolerance (sample-size → detectable-lift → sample-size):
+  // baseline, variants, tails, alpha and power come back verbatim, and the
+  // per-arm n comes back exactly. `mde` does not, and cannot: runtime is whole
+  // days, so ⌈total / traffic⌉ days buys up to traffic − 1 visitors more than
+  // the test needs, and the sibling honestly reports the smaller lift that the
+  // larger n can see. The step is bounded by
+  //   mde' ≥ mde · √( nExact / ⌈traffic × days / variants⌉ )
+  // — measured at 0.01%–2.5% of the lift across the usual ranges — and it is
+  // one step only: a second round trip is a fixed point. Blank traffic also
+  // comes back as the assumed 1,000/day, since the sibling requires it.
+  const SIB = '/lab/detectable-lift/'
+  const SIB_KEYS = ['v', 'baseline', 'traffic', 'days', 'variants', 'tails', 'alpha', 'power']
+  function flipHref(){
+    const hint = $('solvehint')
+    const flip = $('flip')
+    if (!last) {
+      flip.href = SIB
+      hint.textContent = 'carries baseline, variants, tails, α, power — fix the inputs first'
+      return
+    }
+    const assumed = !state.traffic
+    const traffic = state.traffic || 1000
+    const days = runtimeDays({ total: last.total, dailyTraffic: traffic })
+    const sib = { v: 1, baseline: state.baseline, traffic, days, variants: state.variants, tails: state.tails, alpha: state.alpha, power: state.power }
+    flip.href = SIB + '?' + SIB_KEYS.map(k => k + '=' + String(Number(sib[k]))).join('&')
+    hint.textContent = `carries baseline, variants, tails, α, power · your ${fmt(last.perVariant)} per arm becomes ${fmt(days)} day${days === 1 ? '' : 's'} at ${fmt(traffic)}/day${assumed ? ', assumed' : ''}`
+  }
+
   // ── seal / copy / lock ──
   async function sha256(str){
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
@@ -314,6 +364,7 @@
     $('lockbtn').href = APP + '?from=sample-size&' + q
     $('example').textContent = location.pathname + '?' + q
     $('receipt').hidden = true
+    flipHref()
   }
   function update(){
     state = fromForm()
