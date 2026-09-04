@@ -2,7 +2,7 @@
 
 ## Status
 
-**Pre-build, stack settled.** The repository contains the design handoff, the planning/architecture handoff, and a manifest of code earmarked from the predecessor. No application code yet — Sprint 1 (Tier-1 MVP: Bet Front Door → Commit & Lock → Revisit) starts next.
+**Live, building out from the roadmap.** `prototypes/graph-canvas` is the app (promoted in place 2026-09-04; `apps/web` is a quarry). Both sites deploy to Cloudflare Pages. Current plan: `docs/roadmap-2026-09.md`; what works today: `alphabeta.tools/capabilities/` (rendered from the registry, so it can't overstate).
 
 ## What this is
 
@@ -32,7 +32,7 @@ Reuse strategy is **copy + adapt** — no shared dependency, no history transfer
 | Framework | Next.js static export, TypeScript, React |
 | Storage | IndexedDB via Dexie.js |
 | Stats | Pyodide/WASM (Lambda fallback is under privacy review — see handoff §5) |
-| UI / CSS | **Tailwind CSS** (free / OSS). Tokens in `tailwind.config`; component anatomy via `@apply` — avoid utility-class soup in JSX |
+| UI / CSS | Plain CSS, one token file per app (`prototypes/graph-canvas/src/styles.css`; landing pages inline the same tokens). Tailwind is installed in `apps/web` but was never used — do not adopt it; no component library (see roadmap §1c) |
 | Charts | Recharts |
 | Testing | Jest + SWC (`next/jest`), React Testing Library, `fake-indexeddb` |
 | CSV | PapaParse + Web Worker (Welford's algorithm) |
@@ -80,7 +80,7 @@ Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` m
   - `/api/*` — Cloudflare Workers backend (LLM provider proxy, sync, rate-limit checks).
   - `/auth/*` — login / callback / logout. Both consumer auth (tier-3) and SSO/OIDC (tier-2 self-hosted).
   - `/share/*` — public read-only share tokens for locked bets (handoff §10).
-- **`alphabeta.tools/lab/*` — standalone analysis tools (settled 2026-08-28).** Stateless calculators on the *marketing* origin, a flat list **named by the practitioner's question** (method is a title qualifier, never the URL noun): `/lab/sample-size`, `/lab/detectable-lift`, `/lab/srm`, `/lab/pre-post`, `/lab/results`, `/lab/sequential`, `/lab/bayes`. Modeled on Kelly Wortham's `forwarddigital.org/tools` (five of these are ports of its R Shiny apps). Holdback and study are ceremony in the lock flow, not lab tools. Rules:
+- **`alphabeta.tools/lab/*` — standalone analysis tools (settled 2026-08-28; `sample-size`, `detectable-lift`, `srm` live 2026-09-04).** Stateless calculators on the *marketing* origin, a flat list **named by the practitioner's question** (method is a title qualifier, never the URL noun): `/lab/sample-size`, `/lab/detectable-lift`, `/lab/srm`, `/lab/pre-post`, `/lab/results`, `/lab/sequential`, `/lab/bayes`. Modeled on Kelly Wortham's `forwarddigital.org/tools` (five of these are ports of its R Shiny apps). Holdback and study are ceremony in the lock flow, not lab tools. Rules:
   - **The URL is the contract.** Each tool has a versioned canonical query-string schema (`?v=1&…`); a sealed result is SHA-256 of the canonical string, shown as a receipt. Same provenance format as a locked bet.
   - **"Lock as bet" is the only cross-origin hop**: `app.alphabeta.tools/bet/new?from=<tool>&v=1&…` mints a draft with the instrument pre-selected and inputs prefilled.
   - Lab tools and in-bet instrument panels are the **same React component** — inputs from the URL vs. from the locked bet. Stats logic lives in a framework-free core (`packages/analysis`, TS closed-form + Pyodide engines), never in the component.
@@ -93,10 +93,14 @@ Single-app at `~/Projects/alphabeta` for now. The handoff's `experiment-tools` m
 
 | Host | Cloudflare Pages project | Source |
 |---|---|---|
-| `alphabeta.tools` | `alphabeta-landing` | `apps/landing/` (static HTML) |
+| `alphabeta.tools` | `alphabeta-landing` | `apps/landing/` (static HTML; `/lab/*` tools embed a built copy of `packages/analysis`) |
 | `app.alphabeta.tools` | `alphabeta-app` | `prototypes/graph-canvas`, built with `VITE_STATIC=1` |
 
-- Deploys are manual: `npx wrangler pages deploy <dir> --project-name <project>`. Not yet Git-connected.
+- Deploys are manual: `npx wrangler pages deploy <dir> --project-name <project>`. Add `--branch preview` to get `https://preview.<project>.pages.dev` without touching production — review there first. Not yet Git-connected.
+- **Definition of done for canvas changes:** `npm test`, `npm run typecheck`, `VITE_STATIC=1 npx vite build` — all three. `strict: false` means `!r.ok` does not narrow a result union; write `r.ok === false`. Vitest does not typecheck, so a passing test suite says nothing about types.
+- **The capability registry** (`apps/landing/capabilities.json`) is the single source of truth for what works. The canvas imports it at build and throws on drift; `/capabilities/` renders it; chips and the loop tray read from it. A surface is not done until its status line is flipped. When two agents edit it in one round, commit each one's lines with its own commit (stash-and-restore the other's).
+- **`packages/analysis`** is the framework-free stats core (R `power.prop.test` conventions; oracles: local Rscript, scipy, spotify-confidence — disagreements are characterized in tests, never absorbed into tolerance). `npm run sync:landing` builds it and copies the ESM into each `apps/landing/lab/<tool>/analysis.js`; commit the built copies.
+- **Funnel:** `app.alphabeta.tools/bet/new?from=<tool>&v=1&…` mints a draft bet from a lab result (parsers in `src/funnel.ts`; `sample-size` live, others stubbed). The static app is an SPA, so the path works via Pages' fallback.
 - **`VITE_STATIC=1` is what makes the prototype shippable.** The open-field relay is a Vite *dev-server* plugin, so `/api/*` exists only under `npm run dev` — that covers board state, not just the LLM. The flag swaps `/api/state` for `localStorage`, seeds from the `data.ts` fixture (running the tree layout once so a fresh board isn't a mess), and compiles out the dock, replies polling, and open-field creation. `npm run dev` is unaffected, so live relay sessions still work.
 - When publishing the prototype, deploy a copy of `dist/` with the `public/` extras removed (`landing.html`, `brand.html`, `brand2.html`, `design-system.html`, `grid3d.html`) — Vite copies them in and they are internal.
 - Known gap: `apps/web/app/api/llm/route.ts` is a route handler and cannot build under `output: 'export'`. It must become a Worker on `/api/*` or be removed before `apps/web` can deploy anywhere static.
