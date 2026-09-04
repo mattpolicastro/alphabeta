@@ -149,6 +149,93 @@ export function sampleSize(input: SampleSizeInput): SampleSizeResult {
   };
 }
 
+export interface DetectableLiftInput {
+  /** Control conversion rate as a proportion in (0, 1). */
+  baseline: number;
+  /** Visitors entering the experiment per day, across all arms. */
+  dailyTraffic: number;
+  /** Days the test will run. */
+  runtimeDays: number;
+  /** Number of arms including control. */
+  variants: number;
+  tails: 1 | 2;
+  /** Family-wise false-positive rate in (0, 1), before the per-comparison split. */
+  alpha: number;
+  /** 1 − β, in (0, 1). */
+  power: number;
+}
+
+export interface DetectableLiftResult {
+  /** Smallest relative lift over baseline the test can detect at the stated power (0.1 = +10%). */
+  mdeRelative: number;
+  /** The same lift as a difference in rate (0.002 = +0.2 points). */
+  mdeAbsolute: number;
+  /** Visitors in each arm: ⌈dailyTraffic × runtimeDays / variants⌉. */
+  perVariant: number;
+  /** perVariant × variants — may exceed dailyTraffic × runtimeDays by the ceiling. */
+  total: number;
+  assumptions: SampleSizeAssumptions & {
+    /** Half-width of the bisection bracket on the relative lift at exit. */
+    tolerance: number;
+  };
+}
+
+/**
+ * The inverse of `sampleSize`: given the visitors each arm will actually
+ * collect, the smallest positive relative lift detectable under the same
+ * `power.prop.test` conventions. Equivalent to R's
+ * `power.prop.test(n, p1, sig.level, power, alternative)` solving for p2,
+ * which also searches upward from p1.
+ *
+ * Solved by bisection on the relative lift, since the exact (un-ceiled) n
+ * is strictly decreasing in the lift. The bracket is (0, (1 − p1)/p1), i.e.
+ * treatment rates in (p1, 1); it closes when its half-width falls below
+ * 1e-12 relative-lift units, so the reported lift is exact to well past
+ * any digit a page shows. If even p2 → 1 needs more than the available n,
+ * the traffic cannot detect any lift and a RangeError is thrown.
+ */
+export function detectableLift(input: DetectableLiftInput): DetectableLiftResult {
+  const { baseline, dailyTraffic, runtimeDays, variants, tails, alpha, power } = input;
+  assertFinite('dailyTraffic', dailyTraffic);
+  assertFinite('runtimeDays', runtimeDays);
+  if (dailyTraffic <= 0) throw new RangeError('dailyTraffic must be positive');
+  if (runtimeDays <= 0) throw new RangeError('runtimeDays must be positive');
+  // Validate the shared inputs by sizing a nominal lift; errors surface as-is.
+  const probe = { baseline, mde: 0.5, mdeKind: 'relative' as const, variants, tails, alpha, power };
+  sampleSize({ ...probe, mde: Math.min(0.5, (1 - baseline) / baseline / 2) });
+
+  const perVariant = Math.ceil((dailyTraffic * runtimeDays) / variants);
+  const total = perVariant * variants;
+  const nAt = (lift: number) => sampleSize({ ...probe, mde: lift }).assumptions.nExact;
+
+  const maxLift = (1 - baseline) / baseline;
+  // Just inside p2 < 1; sampleSize rejects p2 = 1 exactly.
+  let hi = maxLift * (1 - 1e-12);
+  if (nAt(hi) > perVariant) {
+    throw new RangeError(
+      `${perVariant.toLocaleString('en-US')} visitors per variant cannot detect any lift at this baseline — even a rate of 100% would need more`,
+    );
+  }
+  let lo = 0;
+  const tolerance = 1e-12;
+  // lo is always too small a lift (n needed > available); hi always enough.
+  // The lower edge: nExact → ∞ as lift → 0, so lo = 0 is a valid bracket end.
+  for (let i = 0; i < 200 && hi - lo > tolerance; i++) {
+    const mid = (lo + hi) / 2;
+    if (nAt(mid) > perVariant) lo = mid;
+    else hi = mid;
+  }
+  const mdeRelative = hi;
+  const sized = sampleSize({ ...probe, mde: mdeRelative });
+  return {
+    mdeRelative,
+    mdeAbsolute: sized.assumptions.absoluteMde,
+    perVariant,
+    total,
+    assumptions: { ...sized.assumptions, tolerance: (hi - lo) / 2 },
+  };
+}
+
 /** Whole days to reach `total` visitors at `dailyTraffic` per day. */
 export function runtimeDays({ total, dailyTraffic }: RuntimeInput): number {
   assertFinite('total', total);

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta lab — is my split broken?</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff; --incon:#b58a1e;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a; --incon:#d4a63a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
+  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── the tool ── */
+  .tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
+  form { padding:24px }
+  .field { margin-bottom:16px }
+  .field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
+  .field input[type=number] { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+  .field input[type=number]:focus { outline:none; border-color:var(--ink) }
+  .field .unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); pointer-events:none }
+  .field .wrap { position:relative }
+  fieldset { border:0; margin:0; padding:0 }
+  .seg { display:flex; gap:0 }
+  .seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
+  .seg label + label { border-left:0 }
+  .seg input { position:absolute; opacity:0; width:0; height:0 }
+  .seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
+  .seg input:checked + label + input + label { border-left:0 }
+  .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
+
+  .result { padding:24px }
+  .big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(34px,5vw,46px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+  .stat { margin-bottom:18px }
+  .stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+  .assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
+  .err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
+  .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
+  .receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  .receipt .h { font-weight:600; color:var(--ink) }
+  .flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
+  details { margin-top:8px }
+  summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
+  details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
+  code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
+  table { border-collapse:collapse; width:100%; margin:10px 0 }
+  td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
+  th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
+  @media (max-width:720px){ .tool { grid-template-columns:1fr } }
+
+  .field input[type=text] { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+  .field input[type=text]:focus { outline:none; border-color:var(--ink) }
+  .arms { width:100%; margin:14px 0 0; font-variant-numeric:tabular-nums }
+  .arms td, .arms th { font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:6px 8px 6px 0 }
+  .arms td.n, .arms th.n { text-align:right }
+  .verdict { margin:0 0 18px; padding:14px; border:1.5px solid var(--ink); font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:17px; line-height:1.3 }
+  .verdict .k { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; margin-bottom:4px }
+  .verdict.mismatch { border-color:var(--incon); color:var(--incon); border-style:dashed }
+  .verdict.mismatch .k { color:var(--incon) }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/" aria-current="page">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">Sample ratio mismatch</div>
+  <h1>Is my split broken?</h1>
+  <p class="lede">Checks whether the split you observed between variants is consistent with the split you configured. A mismatch means the assignment itself is off — bot filtering, a redirect, a caching layer, a bug — and the test result cannot be trusted until it is found.</p>
+</section>
+
+<section style="padding-top:0">
+  <div class="tool">
+    <form class="tile" id="form" autocomplete="off" onsubmit="return false">
+      <div class="field">
+        <label for="expected">Intended allocation</label>
+        <input type="text" id="expected" name="expected" inputmode="decimal" spellcheck="false">
+        <p class="help">Comma-separated, one per arm: weights (<code>50,50</code>), shares (<code>0.5,0.5</code>) or ratios (<code>1,3</code>) — only the proportions matter.</p>
+      </div>
+      <div class="field">
+        <label for="observed">Observed visitors per arm</label>
+        <input type="text" id="observed" name="observed" inputmode="numeric" spellcheck="false">
+        <p class="help">Same order as the allocation. Unique visitors assigned, not sessions.</p>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label for="alpha">Alarm level (α)</label>
+        <input type="number" id="alpha" name="alpha" min="0" max="1" step="any" inputmode="decimal">
+        <p class="help">0.001 is the convention. SRM checks run continuously over a test's life, so a loose α (0.05) false-alarms constantly; 0.001 keeps the alarm meaningful and still catches a broken split fast.</p>
+      </div>
+    </form>
+
+    <div class="tile result" id="result" aria-live="polite">
+      <div id="out"></div>
+      <div class="actions">
+        <button class="cta" type="button" id="sealbtn">Seal this result</button>
+        <button class="cta" type="button" id="copybtn">Copy link</button><span class="flash" id="flash"></span>
+        <a class="cta primary" id="lockbtn" href="#">Lock as bet →</a>
+        <div id="receipt" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>The URL is the contract — schema v1</summary>
+    <p class="muted" style="margin-top:10px">Every input lives in the query string, in this order, and nothing else does. A sealed result is <code>SHA-256</code> of the canonical string (everything after <code>?</code>), so the same inputs always produce the same receipt.</p>
+    <table>
+      <tr><th>key</th><th>value</th><th>notes</th></tr>
+      <tr><td><code>v</code></td><td><code>1</code></td><td>schema version; a breaking change bumps it</td></tr>
+      <tr><td><code>expected</code></td><td>positive numbers, comma-separated</td><td>intended allocation per arm; normalised to shares, so <code>50,50</code>, <code>0.5,0.5</code> and <code>1,1</code> seal to different strings but compute the same result</td></tr>
+      <tr><td><code>observed</code></td><td>non-negative integers, comma-separated</td><td>visitors per arm, same order and length as <code>expected</code></td></tr>
+      <tr><td><code>alpha</code></td><td>proportion in (0, 1)</td><td>alarm level; verdict is <em>mismatch</em> when p &lt; α</td></tr>
+    </table>
+    <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.1</code>, not <code>0.10</code>); lists use a literal comma, and the parser also accepts <code>%2C</code>. Method: Pearson's chi-square goodness of fit, <code>χ² = Σ (observed − expected)² / expected</code> with <code>expected = share × total observed</code>, on <code>arms − 1</code> degrees of freedom, no continuity correction — <code>scipy.stats.chisquare</code>. The p-value is the upper tail, computed from the regularized incomplete gamma function.</p>
+    <p class="mono">Example: <code id="example"></code></p>
+  </details>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script type="module">
+  import { srm } from './analysis.js'
+
+  const APP = 'https://app.alphabeta.tools/bet/new'
+  const KEYS = ['v', 'expected', 'observed', 'alpha']
+  const DEFAULTS = { v: 1, expected: [50, 50], observed: [5000, 4800], alpha: 0.001 }
+
+  const $ = id => document.getElementById(id)
+  const form = $('form')
+
+  // ── state ⇄ URL ──
+  function num(s, fallback){ const n = Number(s); return s === null || s === '' || !Number.isFinite(n) ? fallback : n }
+  // A list is kept as-typed (numbers or NaN) so the core's validation can name the bad entry.
+  function list(s){
+    if (s === null) return null
+    const parts = String(s).split(/[,\s]+/).filter(x => x !== '')
+    return parts.map(x => num(x, NaN))
+  }
+  function parse(qs){
+    const p = new URLSearchParams(qs)
+    const s = { ...DEFAULTS }
+    s.expected = list(p.get('expected')) ?? s.expected
+    s.observed = list(p.get('observed')) ?? s.observed
+    s.alpha = num(p.get('alpha'), s.alpha)
+    return s
+  }
+  // Canonical: fixed key order, shortest exact decimal, lists joined by a literal comma.
+  const enc = v => Array.isArray(v) ? v.map(x => String(Number(x))).join(',') : String(Number(v))
+  function canonical(s){
+    return KEYS.map(k => k + '=' + enc(s[k])).join('&')
+  }
+
+  // ── state ⇄ form ──
+  const r = (x, d = 6) => String(Number(Number(x).toFixed(d)))
+  function toForm(s){
+    $('expected').value = s.expected.map(x => String(x)).join(', ')
+    $('observed').value = s.observed.map(x => String(x)).join(', ')
+    $('alpha').value = r(s.alpha)
+  }
+  function fromForm(){
+    const f = new FormData(form)
+    const g = k => f.get(k)
+    return {
+      v: 1,
+      expected: list(g('expected')) ?? [],
+      observed: list(g('observed')) ?? [],
+      alpha: num(g('alpha'), NaN),
+    }
+  }
+
+  // ── render ──
+  const fmt = n => n.toLocaleString('en-US')
+  const fmt1 = n => n.toLocaleString('en-US', { maximumFractionDigits: 1 })
+  const pct = (x, d = 2) => (x * 100).toFixed(d).replace(/\.?0+$/, '') + '%'
+  const signed = (x, f) => (x > 0 ? '+' : x < 0 ? '−' : '') + f(Math.abs(x))
+  const pv = p => p < 1e-4 ? p.toExponential(2) : p.toFixed(4)
+  function compute(s){
+    return srm({ expected: s.expected, observed: s.observed, alpha: s.alpha })
+  }
+  function render(s){
+    const out = $('out')
+    let res
+    try {
+      res = compute(s)
+    } catch (e) {
+      out.innerHTML = ''
+      const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message
+      out.appendChild(p)
+      return null
+    }
+    const mismatch = res.verdict === 'mismatch'
+    const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="big">${v}</div></div>`
+    const rows = res.deviations.map((d, i) =>
+      `<tr><td>${String.fromCharCode(65 + i)}</td><td class="n">${pct(res.expectedShares[i], 2)}</td><td class="n">${fmt1(d.expected)}</td><td class="n">${fmt(d.observed)}</td><td class="n">${signed(d.diff, fmt1)}</td><td class="n">${signed(d.pct, x => pct(x, 2))}</td></tr>`
+    ).join('')
+    out.innerHTML =
+      `<div class="verdict ${res.verdict}"><span class="k">Verdict at α = ${r(res.threshold)}</span>${
+        mismatch
+          ? `Sample ratio mismatch — the split is not the one you configured. Find the cause before reading any result.`
+          : `No evidence of a mismatch — the observed split is consistent with the intended allocation.`
+      }</div>` +
+      `<div class="two">${stat('χ²', res.chi2.toFixed(3))}${stat(`p-value, ${res.df} df`, pv(res.pValue))}</div>` +
+      `<table class="arms"><tr><th>arm</th><th class="n">intended</th><th class="n">expected</th><th class="n">observed</th><th class="n">diff</th><th class="n">diff %</th></tr>${rows}</table>` +
+      `<pre class="assump">test      ${res.assumptions.test}\ntotal     ${fmt(res.total)} visitors across ${res.deviations.length} arms\nχ²        ${res.chi2.toFixed(6)} on ${res.df} df   p ${res.pValue.toExponential(6)}\nverdict   p ${mismatch ? '<' : '≥'} ${r(res.threshold)} → ${res.verdict}</pre>`
+    return res
+  }
+
+  // ── seal / copy / lock ──
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  function flash(msg){
+    const f = $('flash'); f.textContent = msg
+    setTimeout(() => { if (f.textContent === msg) f.textContent = '' }, 1800)
+  }
+  let state = parse(location.search)
+  let last = null
+
+  function sync(){
+    const q = canonical(state)
+    history.replaceState(null, '', location.pathname + '?' + q)
+    $('lockbtn').href = APP + '?from=srm&' + q
+    $('example').textContent = location.pathname + '?' + q
+    $('receipt').hidden = true
+  }
+  function update(){
+    state = fromForm()
+    last = render(state)
+    sync()
+  }
+
+  form.addEventListener('input', update)
+  form.addEventListener('change', update)
+
+  $('copybtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); flash('copied') }
+    catch (e) { flash('copy failed — select the URL bar') }
+  })
+
+  $('sealbtn').addEventListener('click', async () => {
+    if (!last) { flash('fix the inputs first'); return }
+    const q = canonical(state)
+    const hash = await sha256(q)
+    const when = new Date().toISOString()
+    const rc = $('receipt')
+    rc.className = 'receipt'
+    rc.textContent = ''
+    const h = document.createElement('div'); h.className = 'h'; h.textContent = 'sha256  ' + hash
+    rc.appendChild(h)
+    rc.appendChild(document.createTextNode(
+      `sealed  ${when}\n` +
+      `of      ?${q}\n` +
+      `result  χ² ${last.chi2.toFixed(4)} on ${last.df} df · p ${last.pValue.toExponential(4)} · ${last.verdict} at α ${r(last.threshold)}` +
+      `\nlab     srm v1 · ${last.assumptions.test}`
+    ))
+    rc.hidden = false
+  })
+
+  toForm(state)
+  last = render(state)
+  sync()
+</script>
+</body>
+</html>

@@ -21,6 +21,15 @@ sampleSize({
 // → { perVariant: 80682, total: 161364, assumptions: {...} }
 
 runtimeDays({ total: 161364, dailyTraffic: 5000 })  // → 33
+
+detectableLift({          // the inverse: traffic in, smallest detectable lift out
+  baseline: 0.02, dailyTraffic: 10000, runtimeDays: 14,
+  variants: 2, tails: 2, alpha: 0.05, power: 0.8,
+})
+// → { mdeRelative: 0.10755, mdeAbsolute: 0.002151, perVariant: 70000, total: 140000, assumptions: {...} }
+
+srm({ expected: [50, 50], observed: [5000, 4800] })   // alpha defaults to 0.001
+// → { chi2: 4.0816, df: 1, pValue: 0.04335, verdict: 'ok', deviations: [...], ... }
 ```
 
 Out-of-range input throws `RangeError` with a sentence a page can show as-is.
@@ -61,6 +70,29 @@ Two things were changed from the quarried `apps/web/lib/stats/powerCalculator.ts
   rather than sitting a few visitors off. A sealed receipt should not
   depend on which side of an integer an approximation error falls.
 
+### Detectable lift
+
+`detectableLift` inverts the same formula: per-arm
+`n = ⌈dailyTraffic × runtimeDays / variants⌉`, then bisection on the relative
+lift until the bracket is narrower than 1e-12 (the exact n is strictly
+decreasing in the lift, so the bracket `(0, (1−p₁)/p₁)` always contains
+exactly one root). The reported lift is the upper edge, so sizing it again
+lands back on the same integer n. Positive lift only, as R's
+`power.prop.test(n=, p1=, …)` solving for `p2` does. If even `p2 → 1` needs
+more than the available n, it throws.
+
+### SRM
+
+`srm` is Pearson's chi-square goodness of fit — `Σ (o − e)² / e` with
+`e = share × Σo`, `df = arms − 1`, no continuity correction — exactly
+`scipy.stats.chisquare(observed, expected)`. Weights are normalised, so
+`[50, 50]`, `[0.5, 0.5]` and `[1, 1]` are the same allocation. The p-value is
+the upper tail `Q(df/2, χ²/2)`, the regularized upper incomplete gamma,
+implemented in `src/srm.ts` from Numerical Recipes §6.2 (series below
+`a + 1`, Lentz continued fraction above; Lanczos `lgamma`). The verdict
+threshold defaults to **0.001**: SRM checks run continuously over a test's
+life, so 0.05 false-alarms constantly.
+
 ## Oracles
 
 `src/__tests__/oracle.test.ts` holds eight cases spanning baseline 0.5–20%,
@@ -97,17 +129,54 @@ power, alternative)`; Python is
 newer bokeh) then `SampleSize.binomial(baseline*mde, baseline, alpha, power,
 k, 'control_vs_all', treatment_allocations=np.ones(k)/k, bonferroni_correction=True)`.
 
+### Detectable lift — R
+
+`src/__tests__/detectable-lift.test.ts`. Round-trip against `sampleSize` on
+eight cases (lift → n → lift within 0.1%; the recovered lift re-sizes to the
+same integer n), and four cases against R 4.5.3
+`power.prop.test(n=ceiling(daily*days/k), p1, sig.level=alpha/(k-1), power,
+alternative, tol=1e-12)$p2`, generated 2026-09-04:
+
+| id | baseline | daily | days | k | tails | α | power | n per arm | R p2 |
+|---|---|---|---|---|---|---|---|---|---|
+| A | 0.02 | 10 000 | 14 | 2 | 2 | 0.05 | 0.8 | 70 000 | 0.0221509456 |
+| B | 0.05 | 3 000 | 21 | 3 | 2 | 0.05 | 0.8 | 21 000 | 0.0567631979 |
+| C | 0.10 | 2 000 | 28 | 2 | 1 | 0.05 | 0.9 | 28 000 | 0.1075422977 |
+| D | 0.005 | 50 000 | 30 | 4 | 2 | 0.01 | 0.8 | 375 000 | 0.0056343179 |
+
+Specified tolerance ±0.05 points on p2; actual agreement is to the 8th decimal.
+
+### SRM — scipy
+
+`src/__tests__/srm.test.ts`. Eight cases against `scipy.stats.chisquare`
+(`uv run --with scipy python`), p within 1e-6 (actual: 1e-12), df 1–3,
+weights as shares, percents and ratios, one exact match (χ² = 0, p = 1), and
+seven direct checks of `chiSquareSf` against `scipy.stats.chi2.sf` at
+df 1–10 down to p ≈ 3e-12.
+
+| id | expected | observed | χ² | p |
+|---|---|---|---|---|
+| A | 0.5, 0.5 | 5000, 4800 | 4.081633 | 0.0433518 |
+| B | 1, 1, 1 | 3400, 3300, 3300 | 2 | 0.3678794 |
+| C | 25 ×4 | 1000, 1000, 1000, 1100 | 7.317073 | 0.0624497 |
+| D | 1, 3 | 2500, 7600 | 0.330033 | 0.5656397 |
+| E | 0.9, 0.1 | 90200, 9800 | 4.444444 | 0.0350150 |
+| F | 0.5, 0.5 | 50000, 49000 | 10.101010 | 0.0014819 |
+| G | 0.2, 0.3, 0.5 | 2003, 3011, 4986 | 0.084033 | 0.9588538 |
+| H | 0.5, 0.5 | 7000, 7000 | 0 | 1 |
+
 ## Build
 
 ```sh
 npm install
 npm test            # vitest
 npm run build       # tsc → dist/ (ESM + .d.ts)
-npm run sync:landing  # build, then copy dist/power.js → apps/landing/lab/sample-size/analysis.js
+npm run sync:landing  # build, then copy dist/power.js → lab/{sample-size,detectable-lift}/analysis.js
+                      #                  and dist/srm.js → lab/srm/analysis.js
 ```
 
-`src/power.ts` is deliberately import-free so its compiled form is a single
-file the static landing site can load with `<script type="module">`. The
-copy in `apps/landing/lab/sample-size/analysis.js` is checked in — Cloudflare
-Pages serves `apps/landing/` with no build step. Re-run `sync:landing` after
-any change here.
+`src/power.ts` and `src/srm.ts` are deliberately import-free so each
+compiles to a single file the static landing site can load with
+`<script type="module">`. The copies under `apps/landing/lab/*/analysis.js`
+are checked in — Cloudflare Pages serves `apps/landing/` with no build step.
+Re-run `sync:landing` after any change here.
