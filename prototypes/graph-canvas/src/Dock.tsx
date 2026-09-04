@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Thread, type ThreadMsg } from './Thread'
+import { StatusChip, surfaceClass } from './StatusChip'
 
 export type { ThreadMsg }
 
@@ -41,7 +42,7 @@ export function Dock({
   }
 
   return (
-    <div className={`dock ${expanded ? 'expanded' : ''}`}>
+    <div className={`dock ${expanded ? 'expanded' : ''} ${surfaceClass('tray-openfield')}`}>
       {thread.length > 0 && (
         <div className="dock-thread" ref={scrollRef}>
           <Thread msgs={thread} awaiting={awaiting} />
@@ -53,6 +54,7 @@ export function Dock({
           title={relayUp ? 'relay live' : 'relay unreachable'}
         />
         <span className="dock-eyebrow">open field</span>
+        <StatusChip id="tray-openfield" />
         <button className="fac-toggle" title="switch facilitator" onClick={cycleFacilitator}>
           ⇄ {facilitator === 'claude' ? 'claude' : facilitator.split(':')[0]}
         </button>

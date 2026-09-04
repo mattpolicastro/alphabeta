@@ -28,6 +28,9 @@ import { RecordPanel } from './Panel'
 import { LedgerView } from './Ledger'
 import { DocketView } from './Docket'
 import { MomentOverlay, type MomentReq } from './Moment'
+import { LoopTray } from './LoopTray'
+import type { LoopStepId } from './loop'
+import { exportBoard, importBoard, downloadEnvelope, readJsonFile } from './portable'
 
 const nodeTypes = { strat: StratNode, bet: BetNode, openfield: OpenFieldNode }
 
@@ -178,7 +181,13 @@ function Canvas() {
   const [relayUp, setRelayUp] = useState(true)
   const [view, setView] = useState<'canvas' | 'ledger' | 'docket'>('canvas')
   const [moment, setMoment] = useState<MomentReq | null>(null)
-  const [orient, setOrient] = useState<'v' | 'h'>(() => { try { return (localStorage.getItem('gc-orient') as any) || 'h' } catch { return 'h' } })
+  // the walkthrough opens itself on first visit and stays closed once dismissed
+  const [tray, setTray] = useState(() => { try { return !localStorage.getItem('ab-loop-seen') } catch { return false } })
+  const closeTray = () => { setTray(false); try { localStorage.setItem('ab-loop-seen', '1') } catch {} }
+  const [pulseId, setPulseId] = useState<string | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [orient, setOrient] = useState<'v' | 'h'>(() => { try { return (localStorage.getItem('gc-orient') as any) || 'v' } catch { return 'v' } })
   const updateInternals = useUpdateNodeInternals()
   const flip = () => {
     const next = orient === 'v' ? 'h' : 'v'
@@ -190,7 +199,7 @@ function Canvas() {
   const [loaded, setLoaded] = useState(false)
   const [seenVer, setSeenVer] = useState(0)
   const lastSaved = useRef<string>('')
-  const { screenToFlowPosition } = useReactFlow()
+  const { screenToFlowPosition, fitView } = useReactFlow()
 
   // ── boot: server state is canonical; migrate old localStorage once ─
   useEffect(() => {
@@ -563,6 +572,44 @@ function Canvas() {
     setSelectedId(null)
   }, [])
 
+  const tryStep = (id: LoopStepId): string | void => {
+    const betOf = (n: Node) => (n.data as any)?.bet as BetRecord | undefined
+    if (id === 'talk') {
+      closeTray()
+      setTimeout(() => document.querySelector<HTMLTextAreaElement>('.dock-row textarea')?.focus(), 50)
+    } else if (id === 'map') {
+      const goal = nodes.find((n) => (n.data as any)?.strat?.kind === 'goal') ?? nodes[0]
+      closeTray()
+      setView('canvas')
+      setTimeout(() => fitView({ duration: 400 }), 60)
+      if (goal) { setPulseId(goal.id); setTimeout(() => setPulseId(null), 2000) }
+    } else if (id === 'commit') {
+      const b = nodes.find((n) => betOf(n)?.status === 'draft')
+      if (!b) return 'no draft bet on the board — elevate a solution first'
+      closeTray(); setView('canvas'); setSelectedId(b.id); setMoment({ kind: 'lock', nodeId: b.id })
+    } else if (id === 'resolve') {
+      const b = nodes.find((n) => ['locked', 'running'].includes(betOf(n)?.status ?? ''))
+      if (!b) return 'nothing is locked yet — commit a bet first'
+      closeTray(); setView('canvas'); setSelectedId(b.id); setMoment({ kind: 'resolve', nodeId: b.id })
+    }
+  }
+
+  const doExport = useCallback(async () => {
+    downloadEnvelope(await exportBoard(nodes, edges))
+  }, [nodes, edges])
+
+  // import replaces the board wholesale — the envelope's fingerprint is verified first
+  const doImport = useCallback(async (file: File) => {
+    setImportError(null)
+    let data: unknown
+    try { data = await readJsonFile(file) } catch (e) { setImportError((e as Error).message); return }
+    const r = await importBoard(data)
+    if (r.ok === false) { setImportError(r.error); return }
+    const { nodes: ns, edges: es } = r.board
+    if (!confirm(`Replace the current board (${nodes.length} nodes) with ${ns.length} nodes and ${es.length} edges from ${file.name}?`)) return
+    setNodes(ns); setEdges(es); setSelectedId(null); setMoment(null)
+  }, [nodes.length])
+
   const onPaneClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.detail === 2 && !STATIC) {
@@ -581,6 +628,7 @@ function Canvas() {
     () =>
       nodes.map((n) => ({
         ...n,
+        ...(n.id === pulseId ? { className: 'pulse' } : {}),
         data: {
           ...n.data,
           gate: gates.get(n.id) ?? 'open',
@@ -593,7 +641,7 @@ function Canvas() {
               : undefined,
         },
       })),
-    [nodes, gates, resolve, elevate, orient],
+    [nodes, gates, resolve, elevate, orient, pulseId],
   )
 
   const displayEdges = useMemo(
@@ -636,8 +684,14 @@ function Canvas() {
         <button className={`tab ${view === 'ledger' ? 'on' : ''}`} onClick={() => setView('ledger')}>ledger</button>
         <button className={`tab ${view === 'docket' ? 'on' : ''}`} onClick={() => setView('docket')}>docket</button>
         <span className="right">
+          {importError && <span className="import-err">{importError}</span>}
+          <button className="btn2 sm" onClick={doExport}>export</button>
+          <button className="btn2 sm" onClick={() => fileRef.current?.click()}>import</button>
+          <input ref={fileRef} type="file" accept="application/json,.json" hidden
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = '' }} />
           <button className="btn2 sm" onClick={() => { setNodes([]); setEdges([]); setSelectedId(null) }}>clear board</button>
           <button className="btn2 sm" onClick={reset}>reset demo</button>
+          <button className={`btn2 sm ${tray ? 'on' : ''}`} onClick={() => (tray ? closeTray() : setTray(true))}>the loop</button>
         </span>
       </div>
 
@@ -687,6 +741,8 @@ function Canvas() {
         <RecordPanel node={selectedNode} nodes={nodes} edges={edges} onClose={() => setSelectedId(null)} onEdit={editBet}
           onMoment={(kind, nodeId) => setMoment({ kind, nodeId })} />
       )}
+
+      {tray && <LoopTray onClose={closeTray} onTry={tryStep} facilitator={!STATIC} />}
 
       {moment && (
         <MomentOverlay

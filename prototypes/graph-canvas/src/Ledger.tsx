@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Node } from '@xyflow/react'
 import type { BetRecord, BetStatus } from './model'
 import type { MomentKind } from './Moment'
+import { StatusChip } from './StatusChip'
 
 const COLS: { id: BetStatus; title: string }[] = [
   { id: 'draft', title: 'draft' },
@@ -53,7 +54,7 @@ export function LedgerView({
   return (
     <div className="ledger-view">
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-        <div className="dimlbl" style={{ flex: 1 }}>the ledger — every bet, no exceptions ({bets.length})</div>
+        <div className="dimlbl" style={{ flex: 1 }}>the ledger — every bet, no exceptions ({bets.length})<StatusChip id="ledger" /></div>
         <div className="segbtns">
           <button className={mode === 'table' ? 'on' : ''} onClick={() => setMode('table')}>table</button>
           <button className={mode === 'kanban' ? 'on' : ''} onClick={() => setMode('kanban')}>kanban</button>

@@ -128,5 +128,7 @@ export default defineConfig({
     host: true,
     // trusted LAN/tailnet prototype: accept mac-studio.local, MagicDNS names, etc.
     allowedHosts: true,
+    // capabilities.json is shared with the landing site, outside this project root
+    fs: { allow: [path.resolve(__dirname, '../..')] },
   },
 })

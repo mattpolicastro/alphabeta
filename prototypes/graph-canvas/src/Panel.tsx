@@ -2,6 +2,7 @@ import type { Edge, Node } from '@xyflow/react'
 import type { BetRecord, StratRecord } from './model'
 import { wagerSentence } from './model'
 import type { MomentKind } from './Moment'
+import { StatusChip, surfaceClass } from './StatusChip'
 
 interface Props {
   node: Node
@@ -17,11 +18,14 @@ export function RecordPanel({ node, nodes, edges, onClose, onEdit, onMoment }: P
   const strat = (node.data as any).strat as StratRecord | undefined
   const seq = (node.data as any).seq
   const tag = seq ? (bet ? `B${seq}` : `${(strat?.kind ?? '?')[0].toUpperCase()}${seq}`) : ''
+  const faceId = bet
+    ? (bet.status === 'draft' || bet.status === 'ready' ? 'face-draft' : 'face-cockpit')
+    : strat?.kind === 'question' ? 'face-question' : strat?.kind === 'solution' ? 'face-solution' : null
 
   return (
-    <aside className="record-panel">
+    <aside className={`record-panel ${faceId ? surfaceClass(faceId) : ''}`}>
       <div className="panel-head">
-        <span className="panel-eyebrow">{tag} · {bet ? `bet — ${bet.status}` : strat?.kind}</span>
+        <span><span className="panel-eyebrow">{tag} · {bet ? `bet — ${bet.status}` : strat?.kind}</span> {faceId && <StatusChip id={faceId} />}</span>
         <button className="close" onClick={onClose}>×</button>
       </div>
       {strat && <StratFace id={node.id} strat={strat} nodes={nodes} edges={edges} onMoment={onMoment} />}

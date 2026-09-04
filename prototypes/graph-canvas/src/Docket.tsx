@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { deriveGates, type BetRecord, type StratRecord } from './model'
+import { StatusChip } from './StatusChip'
 
 const RUNTIME_DAYS = 14
 const DAY = 86_400_000
@@ -88,7 +89,7 @@ export function DocketView({ nodes, edges, onOpen }: { nodes: Node[]; edges: Edg
 
   return (
     <div className="ledger-view">
-      <div className="dimlbl">the docket — obligations on the clock</div>
+      <div className="dimlbl">the docket — obligations on the clock<StatusChip id="docket" /></div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, maxWidth: 900 }}>
         <span style={{ flex: 1 }} />
         <div className="segbtns">

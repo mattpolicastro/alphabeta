@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import type { BetRecord, StratRecord, Outcome } from './model'
+import { StatusChip, surfaceClass } from './StatusChip'
 
 export type MomentKind = 'lock' | 'resolve' | 'answer' | 'amend'
 export interface MomentReq { kind: MomentKind; nodeId: string }
+
+const MOMENT_CAP: Record<MomentKind, string> = { lock: 'moment-lock', resolve: 'moment-resolve', answer: 'moment-answer', amend: 'moment-amend' }
 
 const BUCKET_CALL: Record<string, string> = {
   win: 'keep', loss: 'revert', inconclusive: 'hold', invalid: 're-run',
@@ -22,7 +25,8 @@ export function MomentOverlay({
 }) {
   return (
     <div className="moment-scrim" onClick={onClose}>
-      <div className="moment" onClick={(e) => e.stopPropagation()}>
+      <div className={`moment ${surfaceClass(MOMENT_CAP[req.kind])}`} onClick={(e) => e.stopPropagation()}>
+        <StatusChip id={MOMENT_CAP[req.kind]} />
         {req.kind === 'lock' && bet && <LockMoment bet={bet} onDone={(p) => { onLock(req.nodeId, p); onClose() }} />}
         {req.kind === 'resolve' && bet && <ResolveMoment bet={bet} onDone={(p) => { onResolve(req.nodeId, p); onClose() }} />}
         {req.kind === 'answer' && strat && <AnswerMoment strat={strat} onDone={(p) => { onAnswer(req.nodeId, p); onClose() }} />}

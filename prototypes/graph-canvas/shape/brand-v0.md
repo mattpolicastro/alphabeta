@@ -29,7 +29,7 @@
 ## Open
 
 ## Canvas layout rules (settled 2026-08-25)
-- **Horizontal is the default orientation.** Kinds are columns (goal → problem →
+- **Vertical is the default orientation (changed 2026-09-04; was horizontal).** Horizontal remains a toggle. In horizontal, kinds are columns (goal → problem →
   question/solution → bets by generation), siblings stack vertically; the cascade
   reads left→right as strategy → evidence → bets. Vertical remains a toggle.
 - Questions and solutions share a lane (dotted vs solid) so problem→child edges
