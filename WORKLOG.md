@@ -1,5 +1,57 @@
 # WORKLOG
 
+## 2026-09-04 — Roadmap, then phases 1–2 and the first lab tool, in one day
+
+**What:** wrote `docs/roadmap-2026-09.md` (quarry `apps/web` into the live
+canvas, honest capability markers, lab as funnel), then ran it with parallel
+sub-agents on disjoint paths while the dev server on :5199 showed the work.
+
+**Decisions:** prototype promoted in place (it is the app; `apps/web` is the
+quarry). Vertical is the default orientation (was horizontal since 08-25;
+brand-v0 updated). Capability page on both landing and app, one registry.
+
+**Landed and deployed:**
+- **Capability registry** — `apps/landing/capabilities.json`, 30 surfaces from
+  surfaces-v0 plus the lab tools, each live / partial / stub / planned. The
+  canvas imports it at build (validates, throws on drift); `/capabilities/`
+  renders it at runtime; chips on ledger/docket/faces/moments read from it.
+  Nothing hardcoded, so the site can't claim what the app doesn't do.
+- **The loop tray** — first draft was the registry dumped into a tray ("way too
+  busy"). Replaced with "One loop, five moments" (talk / map / commit / resolve
+  / calibrate), each step rolling its status up from the registry ids it
+  depends on and with a "try it" that acts on the board. Opens on first visit.
+- **Export / import** with a versioned envelope + canonical-JSON SHA-256,
+  adapted from `apps/web/lib/db/portable.ts`. Clear/reset now confirm and keep
+  one undo — a stray "reset demo" from a tailnet device replaced the real
+  audit board today (reconstructed from the `r-audit-1` ops into
+  `runtime/backups/`).
+- **Phase 2:** cockpit face (sealed commitment in ink, integrity row re-hashes
+  on open, compiled rules under prose, amendments, bucket block); lock reads
+  the v0.3 ladder and demands fold-if / expectation / evidence bar per rung;
+  `criteria.ts` compiles prose criteria to `{metric, direction, threshold,
+  comparator}` without altering prose (nulls when unparseable); ledger filters
+  by status/surface/rung; admission face with provenance tiers. 53 tests.
+- **`/lab/sample-size`** — `packages/analysis` is the framework-free core.
+  Implements R `power.prop.test` conventions because that's what Kelly's
+  forwarddigital.org calculator runs (Tim Wilson's 2018 ancestor; Merritt's
+  repo is empty). Oracles: local Rscript ±1 visitor/arm on 8 cases;
+  `spotify-confidence` runs 1–13% lower and the test *proves* the gap is its
+  baseline-variance convention (Duflo 2007) by rescaling to within 0.5% —
+  tolerance not widened. Page: canonical versioned URL, sealed receipt, copy
+  link, "Lock as bet →" (route on the app side in progress).
+- `/lab/` index in Kelly's card format; cards go live per registry status.
+
+**Lesson:** two agents on disjoint paths, one shared JSON registry, each told
+to flip only its own status lines — no conflicts across four dispatches. The
+one collision risk (registry edited by both) was handled by committing the
+canvas half with the lab line reverted, then restoring it for the lab commit.
+
+**Next:** `/lab/srm` + `/lab/detectable-lift`; funnel route `bet/new?from=`;
+typed intake (classifyAltitude); BYO-key facilitator for the static build;
+resolve-vs-expectation for prepost/none rungs; documents (diff, calibration).
+
+---
+
 ## 2026-08-26 — Domains resolved, both sites live on Cloudflare Pages
 
 **What:** Settled the domain question, stood up landing + app on Cloudflare
