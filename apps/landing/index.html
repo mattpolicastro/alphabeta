@@ -30,6 +30,9 @@
   .muted { color:var(--dim) }
   .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em }
   .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover { color:var(--ink); border-bottom-color:var(--ink) }
   .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink) }
   .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
   .grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) }
@@ -50,6 +53,10 @@
 <main>
 <div class="topbar">
   <span class="wordmark">αlphaβeta</span>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
   <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
 </div>
 
@@ -148,6 +155,7 @@
   <div class="eyebrow">Status</div>
   <h2>In development, built in the open.</h2>
   <p>αlphaβeta is being designed through live use — every session shapes the next version. If you run experiments and recognize the problems above, we'd like to hear how they show up where you work.</p>
+  <p>What works today, what's a preview, and what's only planned is listed on the <a href="/capabilities/">capabilities page</a>, rendered from the same registry the app reads.</p>
   <a class="cta primary" href="https://app.alphabeta.tools">Open the app</a>
   <a class="cta" href="https://github.com/mattpolicastro/alphabeta">Follow the work</a>
 </section>

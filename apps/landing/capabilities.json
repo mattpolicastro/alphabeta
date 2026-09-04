@@ -1,0 +1,41 @@
+{
+  "$comment": "Single source of truth for what αlphaβeta can do today. Consumed by the canvas (status chips + 'what's here' tray) and by the landing site (/capabilities page). Statuses: live = works end to end in the static build; partial = works with a stated gap; stub = placeholder with fixture data, visibly pencil-register; planned = listed only. Kinds follow shape/surfaces-v0.md — every surface is a place, a face, a moment, a document, a tray, or a lab tool. No fifth kind of screen.",
+  "version": 1,
+  "updated": "2026-09-04",
+  "surfaces": [
+    { "id": "canvas",      "kind": "place",    "name": "The Canvas",        "status": "live",    "note": "goal → problem → question/solution → bet cascade; tree auto-layout; horizontal or vertical" },
+    { "id": "ledger",      "kind": "place",    "name": "The Ledger",        "status": "partial", "gap": "no filtering by tag, status, or validity yet" },
+    { "id": "docket",      "kind": "place",    "name": "The Docket",        "status": "partial", "gap": "maturation defaults to 14 days; no contention detection" },
+
+    { "id": "face-question", "kind": "face", "name": "Question dossier",       "status": "live",    "note": "record, expectation slot, answer history" },
+    { "id": "face-solution", "kind": "face", "name": "Solution admission",     "status": "partial", "gap": "shows rivals; no grounds tiers, screens, or arbitration yet" },
+    { "id": "face-draft",    "kind": "face", "name": "Bet, pre-lock",          "status": "live",    "note": "editable draft record, pencil register" },
+    { "id": "face-cockpit",  "kind": "face", "name": "Bet, post-lock (cockpit)", "status": "planned", "note": "sealed commitment, amendment timeline, guardrails, resolve entry" },
+
+    { "id": "moment-admission", "kind": "moment", "name": "Admission",  "status": "planned" },
+    { "id": "moment-lock",      "kind": "moment", "name": "Lock",       "status": "partial", "gap": "premortem + fold-if + confidence; does not yet read the instrument ladder or compile criteria" },
+    { "id": "moment-resolve",   "kind": "moment", "name": "Resolution", "status": "live",    "note": "bucket computed from the locked fold-if; deviation demanded when call ≠ bucket" },
+    { "id": "moment-answer",    "kind": "moment", "name": "Answer",     "status": "live",    "note": "expectation before lookup" },
+    { "id": "moment-amend",     "kind": "moment", "name": "Amendment",  "status": "live",    "note": "one field + reason, on the record" },
+
+    { "id": "doc-diff",        "kind": "document", "name": "The Diff",           "status": "planned", "note": "as-planned vs as-reported, per bet" },
+    { "id": "doc-calibration", "kind": "document", "name": "Calibration mirror", "status": "planned", "note": "expected vs actual, Brier trend — needs resolved bets" },
+    { "id": "doc-graveyard",   "kind": "document", "name": "The Graveyard",      "status": "planned" },
+    { "id": "doc-history",     "kind": "document", "name": "History scrubber",   "status": "planned", "note": "needs the event log persisted, not board state" },
+
+    { "id": "tray-openfield", "kind": "tray", "name": "Open Field (facilitator)", "status": "stub",    "gap": "compiled out of the public build; works under npm run dev with the relay. BYO-key facilitator planned." },
+    { "id": "tray-intake",    "kind": "tray", "name": "Intake / residue",        "status": "planned", "note": "typed intake with rules-based altitude classification" },
+    { "id": "tray-whats-here","kind": "tray", "name": "The loop (walkthrough)", "status": "live", "note": "this registry, rendered in-app" },
+
+    { "id": "data-export", "kind": "data", "name": "Export / import board", "status": "live", "note": "versioned envelope with migration chain; the precondition for keeping real bets here" },
+    { "id": "data-seal",   "kind": "data", "name": "Sealed fingerprint",    "status": "partial", "gap": "lock hash-chains fields; no shareable receipt yet" },
+
+    { "id": "lab-sample-size",     "kind": "lab", "name": "Sample size",            "status": "planned", "question": "How big does my test need to be?" },
+    { "id": "lab-detectable-lift", "kind": "lab", "name": "Detectable lift",        "status": "planned", "question": "What can I detect with the traffic I have?" },
+    { "id": "lab-srm",             "kind": "lab", "name": "Sample ratio mismatch",  "status": "planned", "question": "Is my split broken?" },
+    { "id": "lab-pre-post",        "kind": "lab", "name": "Pre/post",               "status": "planned", "question": "Did the change move the series?", "note": "causal-impact-wasm" },
+    { "id": "lab-results",         "kind": "lab", "name": "Results",                "status": "planned", "question": "What do my results say?" },
+    { "id": "lab-sequential",      "kind": "lab", "name": "Sequential",             "status": "planned", "question": "Can I peek, and when do I stop?" },
+    { "id": "lab-bayes",           "kind": "lab", "name": "Bayesian analysis",      "status": "planned", "question": "How likely is the treatment better?" }
+  ]
+}

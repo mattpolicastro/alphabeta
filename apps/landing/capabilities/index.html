@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta — capabilities: what's here, what's a preview, what's planned.</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── registry ── */
+  .stamp { display:flex; flex-wrap:wrap; gap:8px 28px; align-items:baseline; color:var(--dim) }
+  .legend { display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center }
+  .legend span { display:inline-flex; align-items:center; gap:8px }
+  .group { padding:28px 0 0 }
+  .group h2 { font-size:22px; margin-bottom:10px }
+  .entries { list-style:none; margin:0; padding:0; border-top:1px solid var(--line) }
+  .entry { display:grid; grid-template-columns:18px minmax(160px,220px) 1fr; gap:0 16px; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--line) }
+  .entry .name { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:17px }
+  .entry .detail { color:var(--dim) }
+  .entry .label { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; margin-right:10px }
+  .entry .gap { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .mark { display:inline-block; width:10px; height:10px; position:relative; top:-1px; border:1.5px solid var(--ink); background:transparent }
+  .mark.live { background:var(--ink) }
+  .mark.partial { background:linear-gradient(90deg,var(--ink) 50%,transparent 50%) }
+  .mark.stub, .mark.planned { border-color:var(--dim) }
+  .mark.stub { border-style:dashed }
+  .mark.planned { border-style:dotted }
+  .entry.stub .name, .entry.stub .detail { color:var(--dim) }
+  .entry.stub .name { text-decoration:underline; text-decoration-style:dashed; text-decoration-color:var(--line); text-underline-offset:4px }
+  .entry.planned .name, .entry.planned .detail { color:var(--dim) }
+  .entry.planned .name { font-weight:500 }
+  #fail { display:none }
+  @media (max-width:600px){
+    .entry { grid-template-columns:18px 1fr }
+    .entry .detail { grid-column:2 }
+  }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/">lab</a>
+    <a class="tab" href="/capabilities/" aria-current="page">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">Capabilities</div>
+  <h1>What's here.</h1>
+  <p class="lede">This page is rendered from the same registry the app reads. A surface is listed as live, partial, preview, or planned according to that file, not to this page, so the description can't run ahead of the build.</p>
+  <div class="stamp mono">
+    <span>registry updated <span id="updated">&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;</span></span>
+    <span class="legend">
+      <span><i class="mark live"></i>live</span>
+      <span><i class="mark partial"></i>partial &#8212; gap stated</span>
+      <span><i class="mark stub"></i>preview</span>
+      <span><i class="mark planned"></i>planned</span>
+    </span>
+  </div>
+</section>
+
+<section id="registry" style="padding-top:0">
+  <p id="fail" class="mono">registry unavailable &#8212; <a href="/">back to the front page</a></p>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script>
+  const KINDS = [
+    ['place',    'Places'],
+    ['face',     'Panel faces'],
+    ['moment',   'Moments'],
+    ['document', 'Documents'],
+    ['tray',     'Trays'],
+    ['data',     'Data'],
+    ['lab',      'Lab'],
+  ]
+  const LABEL = { live:'', partial:'partial', stub:'preview', planned:'planned' }
+
+  function el(tag, cls, text){
+    const e = document.createElement(tag)
+    if (cls) e.className = cls
+    if (text != null) e.textContent = text
+    return e
+  }
+
+  function entry(s){
+    const status = LABEL.hasOwnProperty(s.status) ? s.status : 'planned'
+    const li = el('li', 'entry ' + status)
+    li.appendChild(el('i', 'mark ' + status))
+    li.appendChild(el('span', 'name', s.name))
+    const d = el('span', 'detail')
+    if (LABEL[status]) d.appendChild(el('span', 'label', LABEL[status]))
+    if (status === 'partial' && s.gap) d.appendChild(el('span', 'gap', '— ' + s.gap))
+    else if (s.gap) d.appendChild(el('span', 'gap', s.gap))
+    else if (s.note) d.appendChild(el('span', 'note', s.note))
+    li.appendChild(d)
+    return li
+  }
+
+  function render(reg){
+    const root = document.getElementById('registry')
+    const up = document.getElementById('updated')
+    if (up && reg.updated) up.textContent = reg.updated
+    const surfaces = Array.isArray(reg.surfaces) ? reg.surfaces : []
+    const seen = new Set()
+    const frag = document.createDocumentFragment()
+    for (const [kind, heading] of KINDS){
+      const rows = surfaces.filter(s => s.kind === kind)
+      if (!rows.length) continue
+      seen.add(kind)
+      frag.appendChild(group(heading, rows))
+    }
+    // anything with a kind the vocabulary doesn't name still gets listed, never hidden
+    const other = surfaces.filter(s => !seen.has(s.kind))
+    if (other.length) frag.appendChild(group('Other', other))
+    root.appendChild(frag)
+  }
+
+  function group(heading, rows){
+    const g = el('div', 'group')
+    g.appendChild(el('h2', null, heading))
+    const ul = el('ul', 'entries')
+    rows.forEach(s => ul.appendChild(entry(s)))
+    g.appendChild(ul)
+    return g
+  }
+
+  fetch('/capabilities.json', { cache:'no-cache' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+    .then(render)
+    .catch(() => { document.getElementById('fail').style.display = 'block' })
+</script>
+</body>
+</html>

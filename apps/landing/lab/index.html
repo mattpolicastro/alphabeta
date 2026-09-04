@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>αlphaβeta — the lab: calculators that end in a locked bet.</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
+  :root {
+    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
+    --accent:#4059d8; --accent-contrast:#ffffff;
+  }
+  [data-theme="dark"] {
+    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+  main { max-width:860px; margin:0 auto; padding:0 24px }
+  section { padding:48px 0 }
+  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+  p { margin:0 0 14px }
+  .lede { font-size:20px }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+  .muted { color:var(--dim) }
+  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink) }
+  .cta.pencil { border-style:dashed; border-color:var(--dim); color:var(--dim); cursor:default }
+  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
+  a { color:inherit }
+
+  /* ── cards ── */
+  .cards { display:grid; gap:18px }
+  .card { padding:24px }
+  .card .eyebrow { margin-bottom:8px }
+  .card h2 { font-size:24px; margin:0 0 8px }
+  .card.planned { border-style:dashed }
+  .card.planned h2 { color:var(--dim) }
+  .io { display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; margin:14px 0 6px }
+  .io dt { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px }
+  .io dd { margin:0 }
+  .io ul { margin:0; padding-left:18px; font-size:15px } .io li { margin-bottom:3px }
+  .card .engine { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); margin-left:10px }
+  #fail { display:none }
+  @media (max-width:560px){ .io { grid-template-columns:1fr } }
+</style>
+</head>
+<body>
+<main>
+<div class="topbar">
+  <a class="wordmark" href="/">αlphaβeta</a>
+  <nav class="tabs" aria-label="secondary">
+    <a class="tab" href="/lab/" aria-current="page">lab</a>
+    <a class="tab" href="/capabilities/">capabilities</a>
+  </nav>
+  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<section>
+  <div class="eyebrow">The lab</div>
+  <h1>Calculators, named by the question.</h1>
+  <p class="lede">Standalone, stateless tools, one per question people actually ask. Each takes its inputs from the URL, so a result is a link you can share and re-run; the URL is the contract. A sealed result is the hash of that link, shown as a receipt. Every tool ends in <em>lock as bet</em>, which carries the inputs into the app as a draft you commit to before the data exists.</p>
+</section>
+
+<section id="lab" style="padding-top:0">
+  <div class="cards" id="cards"></div>
+  <p id="fail" class="mono">registry unavailable &#8212; <a href="/">back to the front page</a></p>
+</section>
+
+<footer>αlphaβeta · say what would change your mind — before you look.</footer>
+</main>
+<script>
+  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
+  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  let theme = saved || prefers
+  apply()
+  function apply(){
+    document.documentElement.setAttribute('data-theme', theme)
+    const b = document.getElementById('themebtn')
+    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
+  }
+  function toggleTheme(){
+    theme = theme === 'dark' ? 'light' : 'dark'
+    try { localStorage.setItem('ab-theme', theme) } catch(e){}
+    apply()
+  }
+</script>
+<script>
+  // Per-tool prose. The registry owns name, question, and status; this owns the card copy.
+  // The inputs/outputs lists are the draft of each tool's URL contract.
+  const TOOLS = {
+    'lab-sample-size': {
+      desc: 'Given a baseline rate and the smallest lift worth detecting, how many visitors each variant needs before the test can say anything.',
+      inputs: ['baseline conversion rate', 'minimum detectable effect (relative)', 'number of variants', 'one- or two-tailed', 'alpha', 'power', 'daily traffic (optional)'],
+      outputs: ['visitors per variant', 'total visitors', 'runtime in days at the given traffic'],
+    },
+    'lab-detectable-lift': {
+      desc: 'The inverse: fix the traffic and runtime you actually have, and get the smallest lift the test can reliably see.',
+      inputs: ['baseline conversion rate', 'daily traffic', 'runtime in days', 'number of variants', 'one- or two-tailed', 'alpha', 'power'],
+      outputs: ['minimum detectable effect (relative and absolute)', 'visitors per variant at that runtime'],
+    },
+    'lab-srm': {
+      desc: 'Checks whether the split you observed between variants is consistent with the split you configured.',
+      inputs: ['intended allocation per variant', 'observed visitors per variant', 'alpha'],
+      outputs: ['chi-square statistic and p-value', 'expected vs observed per variant', 'verdict: mismatch, or no evidence of one'],
+    },
+    'lab-pre-post': {
+      desc: 'Estimates what a time series would have done without the change, by fitting a Bayesian structural model to the period before it.',
+      inputs: ['the series (date, value; optional control series)', 'intervention date', 'pre- and post-period windows', 'credible-interval level'],
+      outputs: ['counterfactual series', 'absolute and relative effect with credible interval', 'posterior probability of an effect', 'cumulative effect over the post period'],
+    },
+    'lab-results': {
+      desc: 'Reads a finished test: whether the variant beat control, by how much, and how sure you can be.',
+      inputs: ['visitors and conversions per variant (or mean, SD, n for a continuous metric)', 'metric type', 'one- or two-tailed', 'alpha'],
+      outputs: ['rate per variant', 'relative lift with confidence interval', 'p-value', 'significance verdict'],
+    },
+    'lab-sequential': {
+      desc: 'Plans a test you are allowed to look at while it runs: fixed checkpoints, each with a boundary that keeps the overall error rate honest.',
+      inputs: ['baseline conversion rate', 'minimum detectable effect', 'alpha', 'power', 'number of looks', 'spending function', 'observed counts at each look so far'],
+      outputs: ['sample size at each look', 'stopping boundary at each look', 'current statistic vs boundary', 'decision: stop for effect, stop for futility, or continue'],
+    },
+    'lab-bayes': {
+      desc: 'The same test read the Bayesian way: the probability each variant is best, and what you stand to lose by choosing it.',
+      inputs: ['visitors and conversions per variant', 'prior (Beta α, β)', 'threshold of caring', 'credible level'],
+      outputs: ['probability each variant beats control', 'expected loss per variant', 'credible interval on lift'],
+    },
+  }
+
+  function el(tag, cls, text){
+    const e = document.createElement(tag)
+    if (cls) e.className = cls
+    if (text != null) e.textContent = text
+    return e
+  }
+
+  function list(items){
+    const ul = el('ul')
+    items.forEach(t => ul.appendChild(el('li', null, t)))
+    return ul
+  }
+
+  function card(s){
+    const copy = TOOLS[s.id] || {}
+    const live = s.status === 'live'
+    const c = el('article', 'tile card ' + (live ? 'live' : 'planned'))
+    const eb = el('div', 'eyebrow', s.name)
+    c.appendChild(eb)
+    c.appendChild(el('h2', null, s.question || s.name))
+    if (copy.desc) c.appendChild(el('p', null, copy.desc))
+    if (copy.inputs || copy.outputs){
+      const dl = el('dl', 'io')
+      if (copy.inputs){ const d = el('div'); d.appendChild(el('dt', null, 'Inputs')); const dd = el('dd'); dd.appendChild(list(copy.inputs)); d.appendChild(dd); dl.appendChild(d) }
+      if (copy.outputs){ const d = el('div'); d.appendChild(el('dt', null, 'Outputs')); const dd = el('dd'); dd.appendChild(list(copy.outputs)); d.appendChild(dd); dl.appendChild(d) }
+      c.appendChild(dl)
+    }
+    const row = el('div')
+    if (live){
+      const slug = s.id.replace(/^lab-/, '')
+      const a = el('a', 'cta', 'open')
+      a.href = '/lab/' + slug + '/'
+      row.appendChild(a)
+    } else {
+      const m = el('span', 'cta pencil', 'not yet')
+      m.setAttribute('aria-disabled', 'true')
+      row.appendChild(m)
+    }
+    if (s.note) row.appendChild(el('span', 'engine', s.note))
+    c.appendChild(row)
+    return c
+  }
+
+  function render(reg){
+    const root = document.getElementById('cards')
+    const surfaces = Array.isArray(reg.surfaces) ? reg.surfaces : []
+    const frag = document.createDocumentFragment()
+    surfaces.filter(s => s.kind === 'lab').forEach(s => frag.appendChild(card(s)))
+    root.appendChild(frag)
+  }
+
+  fetch('/capabilities.json', { cache:'no-cache' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+    .then(render)
+    .catch(() => { document.getElementById('fail').style.display = 'block' })
+</script>
+</body>
+</html>
