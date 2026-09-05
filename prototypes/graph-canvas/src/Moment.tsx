@@ -168,7 +168,8 @@ function ResolveMoment({ bet, onDone }: { bet: BetRecord; onDone: (p: any) => vo
       </div>
       {mismatch && (
         <>
-          <label style={{ color: '#c0392b' }}>deviation — your call ({call}) differs from the pre-registered action ({expected}); say why, in your words</label>
+          {/* the alarm belongs on the deviation line, in --incon — never a one-off red */}
+          <label className="dev-label">deviation — your call ({call}) differs from the pre-registered action ({expected}); say why, in your words</label>
           <textarea className="finput" rows={2} value={deviation} onChange={(e) => setDeviation(e.target.value)} />
         </>
       )}

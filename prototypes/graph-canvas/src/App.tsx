@@ -40,6 +40,9 @@ import { providerFor, scopeLine, type Scope } from './llm'
 import { dueItems } from './docket-items'
 import { DocOverlay, type DocReq } from './Doc'
 import { Menu } from './Menu'
+import { LaneLayer } from './LaneLayer'
+import { betGenerations, BET_GEN, BET_GENX, BET_X0, BET_Y0, LANE_X, LANE_Y } from './lanes'
+import { useTokens } from './useTokens'
 
 const nodeTypes = { strat: StratNode, bet: BetNode, openfield: OpenFieldNode }
 
@@ -49,10 +52,6 @@ let fieldCounter = 0
 // a dev-server plugin, so there is no /api/*. State lives in localStorage and
 // the LLM-backed open field + dock are compiled out.
 const STATIC = import.meta.env.VITE_STATIC === '1'
-
-const INK = '#26282c'
-const TERRA = '#4059d8'
-const FADE = '#8b939c'
 
 let mintCounter = 0
 
@@ -70,10 +69,9 @@ function sizeOf(n: Node): { w: number; h: number } {
 // ── tree auto-layout: subtree-contiguous (no interleaving → no crossings within a tree),
 //    altitude by kind. Questions and solutions share a lane so problem→child edges never
 //    traverse another lane.
-const LANE_Y: Record<string, number> = { goal: 0, problem: 200, child: 420 }
-const BET_Y0 = 680, BET_GEN = 260, XGAP = 28, ROOTGAP = 90
-const LANE_X: Record<string, number> = { goal: 0, problem: 330, child: 660 }
-const BET_X0 = 990, BET_GENX = 320
+//    The altitude constants live in ./lanes so the bands and the cards read the
+//    same numbers — see src/lanes.ts.
+const XGAP = 28, ROOTGAP = 90
 function relayout(ns: Node[], es: Edge[], orient: 'v' | 'h' = 'v'): Node[] {
   const H = orient === 'h'
   const ext = (n: Node) => (H ? sizeOf(n).h : sizeOf(n).w)
@@ -183,6 +181,8 @@ const loadSeen = (): string[] => {
 }
 
 function Canvas() {
+  // React Flow colours are props, not classes — read them off src/styles.css
+  const tok = useTokens()
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -583,14 +583,26 @@ function Canvas() {
   }, [])
 
   // intake tray → a draft strat node in its altitude lane, pushed clear of neighbours
-  const placeIntake = useCallback((kind: StratKind, title: string) => {
-    const id = `intake-${Date.now().toString(36)}`
+  const placeIntake = useCallback((kind: StratKind, title: string): string => {
+    const id = `intake-${Date.now().toString(36)}-${++mintCounter}`
     const lane = kind === 'goal' ? 'goal' : kind === 'problem' ? 'problem' : 'child'
     const fresh: Node = { id, type: 'strat', position: orient === 'h' ? { x: LANE_X[lane], y: 0 } : { x: 0, y: LANE_Y[lane] }, data: { strat: { kind, title, createdAt: new Date().toISOString() } } }
     setNodes((ns) => deoverlap([...ns, fresh], orient))
     setSelectedId(id); setView('canvas')
     setTimeout(() => fitView({ duration: 400, nodes: [{ id }], maxZoom: 1 }), 120)
+    return id
   }, [orient, fitView])
+
+  // the other half of the discipline choice: answer it with a lookup instead of
+  // spending a test. The question hangs off the same problem the solution does,
+  // so it lands in the shared question/solution lane beside its rival.
+  const askQuestion = useCallback((solutionId: string) => {
+    const src = nodes.find((n) => n.id === solutionId)
+    const title = (src?.data as any)?.strat?.title ?? 'this solution'
+    const parent = edges.find((e) => e.target === solutionId && (e.data as any)?.kind === 'lineage')?.source
+    const id = placeIntake('question', `what would tell us whether ${String(title).toLowerCase()} works?`)
+    if (parent) setEdges((es) => [...es, { id: `e-${parent}-${id}`, source: parent, target: id, data: { kind: 'lineage' } }])
+  }, [nodes, edges, placeIntake])
 
   const onConnect = useCallback(
     (conn: Connection) => {
@@ -737,9 +749,19 @@ function Canvas() {
             n.type === 'strat' && (n.data as any).strat.kind === 'solution'
               ? () => elevate(n.id)
               : undefined,
+          onAsk:
+            n.type === 'strat' && (n.data as any).strat.kind === 'solution'
+              ? () => askQuestion(n.id)
+              : undefined,
         },
       })),
-    [nodes, gates, resolve, elevate, orient, pulseId],
+    [nodes, gates, resolve, elevate, askQuestion, orient, pulseId],
+  )
+
+  // how far the bet cascade actually runs, so the lanes cover every generation
+  const betGens = useMemo(
+    () => betGenerations(nodes.filter((n) => n.type === 'bet').map((n) => n.position), orient),
+    [nodes, orient],
   )
 
   const displayEdges = useMemo(
@@ -750,26 +772,26 @@ function Canvas() {
         const targetPruned = gates.get(e.target) === 'pruned'
         const base: Partial<Edge> = { type: 'smoothstep' }
         if (kind === 'lineage') {
-          base.style = { stroke: INK, strokeWidth: 1.4 }
+          base.style = { stroke: tok['edge-strong'], strokeWidth: 1.4 }
         } else if (kind === 'elevation') {
-          base.style = { stroke: TERRA, strokeWidth: 1.4, strokeDasharray: '7 4' }
+          base.style = { stroke: tok.terra, strokeWidth: 1.4, strokeDasharray: '7 4' }
         } else if (kind === 'spawn') {
-          base.style = { stroke: FADE, strokeWidth: 1.4, strokeDasharray: '2 4' }
+          base.style = { stroke: tok.fade, strokeWidth: 1.4, strokeDasharray: '2 4' }
         } else if (kind === 'evidence') {
-          base.style = { stroke: '#2e7d5b', strokeWidth: 1.8 }
-          base.markerEnd = { type: MarkerType.ArrowClosed, color: '#2e7d5b' }
+          base.style = { stroke: tok.win, strokeWidth: 1.8 }
+          base.markerEnd = { type: MarkerType.ArrowClosed, color: tok.win }
         } else if (kind === 'refute') {
-          base.style = { stroke: TERRA, strokeWidth: 2.2, strokeDasharray: '3 3' }
-          base.markerEnd = { type: MarkerType.ArrowClosed, color: TERRA }
+          base.style = { stroke: tok.terra, strokeWidth: 2.2, strokeDasharray: '3 3' }
+          base.markerEnd = { type: MarkerType.ArrowClosed, color: tok.terra }
         } else if (kind === 'dependency') {
-          base.style = { stroke: TERRA, strokeWidth: 2 }
-          base.markerEnd = { type: MarkerType.ArrowClosed, color: TERRA }
+          base.style = { stroke: tok.terra, strokeWidth: 2 }
+          base.markerEnd = { type: MarkerType.ArrowClosed, color: tok.terra }
           base.animated = srcBet?.status === 'running'
         }
         if (targetPruned) base.style = { ...base.style, opacity: 0.25 }
-        return { ...e, ...base, labelStyle: { fontFamily: 'IBM Plex Mono', fontSize: 10, fill: kind === 'spawn' ? FADE : TERRA }, labelBgStyle: { fill: '#f6f7f9' } }
+        return { ...e, ...base, labelStyle: { fontFamily: 'IBM Plex Mono', fontSize: 10, fill: kind === 'spawn' ? tok.fade : tok.terra }, labelBgStyle: { fill: tok.paper } }
       }),
-    [edges, nodes, gates],
+    [edges, nodes, gates, tok],
   )
 
   const selectedNode = selectedId ? displayNodes.find((n) => n.id === selectedId) : null
@@ -821,15 +843,27 @@ function Canvas() {
         minZoom={0.2}
         proOptions={{ hideAttribution: true }}
       >
-        {/* layout controls belong to the canvas, not the global nav */}
-        <Panel position="top-right" className="canvastools">
-          <button className="btn2 sm" onClick={flip} title="flip layout orientation">{orient === 'v' ? '⇆ horizontal' : '⇅ vertical'}</button>
-          <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(relayout(ns, edges, orient), orient))} title="tree auto-layout">re-layout</button>
-          <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(ns, orient))} title="resolve overlaps along the packing axis">tidy</button>
+        {/* layout controls and the legend belong to the canvas, not the global
+            nav — one stacked cluster, clear of the bets row */}
+        <Panel position="top-right" className="canvascluster">
+          <div className="canvastools">
+            <button className="btn2 sm" onClick={flip} title="flip layout orientation">{orient === 'v' ? '⇆ horizontal' : '⇅ vertical'}</button>
+            <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(relayout(ns, edges, orient), orient))} title="tree auto-layout">re-layout</button>
+            <button className="btn2 sm" onClick={() => setNodes((ns) => deoverlap(ns, orient))} title="resolve overlaps along the packing axis">tidy</button>
+          </div>
+          <div className="legend">
+            <div><span className="sw solid" /> lineage (cascade)</div>
+            <div><span className="sw dash terra" /> tests (elevation)</div>
+            <div><span className="sw solid terra" /> unlocks (dependency)</div>
+            <div><span className="sw dot" /> spawned (learning)</div>
+            <div><span className="sw solid win" /> evidence (supports / grounds)</div>
+            <div><span className="sw dash terra" /> refutes (detonation)</div>
+          </div>
         </Panel>
-        <Background variant={BackgroundVariant.Lines} gap={28} color="#e3e7ec" />
+        <LaneLayer orient={orient} generations={betGens} />
+        <Background variant={BackgroundVariant.Lines} gap={28} color={tok.grid} />
         <Controls />
-        <MiniMap pannable zoomable nodeColor={(n) => (n.type === 'bet' ? TERRA : INK)} />
+        <MiniMap pannable zoomable nodeColor={(n) => (n.type === 'bet' ? tok['edge-strong'] : tok.edge)} />
       </ReactFlow>
       ) : view === 'docket' ? (
         <DocketView nodes={nodes} edges={edges} onOpen={(id) => setSelectedId(id)} onMoment={(kind, nodeId) => { setSelectedId(nodeId); setMoment({ kind, nodeId }) }} />
@@ -839,15 +873,6 @@ function Canvas() {
           onDiff={(id) => setDoc({ kind: 'diff', nodeId: id })}
           onStatus={(id, status) => patchBet(id, { status } as any)} />
       )}
-
-      {view === 'canvas' && <div className="legend narrator">
-        <div><span className="sw" style={{ background: INK }} /> lineage (cascade)</div>
-        <div><span className="sw dash" style={{ borderColor: TERRA }} /> tests (elevation)</div>
-        <div><span className="sw" style={{ background: TERRA }} /> unlocks (dependency)</div>
-        <div><span className="sw dot" style={{ borderColor: FADE }} /> spawned (learning)</div>
-        <div><span className="sw" style={{ background: '#2e7d5b' }} /> evidence (supports / grounds)</div>
-        <div><span className="sw dash" style={{ borderColor: TERRA }} /> refutes (detonation)</div>
-      </div>}
 
       {selectedNode && (
         <RecordPanel node={selectedNode} nodes={nodes} edges={edges} onClose={() => setSelectedId(null)} onEdit={editBet} onEditStrat={patchStrat}

@@ -14,17 +14,23 @@ export function StratNode({ data, selected }: any) {
       </div>
       <div className="node-title">{s.title}</div>
       {s.takeaway && <div className="takeaway">→ {s.takeaway}</div>}
-      {s.kind === 'solution' && data.onElevate && (
-        <button
-          className="elevate"
-          title="Elevate to bet"
-          onClick={(e) => {
-            e.stopPropagation()
-            data.onElevate()
-          }}
-        >
-          ↗ elevate to bet
-        </button>
+      {/* the discipline choice — spend a test, or answer it with a lookup.
+          Equal weight on purpose: neither is the recommended one. */}
+      {s.kind === 'solution' && (data.onElevate || data.onAsk) && (
+        <div className="solution-acts">
+          {data.onElevate && (
+            <button className="act" title="mint a draft bet that tests this solution"
+              onClick={(e) => { e.stopPropagation(); data.onElevate() }}>
+              place a bet
+            </button>
+          )}
+          {data.onAsk && (
+            <button className="act" title="mint a question under the same problem"
+              onClick={(e) => { e.stopPropagation(); data.onAsk() }}>
+              ask a question
+            </button>
+          )}
+        </div>
       )}
       <Handle type="source" position={data.orient === 'h' ? Position.Right : Position.Bottom} />
     </div>
@@ -40,8 +46,13 @@ const OUTCOME_LABEL: Record<string, string> = {
 export function BetNode({ data, selected }: any) {
   const b = data.bet as BetRecord
   const gate = (data.gate ?? 'open') as Gate
+  // the seal mark: locked is the one state the record can no longer be edited in
   const statusLabel =
-    b.status === 'resolved' ? OUTCOME_LABEL[b.outcome ?? 'inconclusive'] : b.status.toUpperCase()
+    b.status === 'resolved'
+      ? OUTCOME_LABEL[b.outcome ?? 'inconclusive']
+      : b.status === 'locked'
+        ? '◆ LOCKED'
+        : b.status.toUpperCase()
   const statusClass = b.status === 'resolved' ? `s-${b.outcome}` : `s-${b.status}`
   const resolvable = b.status === 'locked' || b.status === 'running'
 
