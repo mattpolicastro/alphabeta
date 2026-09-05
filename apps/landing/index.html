@@ -5,47 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>αlphaβeta — the tools aren't missing. The discipline is.</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<script src="/theme.js" defer></script>
 <style>
-  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
-  :root {
-    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
-    --accent:#4059d8; --accent-contrast:#ffffff;
-  }
-  [data-theme="dark"] {
-    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
-    --accent:#7b8ce8; --accent-contrast:#15171a;
-  }
-  * { box-sizing:border-box }
-  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
-  main { max-width:860px; margin:0 auto; padding:0 24px }
+  /* Page-specific: the landing narrative. Everything else is /style.css. */
   section { padding:64px 0 }
-  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
   h1 u { text-decoration:none; border-bottom:4px solid var(--accent) }
-  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
-  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
-  p { margin:0 0 14px }
-  .lede { font-size:20px }
-  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
-  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
-  .muted { color:var(--dim) }
-  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em }
-  .topbar { display:flex; align-items:baseline; justify-content:space-between; padding:18px 0 }
-  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
-  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
-  .tab:hover { color:var(--ink); border-bottom-color:var(--ink) }
-  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink) }
-  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
-  .grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) }
-  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
-  .loop { display:grid; gap:12px; grid-template-columns:repeat(5,1fr); counter-reset:step }
-  .loop .tile::before { counter-increment:step; content:'0' counter(step); display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); margin-bottom:8px }
+  ul { padding-left:20px } li { margin-bottom:8px }
   blockquote { margin:0; padding:20px 24px; border-left:3px solid var(--accent); background:var(--card); font-size:17.5px }
   .callout { padding:28px; border:1.5px solid var(--ink); background:var(--card) }
-  ul { padding-left:20px } li { margin-bottom:8px }
-  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
-  .themebtn { align-self:center; font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
-  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
-  a { color:inherit }
+  .loop { display:grid; gap:12px; grid-template-columns:repeat(5,1fr); counter-reset:step }
+  .loop .tile::before { counter-increment:step; content:'0' counter(step); display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); margin-bottom:8px }
   @media (max-width:720px){ .loop { grid-template-columns:1fr 1fr } }
 </style>
 </head>
@@ -57,7 +31,7 @@
     <a class="tab" href="/lab/">lab</a>
     <a class="tab" href="/capabilities/">capabilities</a>
   </nav>
-  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+  <button class="themebtn" id="themebtn">◐ dark</button>
 </div>
 
 <!-- ═══ HERO ═══ -->
@@ -162,21 +136,5 @@
 
 <footer>αlphaβeta · say what would change your mind — before you look.</footer>
 </main>
-<script>
-  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
-  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  let theme = saved || prefers
-  apply()
-  function apply(){
-    document.documentElement.setAttribute('data-theme', theme)
-    const b = document.getElementById('themebtn')
-    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
-  }
-  function toggleTheme(){
-    theme = theme === 'dark' ? 'light' : 'dark'
-    try { localStorage.setItem('ab-theme', theme) } catch(e){}
-    apply()
-  }
-</script>
 </body>
 </html>

@@ -15,7 +15,7 @@
  *  - One-tailed means the direction was declared in advance: treatment > control.
  *    The p-value is the upper tail and the CI is one-sided (upper bound +∞).
  */
-import { normalQuantile, normalSf, studentTQuantile, studentTSf } from './special.js';
+import { normalQuantile, normalSf, studentTQuantile, studentTSf } from '../analysis/special.js';
 function assertFinite(name, v) {
     if (typeof v !== 'number' || !Number.isFinite(v)) {
         throw new RangeError(`${name} must be a finite number`);

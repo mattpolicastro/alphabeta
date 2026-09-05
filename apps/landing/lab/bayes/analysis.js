@@ -21,7 +21,7 @@
  * own Monte Carlo noise of ours) and add expected loss and a credible
  * interval on lift, which it deliberately omits.
  */
-import { betaPdf, betaQuantile, betainc, gaussLegendre } from './special.js';
+import { betaPdf, betaQuantile, betainc, gaussLegendre } from '../analysis/special.js';
 function assertFinite(name, v) {
     if (typeof v !== 'number' || !Number.isFinite(v)) {
         throw new RangeError(`${name} must be a finite number`);

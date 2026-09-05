@@ -5,17 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>αlphaβeta lab — what can I detect with the traffic I have?</title>
 <meta name="robots" content="noindex">
-<style>body{margin:0;padding:24px;font:13px/1.7 'IBM Plex Mono',ui-monospace,SFMono-Regular,monospace;color:#8b939c;background:#f6f7f9}a{color:inherit}</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+  /* Page-specific: a redirect stub, mono and quiet. Tokens from /style.css. */
+  body { padding:24px; font:13px/1.7 'IBM Plex Mono',ui-monospace,SFMono-Regular,monospace; color:var(--dim) }
+</style>
 </head>
 <body>
-<p>Detectable lift is now a mode of <a id="to" href="/lab/sample-size/?v=2&amp;solve=mde">/lab/sample-size/</a> — one app, two unknowns of the same relation. Redirecting&hellip;</p>
+<p>Detectable lift is now a mode of <a id="to" href="/lab/sample-size/?v=1&amp;solve=mde">/lab/sample-size/</a> — one app, two unknowns of the same relation. Redirecting&hellip;</p>
 <script>
   // Old detectable-lift schema (v,baseline,traffic,days,variants,tails,alpha,power)
   // mapped onto the merged canonical with solve=mde, so every URL shipped before
   // the merge still resolves to the same numbers. Bare visit → solve=mde defaults.
   var p = new URLSearchParams(location.search)
   var g = function(k, d){ var v = p.get(k); return v === null || v === '' || !isFinite(Number(v)) ? String(d) : String(Number(v)) }
-  var q = 'v=2&solve=mde&baseline=' + g('baseline', 0.02) + '&traffic=' + g('traffic', 5000) +
+  var q = 'v=1&solve=mde&baseline=' + g('baseline', 0.02) + '&traffic=' + g('traffic', 5000) +
           '&days=' + g('days', 14) + '&variants=' + g('variants', 2) +
           '&tails=' + (g('tails', 2) === '1' ? '1' : '2') +
           '&alpha=' + g('alpha', 0.05) + '&power=' + g('power', 0.8)

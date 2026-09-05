@@ -5,60 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>αlphaβeta lab — how big does my test need to be?</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Commissioner:wght@900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<script src="/theme.js" defer></script>
 <style>
-  /* αlphaβeta brand v0 — the Instrument. Light/dark via [data-theme]. */
-  :root {
-    --ground:#f6f7f9; --card:#ffffff; --ink:#26282c; --line:#d5d9de; --dim:#8b939c;
-    --accent:#4059d8; --accent-contrast:#ffffff;
-  }
-  [data-theme="dark"] {
-    --ground:#1b1d21; --card:#23262b; --ink:#e6e8ea; --line:#34383e; --dim:#7d848c;
-    --accent:#7b8ce8; --accent-contrast:#15171a;
-  }
-  * { box-sizing:border-box }
-  body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
-  main { max-width:860px; margin:0 auto; padding:0 24px }
-  section { padding:48px 0 }
-  h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
-  h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
-  h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
-  p { margin:0 0 14px }
-  .lede { font-size:20px }
-  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
-  .eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
-  .muted { color:var(--dim) }
-  .mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
-  .wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
-  .tabs { display:flex; gap:18px; margin:0 auto 0 22px }
-  .tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
-  .tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
-  .cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
-  .cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
-  .tile { padding:18px; border:1px solid var(--line); background:var(--card) }
-  footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
-  .themebtn { font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
-  .themebtn:hover { border-color:var(--ink); color:var(--ink) }
-  a { color:inherit }
-
-  /* ── the tool ── */
-  .tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
-  form { padding:24px }
-  .field { margin-bottom:16px }
-  .field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
-  .field input[type=number] { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
-  .field input[type=number]:focus { outline:none; border-color:var(--ink) }
-  .field .unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); pointer-events:none }
-  .field .wrap { position:relative }
-  fieldset { border:0; margin:0; padding:0 }
-  .seg { display:flex; gap:0 }
-  .seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
-  .seg label + label { border-left:0 }
-  .seg input { position:absolute; opacity:0; width:0; height:0 }
-  .seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
-  .seg input:checked + label + input + label { border-left:0 }
-  .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
-  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  /* Page-specific: the solve-for toggle. Everything else is /style.css. */
   .two.solo { grid-template-columns:1fr }
   .solve { margin:0 0 18px; padding-bottom:16px; border-bottom:1px solid var(--line) }
   .solve .k { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px }
@@ -69,26 +23,6 @@
   .solve .opts a:hover { color:var(--ink) }
   .solve .opts a:focus-visible { outline:2px solid var(--ink); outline-offset:-2px; color:var(--ink) }
   .solve .hint { font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.6; color:var(--dim); margin:8px 0 0 }
-  .help { font-size:13px; color:var(--dim); margin:4px 0 0 }
-
-  .result { padding:24px }
-  .big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(34px,5vw,46px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
-  .stat { margin-bottom:18px }
-  .stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
-  .assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
-  .err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
-  .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
-  .receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
-  .receipt .h { font-weight:600; color:var(--ink) }
-  .flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
-  details { margin-top:8px }
-  summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
-  details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
-  code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
-  table { border-collapse:collapse; width:100%; margin:10px 0 }
-  td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
-  th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
-  @media (max-width:720px){ .tool { grid-template-columns:1fr } }
 </style>
 </head>
 <body>
@@ -99,7 +33,7 @@
     <a class="tab" href="/lab/" aria-current="page">lab</a>
     <a class="tab" href="/capabilities/">capabilities</a>
   </nav>
-  <button class="themebtn" id="themebtn" onclick="toggleTheme()">◐ dark</button>
+  <button class="themebtn" id="themebtn">◐ dark</button>
 </div>
 
 <section>
@@ -206,22 +140,6 @@
 
 <footer>αlphaβeta · say what would change your mind — before you look.</footer>
 </main>
-<script>
-  const saved = (()=>{ try { return localStorage.getItem('ab-theme') } catch(e){ return null } })()
-  const prefers = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  let theme = saved || prefers
-  apply()
-  function apply(){
-    document.documentElement.setAttribute('data-theme', theme)
-    const b = document.getElementById('themebtn')
-    if (b) b.textContent = theme === 'dark' ? '◑ light' : '◐ dark'
-  }
-  function toggleTheme(){
-    theme = theme === 'dark' ? 'light' : 'dark'
-    try { localStorage.setItem('ab-theme', theme) } catch(e){}
-    apply()
-  }
-</script>
 <script type="module">
   import { sampleSize, detectableLift, runtimeDays } from './analysis.js'
 
@@ -230,7 +148,11 @@
   // receipt for one specific question even though one file serves both.
   const APP = 'https://app.alphabeta.tools/bet/new'
   const ORDER = ['v', 'solve', 'baseline', 'mde', 'mdeKind', 'traffic', 'days', 'variants', 'tails', 'alpha', 'power']
-  const SCHEMA = 2  // v1 = the two pre-merge schemas; v2 = one app, `solve` inside the seal
+  // v1 is the only schema during alpha. The merge did change the canonical
+  // string (`solve` is now part of it), so receipts sealed before it will not
+  // reproduce — holding at v1 anyway is a deliberate pre-users decision, not a
+  // claim that the schema is unchanged. Bump it once there is someone to break.
+  const SCHEMA = 1
   const DEFAULTS = { v: SCHEMA, solve: 'n', baseline: 0.02, mde: 0.10, mdeKind: 'relative', traffic: null, days: 14, variants: 2, tails: 2, alpha: 0.05, power: 0.8 }
   // Traffic a solve=mde URL falls back to when it arrives without one (the old
   // detectable-lift page default), vs. the traffic the toggle assumes when
@@ -261,14 +183,11 @@
   function parse(qs){
     const p = new URLSearchParams(qs)
     const s = { ...DEFAULTS }
-    // v1 links predate the merge and carry no `solve`. The old sample-size
-    // schema had `mde`, the old detectable-lift schema had `days`; read the
-    // shape to pick the mode, then re-emit as v2. Old receipts will not
-    // re-seal — the canonical string changed — but old links still resolve.
-    const v = num(p.get('v'), SCHEMA)
+    // Links from before the merge carry no `solve`. The old sample-size schema
+    // had `mde`, the old detectable-lift schema had `days` — read the shape.
     s.solve = p.get('solve') === 'mde' ? 'mde'
       : p.get('solve') === 'n' ? 'n'
-      : v < 2 && p.get('days') !== null && p.get('mde') === null ? 'mde'
+      : (p.get('days') !== null && p.get('mde') === null) ? 'mde'
       : 'n'
     s.baseline = num(p.get('baseline'), s.baseline)
     s.mde = num(p.get('mde'), s.mde)

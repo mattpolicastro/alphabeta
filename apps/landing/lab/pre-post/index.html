@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/lab/pre-post/favicon.svg" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon-32.png" sizes="32x32">
+    <link rel="icon" href="/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>αlphaβeta lab — did the change move the series?</title>
     <meta
@@ -11,7 +14,16 @@
     />
     <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@900&display=swap" rel="stylesheet">
     <style>
-      /* αlphaβeta lab strip — sits above the CausalImpact app, colours from the app's own variables. */
+      /* αlphaβeta lab strip — sits above the CausalImpact app, colours from the
+         app's own variables.
+
+         This page deliberately does NOT link /style.css, unlike every other page
+         under apps/landing. The shared sheet styles bare elements — body, h1,
+         h2, h3, p, a, footer, table, td/th, code, summary, section — and the
+         CausalImpact bundle below owns those same elements with its own
+         palette and scale. Linking it restyles the embedded app rather than
+         just deduplicating chrome. The strip below is the only overlap, and it
+         is nine lines. Revisit if the shared sheet ever grows a scoped base. */
       .ab-topbar { max-width: 1060px; margin: 0 auto; padding: 18px 20px 0; display: flex; align-items: baseline; gap: 22px; border-bottom: 0; }
       .ab-topbar .wordmark { font-family: 'Commissioner', system-ui, sans-serif; font-weight: 900; font-size: 20px; letter-spacing: -0.02em; text-decoration: none; color: var(--ink); }
       .ab-topbar .tab { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-size: 13px; text-decoration: none; color: var(--ink-muted); padding: 4px 0; border-bottom: 1.5px solid transparent; }

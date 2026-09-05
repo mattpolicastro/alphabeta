@@ -1,0 +1,134 @@
+/* αlphaβeta brand v0 — the Instrument. One sheet for every apps/landing page.
+   Extracted 2026-09-04 from ten inline copies that had already drifted apart.
+   Nothing page-specific lives here: the test for a rule is whether a second
+   page would ever want it. Page-only rules stay in that page's own <style>.
+
+   Palette is the settled one from prototypes/graph-canvas/src/styles.css, so
+   the marketing origin and the app origin read as one product. Names differ
+   where landing's predate the canvas: --ground = canvas --paper, --card =
+   --paper-raised, --dim = --fade, --line = --edge. Values are identical.
+
+   Three theme states, and the two dark blocks are one palette — edit together:
+   bare :root is light, the media query is the system default, [data-theme] is
+   an explicit choice made with the ◐ button (see theme.js). */
+:root {
+  --ground:#f6f7f9; --card:#ffffff; --ink:#26282c;
+  --line:#c9ced5; --edge-strong:#8d949d; --dim:#8b939c;
+  --accent:#4059d8; --accent-contrast:#ffffff;
+  --incon:#b58a1e; --win:#2e7d5b; --loss:#6d747d;
+  --raise:0 1px 1px rgba(24,26,30,.05), 0 2px 6px rgba(24,26,30,.09);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:#191b1f; --card:#272b31; --ink:#e6e8ea;
+    --line:#3c414a; --edge-strong:#5b626d; --dim:#7d848c;
+    --accent:#7b8ce8; --accent-contrast:#15171a;
+    --incon:#cba33a; --win:#4f9c78; --loss:#828a94;
+    --raise:0 1px 1px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --ground:#191b1f; --card:#272b31; --ink:#e6e8ea;
+  --line:#3c414a; --edge-strong:#5b626d; --dim:#7d848c;
+  --accent:#7b8ce8; --accent-contrast:#15171a;
+  --incon:#cba33a; --win:#4f9c78; --loss:#828a94;
+  --raise:0 1px 1px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.4);
+}
+
+/* ── base ── */
+* { box-sizing:border-box }
+body { margin:0; font:16.5px/1.6 'Barlow',sans-serif; color:var(--ink); background:var(--ground); transition:background .2s,color .2s }
+main { max-width:860px; margin:0 auto; padding:0 24px }
+section { padding:48px 0 }
+h1 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(38px,6vw,58px); line-height:1.05; margin:0 0 16px }
+h2 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:29px; line-height:1.2; margin:0 0 20px }
+h3 { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:18px; margin:0 0 6px }
+p { margin:0 0 14px }
+a { color:inherit }
+.lede { font-size:20px }
+.muted { color:var(--dim) }
+.mono { font-family:'IBM Plex Mono',monospace; font-size:13px }
+.eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; display:flex; align-items:center; gap:10px }
+.eyebrow::after { content:''; flex:1; border-top:1px solid var(--line) }
+
+/* ── chrome ──
+   The topbar aligns on the baseline, not the box: the wordmark carries the β
+   descender and the uppercase tabs carry none, so centring boxes rides the
+   wordmark visibly high. The button has no baseline worth sharing, so it
+   re-centres itself. */
+.topbar { display:flex; align-items:baseline; justify-content:space-between; padding:18px 0 }
+.wordmark { font-family:'Commissioner',sans-serif; font-weight:900; font-size:20px; letter-spacing:-.02em; text-decoration:none; color:inherit }
+.tabs { display:flex; gap:18px; margin:0 auto 0 22px }
+.tab { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; text-decoration:none; color:var(--dim); padding:4px 0; border-bottom:1.5px solid transparent }
+.tab:hover, .tab[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink) }
+.themebtn { align-self:center; font-family:'IBM Plex Mono',monospace; font-size:11px; background:none; border:1px solid var(--line); color:var(--dim); padding:5px 12px; cursor:pointer }
+.themebtn:hover { border-color:var(--ink); color:var(--ink) }
+footer { padding:40px 0; font-size:13px; color:var(--dim); font-family:'IBM Plex Mono',monospace }
+
+/* ── blocks ── */
+.cta { font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:13px; display:inline-block; margin:8px 12px 0 0; padding:11px 20px; border:1.5px solid var(--ink); text-decoration:none; color:var(--ink); background:none; cursor:pointer }
+.cta.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast) }
+.cta.small { padding:7px 14px; font-size:12px; margin:0 }
+.cta.pencil { border-style:dashed; border-color:var(--dim); color:var(--dim); cursor:default }
+.grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) }
+.tile { padding:18px; border:1px solid var(--line); background:var(--card) }
+#fail { display:none }
+
+/* ── lab tools: the instrument ──
+   Every /lab/* page is the same two-column form ⇄ result, so the anatomy is
+   shared and only the tool's own readout is page-specific. */
+.tool { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start }
+form { padding:24px }
+.field { margin-bottom:16px }
+.field label, .field legend { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; padding:0 }
+.field input[type=number], .field input[type=text], .field select { width:100%; font:inherit; font-family:'IBM Plex Mono',monospace; font-size:15px; padding:8px 10px; border:1px solid var(--line); background:var(--ground); color:var(--ink) }
+.field input:focus, .field select:focus { outline:none; border-color:var(--ink) }
+.field .wrap { position:relative }
+.field .unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--dim); pointer-events:none }
+fieldset { border:0; margin:0; padding:0 }
+.seg { display:flex; gap:0 }
+.seg label { flex:1; margin:0; text-align:center; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); padding:8px 0; border:1px solid var(--line); cursor:pointer; user-select:none }
+.seg label + label { border-left:0 }
+.seg input { position:absolute; opacity:0; width:0; height:0 }
+.seg input:checked + label { color:var(--ink); border-color:var(--ink); background:var(--card) }
+.seg input:checked + label + input + label { border-left:0 }
+.seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.help { font-size:13px; color:var(--dim); margin:4px 0 0 }
+
+/* One arm of a multi-arm readout. The column template is the tool's business
+   (a binomial arm and a continuous arm are different shapes) and stays inline. */
+.arm { display:grid; gap:8px; margin-bottom:10px; padding:10px; border:1px dashed var(--line) }
+.arm.control { border-style:solid }
+.arm .field { margin:0 }
+.arm .field input { font-size:14px; padding:7px 8px }
+.arm .field label { font-size:10px }
+
+.result { padding:24px }
+.big { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:clamp(34px,5vw,46px); line-height:1; letter-spacing:-.01em; margin:2px 0 4px; font-variant-numeric:tabular-nums }
+.stat { margin-bottom:18px }
+.stat .k { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim) }
+.stat .ci { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim); font-variant-numeric:tabular-nums }
+.cmp { margin:0 0 22px; padding:0 0 18px; border-bottom:1px solid var(--line) }
+.cmp:last-of-type { border-bottom:0; padding-bottom:0 }
+.cmp h3 { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; margin:0 0 10px }
+.control-line { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim); margin:0 0 16px; font-variant-numeric:tabular-nums }
+.assump { margin:18px 0 0; padding:14px 0 0; border-top:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--dim); white-space:pre-wrap }
+.err { font-family:'IBM Plex Mono',monospace; font-size:13px; padding:14px; border:1px dashed var(--dim); color:var(--dim); margin:0 }
+
+/* ── the seal ── */
+.actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--line) }
+.receipt { margin-top:16px; padding:14px; border:1px solid var(--line); background:var(--ground); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all }
+.receipt .h { font-weight:600; color:var(--ink) }
+.flash { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-left:6px }
+
+/* ── the method drawer ── */
+details { margin-top:8px }
+summary { cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:15px }
+details .mono { color:var(--dim); line-height:1.7; white-space:pre-wrap; word-break:break-all }
+code { font-family:'IBM Plex Mono',monospace; font-size:.9em }
+table { border-collapse:collapse; width:100%; margin:10px 0 }
+td, th { text-align:left; padding:6px 10px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px }
+th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400 }
+
+@media (max-width:720px){ .tool { grid-template-columns:1fr } }
