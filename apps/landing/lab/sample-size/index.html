@@ -59,6 +59,7 @@
   .seg input:checked + label + input + label { border-left:0 }
   .seg input:focus-visible + label { outline:2px solid var(--ink); outline-offset:-2px }
   .two { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .two.solo { grid-template-columns:1fr }
   .solve { margin:0 0 18px; padding-bottom:16px; border-bottom:1px solid var(--line) }
   .solve .k { display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:6px }
   .solve .opts { display:flex }
@@ -102,9 +103,9 @@
 </div>
 
 <section>
-  <div class="eyebrow">Sample size</div>
-  <h1>How big does my test need to be?</h1>
-  <p class="lede">Given a baseline rate and the smallest lift worth detecting, how many visitors each variant needs before the test can say anything.</p>
+  <div class="eyebrow">Sample size · detectable lift</div>
+  <h1 id="h1">How big does my test need to be?</h1>
+  <p class="lede" id="lede">Given a baseline rate and the smallest lift worth detecting, how many visitors each variant needs before the test can say anything.</p>
 </section>
 
 <section style="padding-top:0">
@@ -112,9 +113,9 @@
     <form class="tile" id="form" autocomplete="off" onsubmit="return false">
       <div class="solve">
         <span class="k" id="solvelabel">solve for</span>
-        <div class="opts" role="group" aria-labelledby="solvelabel">
-          <span aria-current="page">sample size</span>
-          <a id="flip" href="/lab/detectable-lift/">detectable lift</a>
+        <div class="opts" id="opts" role="group" aria-labelledby="solvelabel">
+          <a id="opt-n" data-solve="n" href="?">sample size</a>
+          <a id="opt-mde" data-solve="mde" href="?">detectable lift</a>
         </div>
         <p class="hint" id="solvehint"></p>
       </div>
@@ -122,7 +123,7 @@
         <label for="baseline">Baseline conversion rate</label>
         <div class="wrap"><input type="number" id="baseline" name="baseline" min="0" max="100" step="any" inputmode="decimal"><span class="unit">%</span></div>
       </div>
-      <div class="field">
+      <div class="field" id="f-mde">
         <label for="mde">Minimum detectable effect</label>
         <div class="two">
           <div class="wrap"><input type="number" id="mde" name="mde" step="any" inputmode="decimal"><span class="unit" id="mdeunit">%</span></div>
@@ -132,6 +133,16 @@
           </fieldset>
         </div>
         <p class="help" id="mdehelp"></p>
+      </div>
+      <div class="two" id="row-traffic">
+        <div class="field" id="f-traffic">
+          <label for="traffic">Daily traffic <span style="text-transform:none;letter-spacing:0" id="trafficopt">(optional, all arms)</span></label>
+          <div class="wrap"><input type="number" id="traffic" name="traffic" min="0" step="1" inputmode="numeric" placeholder="—"><span class="unit">/ day</span></div>
+        </div>
+        <div class="field" id="f-days">
+          <label for="days">Runtime</label>
+          <div class="wrap"><input type="number" id="days" name="days" min="1" step="1" inputmode="numeric"><span class="unit">days</span></div>
+        </div>
       </div>
       <div class="two">
         <div class="field">
@@ -147,7 +158,7 @@
           </fieldset>
         </div>
       </div>
-      <div class="two">
+      <div class="two" style="margin-bottom:-16px">
         <div class="field">
           <label for="alpha">Alpha (α)</label>
           <input type="number" id="alpha" name="alpha" min="0" max="1" step="any" inputmode="decimal">
@@ -156,10 +167,6 @@
           <label for="power">Power (1 − β)</label>
           <input type="number" id="power" name="power" min="0" max="1" step="any" inputmode="decimal">
         </div>
-      </div>
-      <div class="field" style="margin-bottom:0">
-        <label for="traffic">Daily traffic <span style="text-transform:none;letter-spacing:0">(optional, all arms)</span></label>
-        <div class="wrap"><input type="number" id="traffic" name="traffic" min="0" step="1" inputmode="numeric" placeholder="—"><span class="unit">visitors / day</span></div>
       </div>
     </form>
 
@@ -176,21 +183,23 @@
 
   <details>
     <summary>The URL is the contract — schema v1</summary>
-    <p class="muted" style="margin-top:10px">Every input lives in the query string, in this order, and nothing else does. A sealed result is <code>SHA-256</code> of the canonical string (everything after <code>?</code>), so the same inputs always produce the same receipt.</p>
+    <p class="muted" style="margin-top:10px">One relation, two unknowns: fix the lift and it gives you the n, fix the n and it gives you the lift. <code>solve</code> says which. Every input lives in the query string, in this order, and nothing else does. A sealed result is <code>SHA-256</code> of the canonical string (everything after <code>?</code>), so the same inputs always produce the same receipt — and a receipt is a receipt for one question, because <code>solve</code> is inside the hash.</p>
     <table>
       <tr><th>key</th><th>value</th><th>notes</th></tr>
       <tr><td><code>v</code></td><td><code>1</code></td><td>schema version; a breaking change bumps it</td></tr>
+      <tr><td><code>solve</code></td><td><code>n</code> | <code>mde</code></td><td>the unknown: <code>n</code> = how big, <code>mde</code> = what can I detect</td></tr>
       <tr><td><code>baseline</code></td><td>proportion in (0, 1)</td><td>2% is <code>0.02</code></td></tr>
-      <tr><td><code>mde</code></td><td>proportion, non-zero</td><td>relative: <code>0.1</code> = +10% lift; absolute: <code>0.002</code> = +0.2 points</td></tr>
-      <tr><td><code>mdeKind</code></td><td><code>relative</code> | <code>absolute</code></td><td></td></tr>
+      <tr><td><code>mde</code></td><td>proportion, non-zero</td><td><code>solve=n</code> only — relative: <code>0.1</code> = +10% lift; absolute: <code>0.002</code> = +0.2 points</td></tr>
+      <tr><td><code>mdeKind</code></td><td><code>relative</code> | <code>absolute</code></td><td><code>solve=n</code> only</td></tr>
+      <tr><td><code>traffic</code></td><td>positive integer</td><td>daily visitors across all arms; required for <code>solve=mde</code>, optional (and omitted when blank) for <code>solve=n</code></td></tr>
+      <tr><td><code>days</code></td><td>positive integer</td><td><code>solve=mde</code> only — runtime</td></tr>
       <tr><td><code>variants</code></td><td>integer ≥ 2</td><td>arms including control</td></tr>
       <tr><td><code>tails</code></td><td><code>1</code> | <code>2</code></td><td></td></tr>
       <tr><td><code>alpha</code></td><td>proportion in (0, 1)</td><td>family-wise; split across variants − 1 comparisons (Bonferroni)</td></tr>
       <tr><td><code>power</code></td><td>proportion in (0, 1)</td><td></td></tr>
-      <tr><td><code>traffic</code></td><td>positive integer, optional</td><td>daily visitors across all arms; omitted when blank</td></tr>
     </table>
-    <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.1</code>, not <code>0.10</code>); the parser accepts either. Method: two-proportion z-test, equal arms, no continuity correction — R's <code>power.prop.test</code>, the same convention as the reference calculator on forwarddigital.org/tools.</p>
-    <p class="mono">One relation, two unknowns. <a href="/lab/detectable-lift/">What can I detect with the traffic I have?</a> solves the same <code>power.prop.test</code> for the lift instead of the n; the <strong>solve for</strong> toggle navigates there, carrying <code>baseline</code>, <code>variants</code>, <code>tails</code>, <code>alpha</code> and <code>power</code> verbatim and restating the computed total as that page's <code>traffic</code> × <code>days</code>. Each page keeps its own URL, its own schema and its own seal — a receipt is a receipt for one question.</p>
+    <p class="mono">Numbers are written in their shortest exact decimal form (<code>0.1</code>, not <code>0.10</code>); the parser accepts either. Visitors per variant under <code>solve=mde</code> is <code>⌈traffic × days / variants⌉</code>. Method for both directions: two-proportion z-test, equal arms, no continuity correction — R's <code>power.prop.test</code>, the same convention as the reference calculator on forwarddigital.org/tools. <code>solve=mde</code> runs it backwards, finding the smallest positive relative lift that reaches the stated power at that per-arm n by bisection to 1e-12.</p>
+    <p class="mono">The <strong>solve for</strong> toggle flips the unknown in place and carries the inputs across: <code>baseline</code>, <code>variants</code>, <code>tails</code>, <code>alpha</code> and <code>power</code> verbatim, the computed runtime into <code>days</code>, and the computed lift into <code>mde</code> (<code>mdeKind=relative</code>, rounded up at 6 dp so the trip back never asks for more visitors than you already had). <a href="/lab/detectable-lift/">/lab/detectable-lift/</a> is kept as a redirect: it maps its old schema onto <code>solve=mde</code> and forwards here.</p>
     <p class="mono">Example: <code id="example"></code></p>
   </details>
 </section>
@@ -214,11 +223,35 @@
   }
 </script>
 <script type="module">
-  import { sampleSize, runtimeDays } from './analysis.js'
+  import { sampleSize, detectableLift, runtimeDays } from './analysis.js'
 
+  // One app, two unknowns of the same power.prop.test relation. `solve` is part
+  // of the canonical query and therefore part of the seal, so a receipt stays a
+  // receipt for one specific question even though one file serves both.
   const APP = 'https://app.alphabeta.tools/bet/new'
-  const KEYS = ['v', 'baseline', 'mde', 'mdeKind', 'variants', 'tails', 'alpha', 'power', 'traffic']
-  const DEFAULTS = { v: 1, baseline: 0.02, mde: 0.10, mdeKind: 'relative', variants: 2, tails: 2, alpha: 0.05, power: 0.8, traffic: null }
+  const ORDER = ['v', 'solve', 'baseline', 'mde', 'mdeKind', 'traffic', 'days', 'variants', 'tails', 'alpha', 'power']
+  const SCHEMA = 2  // v1 = the two pre-merge schemas; v2 = one app, `solve` inside the seal
+  const DEFAULTS = { v: SCHEMA, solve: 'n', baseline: 0.02, mde: 0.10, mdeKind: 'relative', traffic: null, days: 14, variants: 2, tails: 2, alpha: 0.05, power: 0.8 }
+  // Traffic a solve=mde URL falls back to when it arrives without one (the old
+  // detectable-lift page default), vs. the traffic the toggle assumes when
+  // sample-size had the field blank.
+  const MDE_TRAFFIC = 5000
+  const ASSUMED_TRAFFIC = 1000
+
+  const MODES = {
+    n: {
+      title: 'αlphaβeta lab — how big does my test need to be?',
+      h1: 'How big does my test need to be?',
+      lede: 'Given a baseline rate and the smallest lift worth detecting, how many visitors each variant needs before the test can say anything.',
+      from: 'sample-size',
+    },
+    mde: {
+      title: 'αlphaβeta lab — what can I detect with the traffic I have?',
+      h1: 'What can I detect with the traffic I have?',
+      lede: 'The same relation, inverted: fix the traffic and runtime you actually have, and get the smallest lift the test can reliably see. Anything smaller than this, the test will mostly miss.',
+      from: 'detectable-lift',
+    },
+  }
 
   const $ = id => document.getElementById(id)
   const form = $('form')
@@ -228,20 +261,39 @@
   function parse(qs){
     const p = new URLSearchParams(qs)
     const s = { ...DEFAULTS }
+    // v1 links predate the merge and carry no `solve`. The old sample-size
+    // schema had `mde`, the old detectable-lift schema had `days`; read the
+    // shape to pick the mode, then re-emit as v2. Old receipts will not
+    // re-seal — the canonical string changed — but old links still resolve.
+    const v = num(p.get('v'), SCHEMA)
+    s.solve = p.get('solve') === 'mde' ? 'mde'
+      : p.get('solve') === 'n' ? 'n'
+      : v < 2 && p.get('days') !== null && p.get('mde') === null ? 'mde'
+      : 'n'
     s.baseline = num(p.get('baseline'), s.baseline)
     s.mde = num(p.get('mde'), s.mde)
     s.mdeKind = p.get('mdeKind') === 'absolute' ? 'absolute' : 'relative'
+    s.days = Math.round(num(p.get('days'), s.days))
     s.variants = Math.round(num(p.get('variants'), s.variants))
     s.tails = num(p.get('tails'), s.tails) === 1 ? 1 : 2
     s.alpha = num(p.get('alpha'), s.alpha)
     s.power = num(p.get('power'), s.power)
     const t = num(p.get('traffic'), null)
     s.traffic = t && t > 0 ? Math.round(t) : null
+    if (s.solve === 'mde' && !s.traffic) s.traffic = MDE_TRAFFIC
     return s
   }
-  // Canonical: fixed key order, shortest exact decimal, traffic only when set.
+  // Canonical: fixed key order, shortest exact decimal, and only the keys the
+  // chosen unknown actually takes — mde/mdeKind under solve=n, days under
+  // solve=mde, traffic always under solve=mde and only when set under solve=n.
+  function keysFor(s){
+    return ORDER.filter(k =>
+      (k !== 'mde' && k !== 'mdeKind' || s.solve === 'n') &&
+      (k !== 'days' || s.solve === 'mde') &&
+      (k !== 'traffic' || s.solve === 'mde' || !!s.traffic))
+  }
   function canonical(s){
-    return KEYS.filter(k => k !== 'traffic' || s.traffic).map(k => k + '=' + (k === 'mdeKind' ? s[k] : String(Number(s[k])))).join('&')
+    return keysFor(s).map(k => k + '=' + (k === 'mdeKind' || k === 'solve' ? s[k] : String(Number(s[k])))).join('&')
   }
 
   // ── state ⇄ form ──
@@ -251,51 +303,76 @@
     $('baseline').value = r(s.baseline * 100)
     $('mde').value = r(s.mde * 100)
     ;(s.mdeKind === 'absolute' ? $('mk-abs') : $('mk-rel')).checked = true
+    $('traffic').value = s.traffic ?? ''
+    $('days').value = s.days
     $('variants').value = s.variants
     ;(s.tails === 1 ? $('t1') : $('t2')).checked = true
     $('alpha').value = r(s.alpha)
     $('power').value = r(s.power)
-    $('traffic').value = s.traffic ?? ''
   }
   function fromForm(){
     const f = new FormData(form)
     const g = k => f.get(k)
     const t = num(g('traffic'), null)
-    return {
-      v: 1,
+    const s = {
+      v: SCHEMA,
+      solve: state.solve,
       baseline: num(g('baseline'), NaN) / 100,
       mde: num(g('mde'), NaN) / 100,
       mdeKind: g('mdeKind') === 'absolute' ? 'absolute' : 'relative',
+      traffic: t && t > 0 ? Math.round(t) : null,
+      days: Math.round(num(g('days'), NaN)),
       variants: Math.round(num(g('variants'), NaN)),
       tails: g('tails') === '1' ? 1 : 2,
       alpha: num(g('alpha'), NaN),
       power: num(g('power'), NaN),
-      traffic: t && t > 0 ? Math.round(t) : null,
+    }
+    return s
+  }
+
+  // ── mode ──
+  function applyMode(solve){
+    const m = MODES[solve]
+    document.title = m.title
+    $('h1').textContent = m.h1
+    $('lede').textContent = m.lede
+    $('f-mde').hidden = solve === 'mde'
+    $('f-days').hidden = solve === 'n'
+    $('row-traffic').classList.toggle('solo', solve === 'n')
+    $('trafficopt').textContent = solve === 'n' ? '(optional, all arms)' : '(all arms)'
+    $('traffic').min = solve === 'n' ? '0' : '1'
+    for (const k of ['n', 'mde']) {
+      const a = $('opt-' + k)
+      if (k === solve) { a.setAttribute('aria-current', 'page'); a.setAttribute('aria-disabled', 'true') }
+      else { a.removeAttribute('aria-current'); a.removeAttribute('aria-disabled') }
     }
   }
 
   // ── render ──
   const fmt = n => n.toLocaleString('en-US')
   const pct = (x, d = 2) => (x * 100).toFixed(d).replace(/\.?0+$/, '') + '%'
-  function render(s){
+  const pts = (x, d = 3) => (x * 100).toFixed(d).replace(/\.?0+$/, '') + ' pts'
+  const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="big">${v}</div></div>`
+  function fail(e){
     const out = $('out')
+    out.innerHTML = ''
+    const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message
+    out.appendChild(p)
+    return null
+  }
+  function render(s){
+    return s.solve === 'n' ? renderN(s) : renderMde(s)
+  }
+  function renderN(s){
     const rel = s.mdeKind === 'relative'
     $('mdeunit').textContent = rel ? '%' : 'pts'
     $('mdehelp').textContent = rel
       ? 'Lift over baseline: 10% takes 2% to 2.2%.'
       : 'Difference in rate, in percentage points: 0.2 takes 2% to 2.2%.'
     let res
-    try {
-      res = sampleSize(s)
-    } catch (e) {
-      out.innerHTML = ''
-      const p = document.createElement('p'); p.className = 'err'; p.textContent = e.message
-      out.appendChild(p)
-      return null
-    }
+    try { res = sampleSize(s) } catch (e) { return fail(e) }
     const a = res.assumptions
     const days = s.traffic ? runtimeDays({ total: res.total, dailyTraffic: s.traffic }) : null
-    const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="big">${v}</div></div>`
     const assump = [
       `test          ${a.test}`,
       `baseline      ${pct(s.baseline, 4)}  →  treatment ${pct(a.treatmentRate, 4)}`,
@@ -304,7 +381,7 @@
       `tails         ${s.tails}   α ${r(s.alpha)}   power ${r(s.power)}`,
       `z_α ${a.zAlpha.toFixed(6)}   z_β ${a.zBeta.toFixed(6)}   n exact ${a.nExact.toFixed(2)}`,
     ].join('\n')
-    out.innerHTML =
+    $('out').innerHTML =
       stat('Visitors per variant', fmt(res.perVariant)) +
       stat(`Total, ${s.variants} arms`, fmt(res.total)) +
       (days !== null
@@ -313,38 +390,104 @@
       `<pre class="assump">${assump}</pre>`
     return res
   }
+  function renderMde(s){
+    let res
+    try {
+      res = detectableLift({ baseline: s.baseline, dailyTraffic: s.traffic, runtimeDays: s.days, variants: s.variants, tails: s.tails, alpha: s.alpha, power: s.power })
+    } catch (e) { return fail(e) }
+    const a = res.assumptions
+    const assump = [
+      `test          ${a.test}`,
+      `baseline      ${pct(s.baseline, 4)}  →  treatment ${pct(a.treatmentRate, 4)}`,
+      `visitors      ${fmt(s.traffic)}/day × ${fmt(s.days)} days ÷ ${s.variants} arms = ${fmt(res.perVariant)} per arm (${fmt(res.total)} total)`,
+      `comparisons   ${a.comparisons} (each arm vs control)${a.correction === 'bonferroni' ? ` · bonferroni: α/${a.comparisons} = ${r(a.alphaPerComparison)}` : ''}`,
+      `tails         ${s.tails}   α ${r(s.alpha)}   power ${r(s.power)}`,
+      `z_α ${a.zAlpha.toFixed(6)}   z_β ${a.zBeta.toFixed(6)}   bisection tol ${a.tolerance.toExponential(1)}`,
+    ].join('\n')
+    $('out').innerHTML =
+      stat('Minimum detectable lift, relative', '+' + pct(res.mdeRelative, 2)) +
+      stat('Absolute', '+' + pts(res.mdeAbsolute)) +
+      stat(`Visitors per variant, ${fmt(s.days)} day${s.days === 1 ? '' : 's'}`, fmt(res.perVariant)) +
+      `<pre class="assump">${assump}</pre>`
+    return res
+  }
 
-  // ── solve-for toggle ──
-  // Each page keeps its own URL, schema and seal; the toggle NAVIGATES to the
-  // sibling with the shared inputs restated in the sibling's canonical form.
+  // ── the solve-for toggle ──
+  // The flip is in place, but each option is a real <a href> to that mode's
+  // canonical URL, so middle-click and copy-link give a working link; a plain
+  // left-click is intercepted and flipped without a navigation.
   //
-  // Round-trip tolerance (sample-size → detectable-lift → sample-size):
-  // baseline, variants, tails, alpha and power come back verbatim, and the
-  // per-arm n comes back exactly. `mde` does not, and cannot: runtime is whole
-  // days, so ⌈total / traffic⌉ days buys up to traffic − 1 visitors more than
-  // the test needs, and the sibling honestly reports the smaller lift that the
-  // larger n can see. The step is bounded by
+  // Carry: baseline, variants, tails, alpha and power always go across verbatim.
+  // n → mde seeds `days` with the computed runtime (⌈total / traffic⌉), using
+  // the entered traffic, or ASSUMED_TRAFFIC when the field was blank.
+  // mde → n seeds `mde` with the computed relative lift (mdeKind=relative) and
+  // keeps the entered traffic.
+  //
+  // Round-trip tolerance, n → mde → n: baseline, variants, tails, alpha, power
+  // come back verbatim, and the per-arm n comes back exactly. `mde` does not,
+  // and cannot: runtime is whole days, so ⌈total / traffic⌉ days buys up to
+  // traffic − 1 visitors more than the test needs, and the inverse honestly
+  // reports the smaller lift that the larger n can see. The step is bounded by
   //   mde' ≥ mde · √( nExact / ⌈traffic × days / variants⌉ )
   // — measured at 0.01%–2.5% of the lift across the usual ranges — and it is
-  // one step only: a second round trip is a fixed point. Blank traffic also
-  // comes back as the assumed 1,000/day, since the sibling requires it.
-  const SIB = '/lab/detectable-lift/'
-  const SIB_KEYS = ['v', 'baseline', 'traffic', 'days', 'variants', 'tails', 'alpha', 'power']
-  function flipHref(){
-    const hint = $('solvehint')
-    const flip = $('flip')
-    if (!last) {
-      flip.href = SIB
-      hint.textContent = 'carries baseline, variants, tails, α, power — fix the inputs first'
-      return
+  // one step: coming back and going out again reproduces the same `days`.
+  // Blank traffic comes back as ASSUMED_TRAFFIC, since the inverse cannot run
+  // without one.
+  //
+  // mde → n → mde is exact in every input except `days`, which can come back
+  // one day longer. That one is structural, not a rounding choice: per-arm n is
+  // ⌈traffic × days / variants⌉, so total = n × variants overshoots
+  // traffic × days by up to variants − 1 whenever variants does not divide it,
+  // and ⌈total / traffic⌉ then tips a day. Each extra day makes divisibility
+  // more likely, so it settles — at the first `days` with variants | traffic ×
+  // days, which is the next one in the common cases (it can take up to
+  // variants − 1 cycles for an unlucky traffic/variants pair).
+  //
+  // The lift is carried at 6 dp — 0.0001% of relative lift, finer than anything
+  // the page prints, and short enough to survive the percent field (which
+  // rounds to 6 dp of percent) as a clean decimal rather than a float-noise
+  // tail. It is rounded UP, never to nearest: rounding down asks for a lift
+  // smaller than the traffic can see, which needs one more visitor per arm than
+  // we just had, which adds a day, which lowers the lift again — a ratchet that
+  // never settles. Rounding up keeps nExact ≤ the n we came from, so the loop
+  // closes.
+  function siblingState(){
+    const target = state.solve === 'n' ? 'mde' : 'n'
+    const s = { ...state, solve: target }
+    if (target === 'mde') {
+      // solve=mde has no optional keys, so the sibling URL must always name a
+      // usable traffic and days even when the current inputs do not compute.
+      s.traffic = state.traffic || ASSUMED_TRAFFIC
+      s.days = last ? runtimeDays({ total: last.total, dailyTraffic: s.traffic })
+        : (Number.isFinite(state.days) && state.days > 0 ? state.days : DEFAULTS.days)
+    } else if (last) {
+      s.mde = Math.ceil(last.mdeRelative * 1e6) / 1e6
+      s.mdeKind = 'relative'
     }
-    const assumed = !state.traffic
-    const traffic = state.traffic || 1000
-    const days = runtimeDays({ total: last.total, dailyTraffic: traffic })
-    const sib = { v: 1, baseline: state.baseline, traffic, days, variants: state.variants, tails: state.tails, alpha: state.alpha, power: state.power }
-    flip.href = SIB + '?' + SIB_KEYS.map(k => k + '=' + String(Number(sib[k]))).join('&')
-    hint.textContent = `carries baseline, variants, tails, α, power · your ${fmt(last.perVariant)} per arm becomes ${fmt(days)} day${days === 1 ? '' : 's'} at ${fmt(traffic)}/day${assumed ? ', assumed' : ''}`
+    return s
   }
+  function hint(sib){
+    if (!last) return 'carries baseline, variants, tails, α, power — fix the inputs first'
+    const carries = 'carries baseline, variants, tails, α, power · '
+    return state.solve === 'n'
+      ? carries + `your ${fmt(last.perVariant)} per arm becomes ${fmt(sib.days)} day${sib.days === 1 ? '' : 's'} at ${fmt(sib.traffic)}/day${state.traffic ? '' : ', assumed'}`
+      : carries + `your +${pct(last.mdeRelative, 2)} detectable lift becomes the MDE, at ${fmt(state.traffic)}/day`
+  }
+  function flip(target){
+    if (target === state.solve) return
+    state = siblingState()
+    applyMode(state.solve)
+    toForm(state)
+    last = render(state)
+    sync()
+  }
+  $('opts').addEventListener('click', e => {
+    const a = e.target.closest('a[data-solve]')
+    if (!a) return
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return // let the browser open it
+    e.preventDefault()
+    flip(a.dataset.solve)
+  })
 
   // ── seal / copy / lock ──
   async function sha256(str){
@@ -360,11 +503,14 @@
 
   function sync(){
     const q = canonical(state)
+    const sib = siblingState()
     history.replaceState(null, '', location.pathname + '?' + q)
-    $('lockbtn').href = APP + '?from=sample-size&' + q
+    $('lockbtn').href = APP + '?from=' + MODES[state.solve].from + '&' + q
+    $('opt-' + state.solve).href = '?' + q
+    $('opt-' + sib.solve).href = '?' + canonical(sib)
+    $('solvehint').textContent = hint(sib)
     $('example').textContent = location.pathname + '?' + q
     $('receipt').hidden = true
-    flipHref()
   }
   function update(){
     state = fromForm()
@@ -385,7 +531,10 @@
     const q = canonical(state)
     const hash = await sha256(q)
     const when = new Date().toISOString()
-    const days = state.traffic ? runtimeDays({ total: last.total, dailyTraffic: state.traffic }) : null
+    const result = state.solve === 'n'
+      ? `${fmt(last.perVariant)} per variant · ${fmt(last.total)} total` +
+        (state.traffic ? ` · ${fmt(runtimeDays({ total: last.total, dailyTraffic: state.traffic }))} days at ${fmt(state.traffic)}/day` : '')
+      : `+${pct(last.mdeRelative, 3)} relative · +${pts(last.mdeAbsolute, 4)} absolute · ${fmt(last.perVariant)} per variant`
     const rc = $('receipt')
     rc.className = 'receipt'
     rc.textContent = ''
@@ -394,13 +543,13 @@
     rc.appendChild(document.createTextNode(
       `sealed  ${when}\n` +
       `of      ?${q}\n` +
-      `result  ${fmt(last.perVariant)} per variant · ${fmt(last.total)} total` +
-      (days !== null ? ` · ${fmt(days)} days at ${fmt(state.traffic)}/day` : '') +
-      `\nlab     sample-size v1 · ${last.assumptions.test}`
+      `result  ${result}\n` +
+      `lab     sample-size v1 · solve=${state.solve} · ${last.assumptions.test}`
     ))
     rc.hidden = false
   })
 
+  applyMode(state.solve)
   toForm(state)
   last = render(state)
   sync()

@@ -169,7 +169,10 @@
     if (live){
       const slug = s.id.replace(/^lab-/, '')
       const a = el('a', 'cta', 'open')
-      a.href = '/lab/' + slug + '/'
+      // `href` on a registry entry overrides the slug default — sample-size and
+      // detectable-lift are two questions served by one app, distinguished by
+      // the `solve` param, so their cards open different modes of one URL.
+      a.href = s.href || ('/lab/' + slug + '/')
       row.appendChild(a)
     } else {
       const m = el('span', 'cta pencil', 'not yet')
